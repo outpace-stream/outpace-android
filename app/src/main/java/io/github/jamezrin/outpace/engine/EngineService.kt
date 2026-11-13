@@ -18,6 +18,7 @@ import io.github.jamezrin.outpace.core.Launch
 import io.github.jamezrin.outpace.core.StreamInfo
 import io.github.jamezrin.outpace.core.StreamUrls
 import io.github.jamezrin.outpace.core.StreamsJson
+import io.github.jamezrin.outpace.core.TimeBudget
 import io.github.jamezrin.outpace.net.Http
 import io.github.jamezrin.outpace.ui.MainActivity
 import java.io.IOException
@@ -228,12 +229,19 @@ class EngineService : Service() {
      * Peers and buffer for the first few streams, fetched only while a screen shows them so the
      * background poll stays one request. A stream whose status fails is shown without them.
      */
-    private fun withStatus(streams: List<StreamInfo>): List<StreamInfo> = streams.mapIndexed { i, st ->
-        if (i >= MAX_STATUS_STREAMS) return@mapIndexed st
-        try {
-            StreamsJson.withStatus(st, Http.get(StreamUrls.status(port, st.network, st.id), readTimeout = 2_000))
-        } catch (_: Exception) {
-            st
+    private fun withStatus(streams: List<StreamInfo>): List<StreamInfo> {
+        // These requests share the lifecycle worker, so they get one bounded budget per poll; a stop
+        // or restart waits at most STATUS_BUDGET_MS behind them.
+        val budget = TimeBudget(STATUS_BUDGET_MS)
+        return streams.mapIndexed { i, st ->
+            if (i >= MAX_STATUS_STREAMS) return@mapIndexed st
+            val timeout = budget.next(STATUS_REQUEST_MS, STATUS_MIN_MS) ?: return@mapIndexed st
+            try {
+                val url = StreamUrls.status(port, st.network, st.id)
+                StreamsJson.withStatus(st, Http.get(url, readTimeout = timeout, connectTimeout = timeout))
+            } catch (_: Exception) {
+                st
+            }
         }
     }
 
@@ -329,6 +337,11 @@ class EngineService : Service() {
         private const val STOP_TIMEOUT_MS = 5_000L
         private const val UI_POLL_MS = 2_000L
         private const val MAX_STATUS_STREAMS = 4
+
+        /** Total time per poll for peer and buffer requests; shorter than the UI poll interval. */
+        private const val STATUS_BUDGET_MS = 1_500L
+        private const val STATUS_REQUEST_MS = 1_000
+        private const val STATUS_MIN_MS = 100
         private const val BACKGROUND_POLL_MS = 30_000L
         private const val WAKE_LOCK_MS = 3 * BACKGROUND_POLL_MS
     }

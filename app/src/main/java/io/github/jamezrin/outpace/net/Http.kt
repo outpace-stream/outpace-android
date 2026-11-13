@@ -15,15 +15,15 @@ object Http {
     private const val READ_TIMEOUT = 20_000
     private const val MAX_TEXT = 4 * 1024 * 1024
 
-    private fun open(url: String, readTimeout: Int = READ_TIMEOUT): HttpURLConnection =
+    private fun open(url: String, readTimeout: Int = READ_TIMEOUT, connectTimeout: Int = CONNECT_TIMEOUT): HttpURLConnection =
         (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = CONNECT_TIMEOUT
+            this.connectTimeout = connectTimeout
             this.readTimeout = readTimeout
             setRequestProperty("User-Agent", "outpace-android/${BuildConfig.VERSION_NAME}")
         }
 
-    fun get(url: String, accept: String? = null, readTimeout: Int = READ_TIMEOUT): String {
-        val c = open(url, readTimeout)
+    fun get(url: String, accept: String? = null, readTimeout: Int = READ_TIMEOUT, connectTimeout: Int = CONNECT_TIMEOUT): String {
+        val c = open(url, readTimeout, connectTimeout)
         try {
             if (accept != null) c.setRequestProperty("Accept", accept)
             if (c.responseCode !in 200..299) throw HttpStatusException(c.responseCode, url)
