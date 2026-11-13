@@ -3,6 +3,7 @@ package io.github.jamezrin.outpace.ui
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.accessibility.AccessibilityNodeInfo
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
@@ -70,6 +71,16 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
     private fun toggle(group: LinearLayout, title: Int, summary: Int, read: () -> Boolean, index: Int = -1, write: (Boolean) -> Unit): View {
         val t = Toggle(row(group, title, summary, index), read, write)
         t.switch.visibility = View.VISIBLE
+        // The switch is hidden from accessibility, so the row reports itself as the switch, reading
+        // its state live so it never goes stale.
+        t.row.accessibilityDelegate = object : View.AccessibilityDelegate() {
+            override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
+                super.onInitializeAccessibilityNodeInfo(host, info)
+                info.className = Switch::class.java.name
+                info.isCheckable = true
+                info.isChecked = t.switch.isChecked
+            }
+        }
         t.row.setOnClickListener {
             val value = !t.switch.isChecked
             t.switch.isChecked = value

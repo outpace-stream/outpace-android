@@ -18,7 +18,11 @@ data class SearchItem(
 /** A channel name with the streams the index groups under it. */
 data class SearchGroup(val name: String, val items: List<SearchItem>)
 
-data class SearchPage(val total: Int, val groups: List<SearchGroup>) {
+/**
+ * One page of results. `groups` keeps only groups with a playable item; `rawGroups` counts every
+ * group the engine returned, so pagination still knows a page was full after filtering.
+ */
+data class SearchPage(val total: Int, val groups: List<SearchGroup>, val rawGroups: Int = groups.size) {
     val itemCount: Int get() = groups.sumOf { it.items.size }
 }
 
@@ -63,7 +67,7 @@ object SearchJson {
             if (parsed.isEmpty()) continue
             out += SearchGroup(text(g, "name") ?: parsed.first().name, parsed)
         }
-        return SearchPage(maxOf(result.optInt("total", out.size), out.size), out)
+        return SearchPage(maxOf(result.optInt("total", out.size), out.size), out, groups.length())
     }
 
     private fun item(o: JSONObject): SearchItem? {

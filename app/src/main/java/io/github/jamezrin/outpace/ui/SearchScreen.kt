@@ -54,6 +54,7 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
     private var nextPage = 0
     private var total = 0
     private var groupsShown = 0
+    private var groupsSeen = 0
     private var inFlight = false
 
     /** Bumped per request, so a late answer for an older query is dropped. */
@@ -65,7 +66,7 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
             val enter = event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_UP
             if (action == EditorInfo.IME_ACTION_SEARCH || enter) { submit(query.text.toString()); true } else false
         }
-        more.setOnClickListener { shownQuery?.let { run(it, nextPage) } }
+        more.setOnClickListener { loadMore() }
     }
 
     override fun focusTarget(): View = query
@@ -157,9 +158,21 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
         nextPage = 0
         total = 0
         groupsShown = 0
+        groupsSeen = 0
         results.removeAllViews()
         more.visibility = View.GONE
         run(q, 0)
+    }
+
+    /** Next page, under the same checks as a new search: search may have been turned off since. */
+    private fun loadMore() {
+        val q = shownQuery ?: return
+        if (block() != null) {
+            renderNotice()
+            noticeAction.requestFocus()
+            return
+        }
+        run(q, nextPage)
     }
 
     private fun run(q: String, page: Int) {
@@ -233,7 +246,9 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
         val firstNew = results.childCount
         for (g in result.groups) results.addView(groupView(g))
         groupsShown += result.groups.size
-        val hasMore = result.groups.size >= PAGE_SIZE && groupsShown < total
+        // A full page from the engine means there may be more, even if some groups were dropped.
+        groupsSeen += result.rawGroups
+        val hasMore = result.rawGroups >= PAGE_SIZE && groupsSeen < total
         more.visibility = if (hasMore) View.VISIBLE else View.GONE
         status.text = when {
             groupsShown == 0 -> host.getString(R.string.search_empty, q)

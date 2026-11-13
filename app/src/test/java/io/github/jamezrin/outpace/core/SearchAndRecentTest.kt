@@ -52,6 +52,15 @@ class SearchAndRecentTest {
         assertFalse(item.disabled)
     }
 
+    @Test fun rawGroupCountSurvivesFiltering() {
+        val json = """{"result":{"total":30,"results":[
+            {"name":"Synthetic A","items":[{"infohash":"$id"}]},
+            {"name":"Synthetic B","items":[{"infohash":"not-hex"}]}]},"error":null}"""
+        val page = SearchJson.parse(json)
+        assertEquals(1, page.groups.size)
+        assertEquals(2, page.rawGroups)
+    }
+
     @Test fun parsesEmptySearch() {
         val page = SearchJson.parse("""{"result":{"total":0,"results":[]},"error":null}""")
         assertEquals(0, page.total)
