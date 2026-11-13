@@ -40,6 +40,11 @@
         <item quantity="one">%1$s, %2$d client</item>
         <item quantity="other">%1$s, %2$d clients</item>
     </plurals>
+    <plurals name="stream_peers">
+        <item quantity="one">, %d peer</item>
+        <item quantity="other">, %d peers</item>
+    </plurals>
+    <string name="stream_buffer">, %.1f s buffered</string>
     <string name="untitled">Untitled stream</string>
 
     <string name="play_title">Play stream</string>

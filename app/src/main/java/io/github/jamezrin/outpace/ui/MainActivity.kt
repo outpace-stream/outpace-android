@@ -163,7 +163,11 @@ class MainActivity : Activity() {
             streams.addRow(getString(R.string.streams_none), null)
         } else {
             for (st in list) {
-                val label = resources.getQuantityString(R.plurals.stream_row, st.clients, st.title ?: getString(R.string.untitled), st.clients)
+                val label = buildString {
+                    append(resources.getQuantityString(R.plurals.stream_row, st.clients, st.title ?: getString(R.string.untitled), st.clients))
+                    st.peers?.let { append(resources.getQuantityString(R.plurals.stream_peers, it, it)) }
+                    st.bufferMs?.let { append(getString(R.string.stream_buffer, it / 1000.0)) }
+                }
                 val id = st.contentId
                 streams.addRow(label, id?.let { cid -> { startActivity(Intent(this, PlayActivity::class.java).putExtra(PlayActivity.EXTRA_TEXT, cid)) } })
             }

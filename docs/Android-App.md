@@ -19,7 +19,7 @@ Kodi. It has no player of its own.
 
 The app needs Android 5 or newer, on 64-bit ARM (`arm64-v8a`) or 32-bit ARM (`armeabi-v7a`).
 Many Android TV devices run 32-bit Android even on 64-bit chips; the app picks the right engine
-build for you.
+build for you. 32-bit engine builds are published from the engine release after v1.0.1.
 
 The APK is sideloaded only. It isn't on the Play Store, because Play policy doesn't allow apps
 that download programs to run.
@@ -44,6 +44,10 @@ You can start playback from:
 - **The main screen.** Paste a content id or link into the box and press **Play**.
 - **Recent streams.** The main screen lists the last 10 content ids you played. This is the easy
   way to replay on a TV remote. **Clear recent** forgets them.
+- **Active streams.** While the engine runs, the main screen lists what it is playing, with the
+  title, the number of clients, peers and seconds buffered. Choose one to open it again. Few or no
+  peers usually means the stream is hard to find; see
+  [Troubleshooting](https://github.com/outpace-stream/outpace-engine/wiki/Troubleshooting).
 
 The app starts the engine if it isn't running, waits until it answers, then opens Android's
 "Play with" chooser for `http://127.0.0.1:6878/streams/ace/cid:<id>`. Tick "Always" to go
@@ -72,7 +76,7 @@ badges:
 | installed | Downloaded and ready on this device. |
 | latest | The newest release. |
 | pre-release | Hidden unless **Show pre-releases** is ticked. |
-| not available for this device | That release has no Android build for this device. Releases before v1.0.0 have none, and 32-bit support depends on whether the selected engine release includes an `armv7-linux-androideabi` archive and checksum. |
+| not available for this device | That release has no Android build for this device. Releases before v1.0.0 have none, and 32-bit builds (`armv7-linux-androideabi`) start with the release after v1.0.1. |
 
 Choose a row to download it, switch to it or remove it. Switching while the engine runs restarts
 it on the new version. Up to 3 versions can be installed at once. The running version can't be
@@ -117,7 +121,8 @@ to ignore battery optimisation (**Settings > Battery optimisation**). On TV, and
 boot is on, the app asks once.
 
 The app holds a wake lock only while a stream is active. It checks the engine every 30 seconds
-when no app screen is open, and every 2 seconds while one is.
+when no app screen is open, and every 2 seconds while one is. Peer counts and buffer on the main
+screen are fetched only while it is open, for at most 4 streams.
 
 ## Logs and problems
 
