@@ -20,6 +20,8 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36'
       - name: Build signed APK
         shell: bash
         env:
