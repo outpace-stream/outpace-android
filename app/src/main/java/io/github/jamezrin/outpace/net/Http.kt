@@ -6,6 +6,8 @@ import java.io.IOException
 import java.io.InterruptedIOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class HttpStatusException(val code: Int, url: String) : IOException("HTTP $code for $url")
 
@@ -15,6 +17,9 @@ object Http {
     private const val READ_TIMEOUT = 20_000
     private const val MAX_TEXT = 4 * 1024 * 1024
 
+    /** Closes connections whose total deadline passed; one daemon thread, idle unless a deadline is armed. */
+    private val deadlines = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "http-deadline").apply { isDaemon = true } }
+
     private fun open(url: String, readTimeout: Int = READ_TIMEOUT, connectTimeout: Int = CONNECT_TIMEOUT): HttpURLConnection =
         (URL(url).openConnection() as HttpURLConnection).apply {
             this.connectTimeout = connectTimeout
@@ -22,14 +27,39 @@ object Http {
             setRequestProperty("User-Agent", "outpace-android/${BuildConfig.VERSION_NAME}")
         }
 
-    fun get(url: String, accept: String? = null, readTimeout: Int = READ_TIMEOUT, connectTimeout: Int = CONNECT_TIMEOUT): String {
-        val c = open(url, readTimeout, connectTimeout)
+    fun get(url: String, accept: String? = null, readTimeout: Int = READ_TIMEOUT): String {
+        val c = open(url, readTimeout)
         try {
             if (accept != null) c.setRequestProperty("Accept", accept)
             if (c.responseCode !in 200..299) throw HttpStatusException(c.responseCode, url)
             val bytes = c.inputStream.use { it.readBytesBounded(MAX_TEXT) }
             return String(bytes, Charsets.UTF_8)
         } finally {
+            c.disconnect()
+        }
+    }
+
+    /**
+     * A GET that finishes within [totalMs] overall. Connect and read timeouts apply per step, and a
+     * response that trickles in resets the read timer on every read, so a watchdog closes the
+     * connection when the deadline passes, which aborts any blocked connect or read.
+     */
+    fun getWithin(url: String, totalMs: Int): String {
+        val deadline = System.nanoTime() + totalMs * 1_000_000L
+        val c = open(url, readTimeout = totalMs, connectTimeout = totalMs)
+        // On Android, disconnecting cancels a blocked connect or header read. The body loop below
+        // also checks the deadline between reads, which works on any runtime.
+        val timer = deadlines.schedule({ c.disconnect() }, totalMs.toLong(), TimeUnit.MILLISECONDS)
+        try {
+            if (c.responseCode !in 200..299) throw HttpStatusException(c.responseCode, url)
+            val bytes = c.inputStream.use { it.readBytesBounded(MAX_TEXT, deadline) }
+            if (timer.isDone) throw InterruptedIOException("deadline of $totalMs ms exceeded")
+            return String(bytes, Charsets.UTF_8)
+        } catch (e: IOException) {
+            if (timer.isDone && e !is InterruptedIOException) throw InterruptedIOException("deadline of $totalMs ms exceeded")
+            throw e
+        } finally {
+            timer.cancel(false)
             c.disconnect()
         }
     }
@@ -79,10 +109,12 @@ object Http {
         }
     }
 
-    private fun java.io.InputStream.readBytesBounded(limit: Int): ByteArray {
+    /** Reads at most [limit] bytes; with a [deadline] (System.nanoTime), stops once it passes. */
+    private fun java.io.InputStream.readBytesBounded(limit: Int, deadline: Long = Long.MAX_VALUE): ByteArray {
         val out = java.io.ByteArrayOutputStream()
         val buf = ByteArray(16 * 1024)
         while (true) {
+            if (System.nanoTime() - deadline > 0) throw InterruptedIOException("deadline exceeded")
             val n = read(buf)
             if (n < 0) break
             out.write(buf, 0, n)

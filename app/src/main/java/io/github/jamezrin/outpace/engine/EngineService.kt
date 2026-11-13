@@ -230,15 +230,15 @@ class EngineService : Service() {
      * background poll stays one request. A stream whose status fails is shown without them.
      */
     private fun withStatus(streams: List<StreamInfo>): List<StreamInfo> {
-        // These requests share the lifecycle worker, so they get one bounded budget per poll; a stop
-        // or restart waits at most STATUS_BUDGET_MS behind them.
+        // These requests share the lifecycle worker, so they get one bounded budget per poll, and each
+        // has a hard total deadline; a stop or restart waits at most about STATUS_BUDGET_MS.
         val budget = TimeBudget(STATUS_BUDGET_MS)
         return streams.mapIndexed { i, st ->
             if (i >= MAX_STATUS_STREAMS) return@mapIndexed st
             val timeout = budget.next(STATUS_REQUEST_MS, STATUS_MIN_MS) ?: return@mapIndexed st
             try {
                 val url = StreamUrls.status(port, st.network, st.id)
-                StreamsJson.withStatus(st, Http.get(url, readTimeout = timeout, connectTimeout = timeout))
+                StreamsJson.withStatus(st, Http.getWithin(url, timeout))
             } catch (_: Exception) {
                 st
             }
