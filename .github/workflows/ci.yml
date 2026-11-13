@@ -1,0 +1,32 @@
+name: Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    name: Build and test the Android app
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+      - name: Unit tests, lint and release build
+        run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleRelease
+      - name: Upload unsigned development APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: outpace-android-unsigned
+          path: app/build/outputs/apk/release/*unsigned.apk
