@@ -3,7 +3,7 @@
 > **Unreleased:** this is development documentation. APKs will be published in this repository
 > after signing and device validation; app versions are independent of engine versions.
 
-The outpace Android app runs the engine on a phone or an Android TV box without root and
+The Outpace Android app runs the engine on a phone or an Android TV box without root and
 without Termux. It downloads the engine release you choose, keeps it running in the background,
 and hands streams to the video player you already use, such as VLC, MX Player, Just Player or
 Kodi. It has no player of its own.
@@ -38,8 +38,8 @@ the same device reach it with the usual [URLs](https://github.com/outpace-stream
 
 The main screen has three tabs: **Home**, **Search** and **Settings**. On a phone held upright
 they sit along the bottom; on TV, tablets and landscape phones they form a rail on the left.
-Back from Search or Settings returns to Home. **Engine versions** and **Logs** open from the
-engine card on Home.
+Back from Search or Settings returns to Home. **Versions** (Engine versions) and **Logs** sit next
+to the start button on Home.
 
 Home shows the engine state with a coloured dot, the start/stop button, the address players use,
 what is playing now and what you played recently. When you change settings while the engine runs,
@@ -50,8 +50,8 @@ a banner offers **Restart** to apply them.
 You can start playback from:
 
 - **A link.** Tap an `acestream://<id>` or `acestream:?content_id=<id>` link in a browser or chat
-  app and choose outpace.
-- **The share menu.** Share text that contains a content id or an `acestream:` link to outpace.
+  app and choose Outpace.
+- **The share menu.** Share text that contains a content id or an `acestream:` link to Outpace.
 - **Home.** Paste a content id or link into the box and press **Play**. On phones, **Paste**
   fills the box from the clipboard.
 - **Search.** Find a stream by name and press its **Play** button; see [Search](#search).
@@ -101,7 +101,7 @@ again.
 
 ## Engine versions
 
-**Engine versions** lists outpace releases, newest first. Each row shows the release date and
+**Engine versions** lists Outpace releases, newest first. Each row shows the release date and
 badges:
 
 | Badge | Meaning |

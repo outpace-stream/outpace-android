@@ -6,11 +6,11 @@ Migrated from the engine Android draft PR #454 with the maintainer-approved repo
 
 ## Intent
 
-Today, running outpace on Android means Termux, a manual download, `termux-wake-lock` and a
+Today, running Outpace on Android means Termux, a manual download, `termux-wake-lock` and a
 terminal. That works for people who already live in Termux and is a wall for everyone else,
 especially on Android TV, where there is no comfortable terminal at all.
 
-The app is a thin, installable wrapper that makes outpace a normal Android citizen: install an
+The app is a thin, installable wrapper that makes Outpace a normal Android citizen: install an
 APK, press start, and the engine runs in the background on `127.0.0.1:6878`. Its second job is
 to turn a content id or `acestream://` link into playback in whatever player the user already
 has (VLC, MX Player, Just Player, Kodi), without the user ever seeing or copying a URL.
@@ -19,7 +19,7 @@ It must work equally well on a phone and on an Android TV box.
 
 ## Goals
 
-1. Start, stop and supervise the outpace engine on the device, without root and without Termux.
+1. Start, stop and supervise the Outpace engine on the device, without root and without Termux.
 2. Keep the engine alive in the background reliably (foreground service).
 3. Show whether the engine is healthy and which streams are active.
 4. Accept a content id or `acestream://` link from link taps, the system share sheet, a paste

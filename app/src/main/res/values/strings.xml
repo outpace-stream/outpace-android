@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">outpace</string>
+    <string name="app_name">Outpace</string>
     <string name="channel_engine">Engine</string>
 
     <string name="state_stopped">Engine stopped</string>
@@ -16,6 +16,7 @@
     <string name="action_stop">Stop engine</string>
     <string name="action_download_engine">Download engine</string>
     <string name="action_versions">Engine versions</string>
+    <string name="action_versions_short">Versions</string>
     <string name="action_logs">Logs</string>
     <string name="action_play">Play</string>
 
@@ -175,5 +176,5 @@
     <string name="settings_ace_compat">AceStream-compatible API</string>
     <string name="settings_section_background">Background</string>
     <string name="settings_section_about">About</string>
-    <string name="settings_about">outpace for Android %1$s\nEngine releases come from github.com/%2$s</string>
+    <string name="settings_about">Outpace for Android %1$s\nEngine releases come from github.com/%2$s</string>
 </resources>

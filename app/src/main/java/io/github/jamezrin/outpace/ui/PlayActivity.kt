@@ -23,8 +23,9 @@ import io.github.jamezrin.outpace.engine.EngineState
 
 /**
  * Turns a link, shared text, pasted id or an in-app stream (search result, recent, active) into a
- * hand-off to an external player. Links and shared text are only read for content ids; the app's
- * own screens pass an explicit [EXTRA_REF], which may be an infohash from search.
+ * hand-off to an external player. Links and shared text are only read for content ids. The app's
+ * own screens open it through the non-exported [IN_APP_ALIAS] and pass an explicit [EXTRA_REF],
+ * which may be an infohash from search; those extras are ignored on any other entry.
  */
 class PlayActivity : Activity() {
     private lateinit var status: TextView
@@ -55,7 +56,9 @@ class PlayActivity : Activity() {
         findViewById<Button>(R.id.share).setOnClickListener { shareUrl() }
 
         nameView.visibility = View.GONE
-        val explicit = intent.getStringExtra(EXTRA_REF)?.let(StreamRef::parse)
+        // Only trust typed extras when launched through the alias other apps cannot start.
+        val inApp = intent.component?.className == IN_APP_ALIAS
+        val explicit = if (inApp) intent.getStringExtra(EXTRA_REF)?.let(StreamRef::parse) else null
         if (explicit != null) {
             prepare(explicit, intent.getStringExtra(EXTRA_NAME))
             return
@@ -171,7 +174,10 @@ class PlayActivity : Activity() {
     companion object {
         const val EXTRA_TEXT = "io.github.jamezrin.outpace.TEXT"
 
-        /** A prefixed selector (`cid:` or `ih:`) from the app's own screens. Not exported text. */
+        /** The non-exported alias the app's own screens use; see the manifest. */
+        const val IN_APP_ALIAS = "io.github.jamezrin.outpace.ui.InAppPlayActivity"
+
+        /** A prefixed selector (`cid:` or `ih:`), honoured only through [IN_APP_ALIAS]. */
         const val EXTRA_REF = "io.github.jamezrin.outpace.REF"
         const val EXTRA_NAME = "io.github.jamezrin.outpace.NAME"
     }

@@ -55,7 +55,7 @@ internal fun Context.dp(value: Int): Int = (value * resources.displayMetrics.den
 
 /** Opens the play hand-off for a stream the app already knows the kind of. */
 internal fun Context.playIntent(ref: StreamRef, name: String?): Intent =
-    Intent(this, PlayActivity::class.java)
+    Intent().setClassName(this, PlayActivity.IN_APP_ALIAS)
         .putExtra(PlayActivity.EXTRA_REF, ref.selector)
         .apply { if (!name.isNullOrBlank()) putExtra(PlayActivity.EXTRA_NAME, name) }
 
