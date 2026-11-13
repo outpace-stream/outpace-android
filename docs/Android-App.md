@@ -141,7 +141,7 @@ engine runs with older settings, a banner offers **Restart** to apply them right
 | AceStream-compatible API | Off | [`OUTPACE_ACE_COMPAT`](https://github.com/outpace-stream/outpace-engine/wiki/Playing-Streams#acestream-compatible-api) |
 | Stream search | Off | [`OUTPACE_COMPAT_ACESTREAM_SERVICES`](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search). Sends queries and your IP address to AceStream's public index over plain HTTP. |
 | Start on boot | On for TV, off for phones | Starts the engine when the device boots. |
-| Stop after 10 minutes with no streams | On for phones, off for TV | Saves battery when nothing is playing. |
+| Stop when idle | On for phones, off for TV | Stops the engine after 10 minutes with no streams, to save battery. |
 
 The engine's data and cache live in the app's private storage (`OUTPACE_DATA_DIR` and
 `OUTPACE_CACHE_DIR`). Uninstalling the app removes them. The peer listener keeps its usual

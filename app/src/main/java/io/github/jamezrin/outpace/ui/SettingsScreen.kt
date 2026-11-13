@@ -1,10 +1,12 @@
 package io.github.jamezrin.outpace.ui
 
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
 import io.github.jamezrin.outpace.BuildConfig
@@ -13,77 +15,103 @@ import io.github.jamezrin.outpace.core.EngineSettings
 import io.github.jamezrin.outpace.core.Releases
 import io.github.jamezrin.outpace.engine.EngineController
 import io.github.jamezrin.outpace.engine.EngineState
+import java.util.Locale
 
 /** Engine and app settings. Every change saves at once; engine settings apply on the next start. */
 class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R.layout.screen_settings) {
     private val port = find<EditText>(R.id.port)
     private val restartBanner = find<View>(R.id.restart_banner)
-    private val battery = find<Button>(R.id.battery)
-    private val batterySummary = find<View>(R.id.battery_summary)
-    private val engineSwitches: Map<Int, Pair<(EngineSettings) -> Boolean, (EngineSettings, Boolean) -> EngineSettings>> = mapOf(
-        R.id.search to Pair({ s: EngineSettings -> s.search }, { s: EngineSettings, v: Boolean -> s.copy(search = v) }),
-        R.id.lan to Pair({ s: EngineSettings -> s.lan }, { s: EngineSettings, v: Boolean -> s.copy(lan = v) }),
-        R.id.seeding to Pair({ s: EngineSettings -> s.seeding }, { s: EngineSettings, v: Boolean -> s.copy(seeding = v) }),
-        R.id.inbound to Pair({ s: EngineSettings -> s.inbound }, { s: EngineSettings, v: Boolean -> s.copy(inbound = v) }),
-        R.id.port_mapping to Pair({ s: EngineSettings -> s.portMapping }, { s: EngineSettings, v: Boolean -> s.copy(portMapping = v) }),
-        R.id.ace_compat to Pair({ s: EngineSettings -> s.aceCompat }, { s: EngineSettings, v: Boolean -> s.copy(aceCompat = v) }),
-    )
 
-    /** Set while switches are filled from preferences, so that filling them saves nothing. */
-    private var binding = false
+    /** A switch row bound to a preference: how to read it and how to store a new value. */
+    private class Toggle(val row: View, val read: () -> Boolean, val write: (Boolean) -> Unit) {
+        val switch: Switch = row.findViewById(R.id.toggle)
+    }
+
+    private val toggles = ArrayList<Toggle>()
+    private lateinit var batteryRow: View
+    private lateinit var searchRow: View
 
     init {
-        for ((id, access) in engineSwitches) {
-            find<Switch>(id).setOnCheckedChangeListener { _, checked ->
-                if (!binding) save(access.second(prefs.settings, checked))
-            }
-        }
-        find<Switch>(R.id.boot).setOnCheckedChangeListener { _, checked -> if (!binding) prefs.startOnBoot = checked }
-        find<Switch>(R.id.idle).setOnCheckedChangeListener { _, checked -> if (!binding) prefs.idleStop = checked }
+        val search = find<LinearLayout>(R.id.group_search)
+        val network = find<LinearLayout>(R.id.group_network)
+        val peers = find<LinearLayout>(R.id.group_peers)
+        val background = find<LinearLayout>(R.id.group_background)
+
+        searchRow = engineToggle(search, R.string.settings_search, R.string.settings_search_summary, { it.search }) { s, v -> s.copy(search = v) }
+        // LAN access goes above the port, which is already in the layout.
+        engineToggle(network, R.string.settings_lan, R.string.settings_lan_warning, { it.lan }, index = 0) { s, v -> s.copy(lan = v) }
+        engineToggle(peers, R.string.settings_seeding, R.string.settings_seeding_summary, { it.seeding }) { s, v -> s.copy(seeding = v) }
+        engineToggle(peers, R.string.settings_inbound, R.string.settings_inbound_summary, { it.inbound }) { s, v -> s.copy(inbound = v) }
+        engineToggle(peers, R.string.settings_port_mapping, R.string.settings_port_mapping_summary, { it.portMapping }) { s, v -> s.copy(portMapping = v) }
+        engineToggle(peers, R.string.settings_ace_compat, R.string.settings_ace_compat_summary, { it.aceCompat }) { s, v -> s.copy(aceCompat = v) }
+        toggle(background, R.string.settings_boot, R.string.settings_boot_summary, { prefs.startOnBoot }) { prefs.startOnBoot = it }
+        toggle(background, R.string.settings_idle, R.string.settings_idle_summary, { prefs.idleStop }) { prefs.idleStop = it }
+        batteryRow = row(background, R.string.settings_battery, R.string.settings_battery_summary)
+        batteryRow.setOnClickListener { BatteryPrompt.request(host) }
+
         port.setOnEditorActionListener { _, action, _ ->
             if (action == EditorInfo.IME_ACTION_DONE) { savePort(); port.hideKeyboard(); true } else false
         }
         port.setOnFocusChangeListener { _, focused -> if (!focused) savePort() }
-        battery.setOnClickListener { BatteryPrompt.request(host) }
         find<Button>(R.id.restart).setOnClickListener { EngineController.restart(host) }
         find<TextView>(R.id.about).text = host.getString(R.string.settings_about, BuildConfig.VERSION_NAME, Releases.REPO)
     }
 
-    override fun focusTarget(): View = find(R.id.search)
+    override fun focusTarget(): View = searchRow
+
+    private fun row(group: LinearLayout, title: Int, summary: Int, index: Int = -1): View {
+        val row = LayoutInflater.from(host).inflate(R.layout.item_setting, group, false)
+        row.findViewById<TextView>(R.id.title).setText(title)
+        row.findViewById<TextView>(R.id.summary).apply { setText(summary); visibility = View.VISIBLE }
+        group.addView(row, index)
+        return row
+    }
+
+    private fun toggle(group: LinearLayout, title: Int, summary: Int, read: () -> Boolean, index: Int = -1, write: (Boolean) -> Unit): View {
+        val t = Toggle(row(group, title, summary, index), read, write)
+        t.switch.visibility = View.VISIBLE
+        t.row.setOnClickListener {
+            val value = !t.switch.isChecked
+            t.switch.isChecked = value
+            t.write(value)
+            render()
+        }
+        toggles += t
+        return t.row
+    }
+
+    private fun engineToggle(
+        group: LinearLayout,
+        title: Int,
+        summary: Int,
+        get: (EngineSettings) -> Boolean,
+        index: Int = -1,
+        set: (EngineSettings, Boolean) -> EngineSettings,
+    ): View = toggle(group, title, summary, { get(prefs.settings) }, index) { v -> prefs.settings = set(prefs.settings, v) }
 
     override fun onShown() {
-        binding = true
-        val s = prefs.settings
-        for ((id, access) in engineSwitches) find<Switch>(id).isChecked = access.first(s)
-        find<Switch>(R.id.boot).isChecked = prefs.startOnBoot
-        find<Switch>(R.id.idle).isChecked = prefs.idleStop
-        port.setText(String.format(java.util.Locale.ROOT, "%d", s.port))
+        for (t in toggles) t.switch.isChecked = t.read()
+        port.setText(String.format(Locale.ROOT, "%d", prefs.settings.port))
         port.error = null
-        binding = false
     }
 
     override fun render() {
         val running = EngineController.runningSettings
         val changed = EngineController.state == EngineState.Running && running != null && running != prefs.settings
         restartBanner.visibility = if (changed) View.VISIBLE else View.GONE
-        val exempt = BatteryPrompt.isExempt(host)
-        battery.visibility = if (exempt) View.GONE else View.VISIBLE
-        batterySummary.visibility = battery.visibility
-    }
-
-    private fun save(s: EngineSettings) {
-        prefs.settings = s
-        render()
+        batteryRow.visibility = if (BatteryPrompt.isExempt(host)) View.GONE else View.VISIBLE
     }
 
     private fun savePort() {
-        if (binding) return
         val value = port.text.toString().toIntOrNull()
         if (value == null || !EngineSettings.validPort(value)) {
             port.error = host.getString(R.string.settings_port_invalid)
             return
         }
         port.error = null
-        if (value != prefs.settings.port) save(prefs.settings.copy(port = value))
+        if (value != prefs.settings.port) {
+            prefs.settings = prefs.settings.copy(port = value)
+            render()
+        }
     }
 }

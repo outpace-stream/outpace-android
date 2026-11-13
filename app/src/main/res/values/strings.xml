@@ -73,11 +73,16 @@
     <string name="settings_lan_warning">Anyone on your network can use the engine. Turn this on only on a trusted network.</string>
     <string name="settings_port">HTTP port</string>
     <string name="settings_port_invalid">Use a port between 1024 and 65535.</string>
-    <string name="settings_seeding">Seeding (upload to peers)</string>
+    <string name="settings_seeding">Seeding</string>
+    <string name="settings_seeding_summary">Upload pieces to other viewers of the same stream.</string>
     <string name="settings_inbound">Accept inbound peers</string>
-    <string name="settings_port_mapping">Router port mapping (UPnP / NAT-PMP)</string>
+    <string name="settings_inbound_summary">Let other peers connect to this device, not only the other way round.</string>
+    <string name="settings_port_mapping">Router port mapping</string>
+    <string name="settings_port_mapping_summary">Ask the router to open the peer port with UPnP or NAT-PMP.</string>
     <string name="settings_boot">Start on boot</string>
-    <string name="settings_idle">Stop after 10 minutes with no streams</string>
+    <string name="settings_boot_summary">Start the engine when the device turns on.</string>
+    <string name="settings_idle">Stop when idle</string>
+    <string name="settings_idle_summary">Stop the engine after 10 minutes with no streams, to save battery.</string>
     <string name="settings_battery">Battery optimisation</string>
     <string name="settings_battery_summary">Allow the engine to keep running in the background.</string>
 
@@ -174,6 +179,7 @@
     <string name="settings_port_summary">The port players connect to. Default 6878.</string>
     <string name="settings_section_peers">Peers</string>
     <string name="settings_ace_compat">AceStream-compatible API</string>
+    <string name="settings_ace_compat_summary">Also serve the /ace/getstream API that AceStream clients and playlists use.</string>
     <string name="settings_section_background">Background</string>
     <string name="settings_section_about">About</string>
     <string name="settings_about">Outpace for Android %1$s\nEngine releases come from github.com/%2$s</string>
