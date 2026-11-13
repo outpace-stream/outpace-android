@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:paddingStart="@dimen/page_padding" android:paddingEnd="@dimen/page_padding"
+        android:paddingTop="@dimen/page_top" android:paddingBottom="32dp">
+
+        <TextView style="@style/Text.Title" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/settings_title" />
+        <TextView style="@style/Text.Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" android:text="@string/settings_autosave" />
+
+        <LinearLayout android:id="@+id/restart_banner" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="@drawable/bg_notice"
+            android:orientation="horizontal" android:gravity="center_vertical" android:padding="14dp"
+            android:visibility="gone">
+            <TextView style="@style/Text.Body" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="@string/restart_banner" />
+            <Button android:id="@+id/restart" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="12dp" android:text="@string/action_restart_short" />
+        </LinearLayout>
+
+        <TextView style="@style/Section" android:text="@string/settings_section_search" />
+        <Switch android:id="@+id/search" style="@style/SettingSwitch" android:text="@string/settings_search" />
+        <TextView style="@style/SettingSummary" android:text="@string/settings_search_summary" />
+
+        <TextView style="@style/Section" android:text="@string/settings_section_network" />
+        <Switch android:id="@+id/lan" style="@style/SettingSwitch" android:text="@string/settings_lan" />
+        <TextView style="@style/SettingSummary" android:text="@string/settings_lan_warning" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical" android:paddingStart="12dp"
+            android:minHeight="56dp">
+            <TextView style="@style/Text.Body" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:labelFor="@id/port" android:text="@string/settings_port" />
+            <EditText android:id="@+id/port" android:layout_width="120dp" android:layout_height="wrap_content"
+                android:inputType="number" android:maxLength="5" android:imeOptions="actionDone"
+                android:importantForAutofill="no" android:gravity="center" />
+        </LinearLayout>
+        <TextView style="@style/SettingSummary" android:text="@string/settings_port_summary" />
+
+        <TextView style="@style/Section" android:text="@string/settings_section_peers" />
+        <Switch android:id="@+id/seeding" style="@style/SettingSwitch" android:text="@string/settings_seeding" />
+        <Switch android:id="@+id/inbound" style="@style/SettingSwitch" android:text="@string/settings_inbound" />
+        <Switch android:id="@+id/port_mapping" style="@style/SettingSwitch" android:text="@string/settings_port_mapping" />
+        <Switch android:id="@+id/ace_compat" style="@style/SettingSwitch" android:text="@string/settings_ace_compat" />
+
+        <TextView style="@style/Section" android:text="@string/settings_section_background" />
+        <Switch android:id="@+id/boot" style="@style/SettingSwitch" android:text="@string/settings_boot" />
+        <Switch android:id="@+id/idle" style="@style/SettingSwitch" android:text="@string/settings_idle" />
+        <Button android:id="@+id/battery" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="@string/settings_battery" />
+        <TextView android:id="@+id/battery_summary" style="@style/SettingSummary" android:layout_marginTop="4dp"
+            android:text="@string/settings_battery_summary" />
+
+        <TextView style="@style/Section" android:text="@string/settings_section_about" />
+        <TextView android:id="@+id/about" style="@style/Text.Muted" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:paddingStart="12dp" />
+    </LinearLayout>
+</ScrollView>

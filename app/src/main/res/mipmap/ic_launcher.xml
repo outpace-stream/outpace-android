@@ -1,4 +1,5 @@
+<!-- GENERATED FILE: edit logo/outpace-logo.svg, then run tools/build-android-icons.py. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item><shape android:shape="oval"><solid android:color="@color/brand" /></shape></item>
+    <item><shape android:shape="oval"><solid android:color="#FFFFFFFF" /></shape></item>
     <item android:drawable="@drawable/ic_launcher_foreground" />
 </layer-list>

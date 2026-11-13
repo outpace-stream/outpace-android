@@ -25,3 +25,9 @@ an app version. Release signing uses `OUTPACE_ANDROID_KEYSTORE`,
 `OUTPACE_ANDROID_KEYSTORE_PASSWORD`, `OUTPACE_ANDROID_KEY_ALIAS` and
 `OUTPACE_ANDROID_KEY_PASSWORD`; never commit a keystore or secret.
 The application ID remains unchanged to preserve the existing app identity.
+
+## Icons
+
+The launcher icon, themed icon, notification icon, in-app logo and TV banner are generated in
+[outpace-stream/assets](https://github.com/outpace-stream/assets) from the canonical logo SVG.
+Regenerate them there and copy its `android/res` into `app/src/main/res`; do not hand-edit them.

@@ -1,4 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GENERATED FILE: edit logo/outpace-logo.svg, then run tools/build-android-icons.py. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
-    <path android:fillColor="#FFFFFFFF" android:pathData="M12,2A10,10 0,1 0,22 12,10 10,0 0,0 12,2ZM10,16.5V7.5L16,12Z" />
+    <group android:scaleX="0.025686" android:scaleY="0.025686" android:translateX="-3.2187" android:translateY="-4.1177">
+        <path android:name="ring" android:fillColor="#FFFFFFFF" android:pathData="M347 476 H215 C187 476 165 502 148 540 C144 548 149 551 157 551 H468 C500 551 518 529 538 500 C560 469 591 445 625 445 C642 445 657 450 676 460 L847 568 C871 584 882 602 882 622 C883 646 871 664 850 680 L646 801 C622 815 602 819 583 811 C539 797 525 762 533 697 Q535 692 529 692 H308 C287 692 273 711 261 740 Q257 752 269 752 H339 C351 792 371 835 399 868 C467 951 553 998 662 998 C857 998 1041 829 1041 630 C1041 555 1028 486 985 430 C939 327 822 257 691 257 C550 257 411 340 347 476 Z" />
+        <path android:name="middle-streak" android:fillColor="#FFFFFFFF" android:pathData="M262 587 H542 Q552 587 547 599 C535 632 516 657 488 657 H211 Q198 657 204 645 C219 610 238 587 262 587 Z" />
+        <path android:name="amber-sweep" android:fillColor="#FFFFFFFF" android:pathData="M985 430 C1009 523 993 616 850 680 L646 801 C622 815 602 819 583 811 C539 797 525 762 533 697 C461 719 384 788 399 868 C467 951 553 998 662 998 C857 998 1041 829 1041 630 C1041 555 1028 486 985 430 Z" />
+    </group>
 </vector>
