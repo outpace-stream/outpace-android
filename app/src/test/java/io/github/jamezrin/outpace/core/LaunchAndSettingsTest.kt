@@ -73,5 +73,27 @@ class LaunchAndSettingsTest {
         assertNull(s[1].contentId)
     }
 
+    @Test fun addsStatusPeersAndBuffer() {
+        val id = "0123456789abcdef0123456789abcdef01234567"
+        val base = StreamInfo("cid:$id", "News", null, 1)
+        val json = """{"network":"ace","id":"cid:$id","clients":1,"peers":7,"bitrate":4000000,"buffer_ms":3250,"uploaded":0}"""
+        val s = StreamsJson.withStatus(base, json)
+        assertEquals(7, s.peers)
+        assertEquals(3_250L, s.bufferMs)
+        assertEquals("News", s.title)
+    }
+
+    @Test fun statusWithoutFieldsLeavesThemNull() {
+        val s = StreamsJson.withStatus(StreamInfo("cid:x", null, null, 0), """{"peers":null}""")
+        assertNull(s.peers)
+        assertNull(s.bufferMs)
+    }
+
+    @Test fun keepsNetworkFromStreams() {
+        val s = StreamsJson.parse("""{"streams":[{"network":"fix","id":"chan","clients":0}]}""")
+        assertEquals("fix", s[0].network)
+        assertNull(s[0].contentId)
+    }
+
     @Test fun parsesEmptyStreams() = assertEquals(emptyList<StreamInfo>(), StreamsJson.parse("""{"streams":[]}"""))
 }
