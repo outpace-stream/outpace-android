@@ -13,11 +13,11 @@ fun versionCodeOf(version: String): Int {
 }
 
 android {
-    namespace = "io.github.jamezrin.outpace"
+    namespace = "io.github.outpacestream.android"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "io.github.jamezrin.outpace"
+        applicationId = "io.github.outpacestream.android"
         minSdk = 21
         targetSdk = 36
         versionName = appVersion
@@ -25,7 +25,7 @@ android {
     }
 
     signingConfigs {
-        // Release signing comes from CI secrets; without them the release APK is unsigned.
+        // Release signing comes from CI secrets (release.yml fails without them); local release builds are unsigned.
         val storeFile = System.getenv("OUTPACE_ANDROID_KEYSTORE")
         if (storeFile != null) {
             create("release") {
