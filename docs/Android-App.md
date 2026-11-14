@@ -57,8 +57,10 @@ latest versions and when the app last checked, and has **Check for updates**, **
 **Update**, and the **Notify me about updates** switch that **Never ask again** turns off.
 
 Only signed release builds update this way. A build you compiled yourself is signed with a
-different key, so Android refuses the update; the app then says so and you can install the new
-APK from the releases page by hand. Development builds (version `0.0.0`) never show the dialog
+different key, so Android refuses the update, and installing the release APK by hand fails the same
+way. To switch to the official release, uninstall the app first, then install the APK from the
+releases page. Uninstalling deletes the app's data, including the downloaded engine and your
+settings. Development builds (version `0.0.0`) never show the dialog
 and can't update from Settings.
 
 ## First start

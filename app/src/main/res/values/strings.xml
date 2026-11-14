@@ -210,6 +210,7 @@
     <string name="settings_update_status">Installed version %1$s</string>
     <string name="settings_update_up_to_date">Up to date. Checked %1$s.</string>
     <string name="settings_update_available">Version %1$s is available.</string>
+    <string name="settings_update_available_checked">Version %1$s is available. Checked %2$s.</string>
     <string name="settings_update_never_checked">Not checked yet.</string>
     <string name="settings_update_dev">Development build. Updates are off.</string>
     <string name="settings_update_check_failed">Last check failed: %1$s</string>
@@ -224,7 +225,7 @@
     <string name="settings_update_notify">Notify me about updates</string>
     <string name="settings_update_notify_summary">Show a dialog when a new version is out, at most once a day.</string>
 
-    <string name="update_failed_signature">This build can\'t be updated in place. Install the new version from the release page.</string>
+    <string name="update_failed_signature">This build is signed with a different key, so Android won\'t update it. To switch to the official release, uninstall this app first (this deletes its data, including the engine and settings), then install the APK from the release page.</string>
     <string name="update_cancelled">Update cancelled.</string>
     <string name="update_failed_generic">The update could not be installed.</string>
     <string name="close">Close</string>

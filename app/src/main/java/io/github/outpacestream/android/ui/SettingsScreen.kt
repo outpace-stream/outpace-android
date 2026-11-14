@@ -177,6 +177,7 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         updateStatus.findViewById<TextView>(R.id.summary).text = when {
             installed == AppRelease.DEV_VERSION -> host.getString(R.string.settings_update_dev)
             checkError != null -> host.getString(R.string.settings_update_check_failed, checkError)
+            newer && checkedAt != 0L -> host.getString(R.string.settings_update_available_checked, latest, DateUtils.getRelativeTimeSpanString(checkedAt))
             newer -> host.getString(R.string.settings_update_available, latest)
             latest == null || checkedAt == 0L -> host.getString(R.string.settings_update_never_checked)
             else -> host.getString(R.string.settings_update_up_to_date, DateUtils.getRelativeTimeSpanString(checkedAt))

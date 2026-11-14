@@ -60,6 +60,9 @@ class MainActivity : Activity() {
 
     /** Set when another one-time prompt showed during this activity, so the update dialog waits. */
     private var otherPromptShown = false
+    private var started = false
+    /** A release check finished while stopped; prompt on the next resume instead. */
+    private var promptPending = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,6 +93,7 @@ class MainActivity : Activity() {
 
     override fun onStart() {
         super.onStart()
+        started = true
         EngineController.addListener(listener)
         EngineController.screenShown()
         screens[current].render()
@@ -100,9 +104,14 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         updateFlow.onResumed()
+        if (promptPending) {
+            promptPending = false
+            maybePromptUpdate()
+        }
     }
 
     override fun onStop() {
+        started = false
         updateFlow.detach()
         EngineController.removeListener(listener)
         EngineController.screenHidden()
@@ -194,7 +203,8 @@ class MainActivity : Activity() {
             app.latest(force = false)
             onMain {
                 screens[current].render()
-                maybePromptUpdate()
+                // A dialog shown while stopped could be lost and still use up the day's prompt.
+                if (started) maybePromptUpdate() else promptPending = true
             }
         }
     }

@@ -47,6 +47,8 @@ class AppUpdates(context: Context) {
             val part = File(dir, "$name.part")
             Http.download(AppRelease.REPO.downloadUrl(version, name), part, cancelled, progress)
             UpdateFiles.verify(part, checksum, name)
+            // Cancel can land while the APK is hashed; never hand a cancelled download to the installer.
+            if (cancelled()) throw IOException("download cancelled")
             val apk = File(dir, name)
             if (!part.renameTo(apk)) throw IOException("cannot store the download")
             return apk
