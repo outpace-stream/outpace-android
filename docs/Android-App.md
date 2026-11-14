@@ -101,8 +101,9 @@ and engine settings live in the [Engines](#engines) tab.
 The **Engines** tab lists every engine the app can use in one list: each engine version downloaded
 to this device ("This device, v1.0.1") and each remote engine you added (its name and address).
 One of them is **Selected**; Home, Search and playback all use it. Choose a row to use that
-engine, to edit a remote engine, or to remove it. Removing the selected engine leaves nothing
-selected, and Home shows **Configure** again.
+engine, to edit a remote engine, or to remove it. Editing the connected remote engine reconnects
+to it at once; playback continues. Removing the selected engine leaves nothing selected, and Home
+shows **Configure** again.
 
 Switching is free in both directions. Selecting a remote engine stops this device's engine if it
 runs, and selecting another engine disconnects from a remote one first.
@@ -222,7 +223,7 @@ badges:
 Choose a row to download it, switch to it or remove it. A download becomes the selected engine
 only when no engine is selected; otherwise it joins the Engines list. Switching while the engine
 runs restarts it on the new version. Up to 3 versions can be installed at once. The running
-version can't be removed.
+version, or one that is starting, can't be removed.
 
 When a newer release exists, the Engines tab shows a **vX.Y.Z available** button. The app checks GitHub when the main screen opens, at most once a day, and never upgrades
 the engine by itself.

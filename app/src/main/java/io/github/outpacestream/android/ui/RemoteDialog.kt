@@ -19,7 +19,7 @@ object RemoteDialog {
             address.setText(existing.endpoint.display)
         }
         val dialog = AlertDialog.Builder(host)
-            .setTitle(R.string.remote_add_title)
+            .setTitle(if (existing == null) R.string.remote_add_title else R.string.remote_edit_title)
             .setView(view)
             .setPositiveButton(R.string.action_save, null)
             .setNegativeButton(R.string.cancel, null)

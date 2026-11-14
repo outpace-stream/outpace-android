@@ -52,6 +52,8 @@ object EngineSelection {
         if (choice == before) return
         if (before is EngineChoice.Remote) Prefs(context).remoteConnected = false
         val s = EngineController.sessionState
+        // An error belongs to the engine that failed, not to the one chosen next.
+        if (s is EngineState.Crashed) EngineController.update(EngineState.Stopped, clearVersion = true)
         val active = s != EngineState.Stopped && s !is EngineState.Crashed
         if (!active) return
         when {
@@ -67,9 +69,12 @@ object EngineSelection {
         store(context, EngineChoices.afterInstall(current(context), version))
     }
 
-    /** Deletes a downloaded version; false (and nothing removed) while that version runs. */
+    /** Deletes a downloaded version; false (and nothing removed) while that version runs or is starting. */
     fun removeLocal(context: Context, version: String): Boolean {
         if (version == EngineController.runningVersion) return false
+        // A queued start sets the running version only once it runs; the selected version is the one it will launch.
+        val starting = EngineController.sessionState == EngineState.Starting && localVersion(context) == version
+        if (starting) return false
         EngineFiles.store(context).remove(version)
         store(context, EngineChoices.afterRemove(current(context), EngineChoice.Local(version)))
         return true
@@ -90,9 +95,10 @@ object EngineSelection {
         val i = list.indexOfFirst { it.id == r.id }
         if (i < 0 && list.size >= RemoteEngines.MAX_REMOTES) return false
         prefs.remotes = if (i < 0) list + r else list.toMutableList().also { it[i] = r }
-        // A new address for the engine we are connected to takes effect at once.
+        // An edit of the engine we are connected to (address or name) takes effect at once; a remote
+        // reconnect touches no stream, so the player keeps going.
         val connected = (EngineController.sessionTarget as? EngineTarget.Remote)?.engine
-        if (connected?.id == r.id && connected.endpoint != r.endpoint) EngineController.restart(context)
+        if (connected?.id == r.id && connected != r) EngineController.restart(context)
         return true
     }
 }

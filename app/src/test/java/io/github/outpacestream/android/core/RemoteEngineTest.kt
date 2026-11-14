@@ -32,6 +32,18 @@ class RemoteEngineTest {
         }
     }
 
+    @Test fun rejectsMalformedIpv6() {
+        for (t in listOf("[:]", "[::::]", "[1::2::3]", "[12345::1]", "[1:2:3:4:5:6:7:8:9]", "[1:2:3:4:5:6:7]", "[::1.2.3]", "[::1.2.3.256]", "[1.2.3.4]", "[:1::2]", "[1::2:]")) {
+            assertNull(t, RemoteEngines.parseAddress(t))
+        }
+    }
+
+    @Test fun acceptsValidIpv6Forms() {
+        for (h in listOf("::", "::1", "fe80::1", "1:2:3:4:5:6:7:8", "1::8", "::ffff:192.168.1.5", "2001:db8::1:0:0:1", "1:2:3:4:5:6::")) {
+            assertEquals(h, Endpoint(h, 6878), RemoteEngines.parseAddress("[$h]"))
+        }
+    }
+
     @Test fun ipv6UrlIsBracketed() = assertEquals("http://[fd00::5]:7000", Endpoint("fd00::5", 7000).base)
 
     @Test fun ipv4Url() = assertEquals("http://192.168.1.5:6878", Endpoint("192.168.1.5", 6878).base)

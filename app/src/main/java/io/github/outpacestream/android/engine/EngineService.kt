@@ -266,9 +266,9 @@ class EngineService : Service() {
      * local engine. No idle stop and no wake lock: the phone holds no process to keep alive.
      */
     private fun pollRemote(engine: RemoteEngine) {
-        val gen = generation
+        // Runs on the single worker, like every start and stop, so the session cannot change
+        // mid-poll; schedulePoll's generation check drops polls queued for an earlier session.
         val error = remoteHealthError(engine.endpoint)
-        if (gen != generation) return
         if (error != null) {
             if (EngineController.sessionState !is EngineState.Unreachable) {
                 EngineController.log.add("[app] ${engine.name} is not answering: $error")
@@ -278,13 +278,11 @@ class EngineService : Service() {
         } else {
             if (EngineController.sessionState != EngineState.Running) {
                 val version = try { VersionJson.parse(Http.getWithin(StreamUrls.version(engine.endpoint), VERSION_MS)) } catch (_: Exception) { null }
-                if (gen != generation) return
                 EngineController.log.add("[app] connected to ${engine.name}" + (version?.let { ", v$it" } ?: ""))
                 EngineController.update(EngineState.Running, remoteVersion = version)
                 updateNotification()
             }
             val streams = fetchStreams(engine.endpoint)
-            if (gen != generation) return
             if (streams != null) {
                 EngineController.update(streams = streams)
                 if (streams.size != shownStreams) updateNotification()

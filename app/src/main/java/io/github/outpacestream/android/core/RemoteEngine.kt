@@ -29,7 +29,36 @@ object RemoteEngines {
     const val MAX_NAME = 40
 
     private val hostName = Regex("[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?")
-    private val ipv6 = Regex("[0-9A-Fa-f:.]*:[0-9A-Fa-f:.]*")
+    private val hexGroup = Regex("[0-9A-Fa-f]{1,4}")
+    private val ipv4 = Regex("(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}")
+
+    /**
+     * A literal IPv6 address (RFC 4291 text form, no zone id): eight hex groups, or fewer with one
+     * `::`, optionally ending in a dotted IPv4 address that counts as two groups. Pure parsing, so
+     * an invalid literal is never handed to a resolver.
+     */
+    internal fun isIpv6(text: String): Boolean {
+        val halves = text.split("::")
+        if (halves.size > 2) return false
+        fun groups(part: String, last: Boolean): Int? {
+            if (part.isEmpty()) return 0
+            val items = part.split(':')
+            var n = 0
+            for ((i, g) in items.withIndex()) {
+                n += when {
+                    hexGroup.matches(g) -> 1
+                    last && i == items.lastIndex && ipv4.matches(g) -> 2
+                    else -> return null
+                }
+            }
+            return n
+        }
+        val compressed = halves.size == 2
+        val head = groups(halves[0], last = !compressed) ?: return false
+        val tail = if (compressed) groups(halves[1], last = true) ?: return false else 0
+        val total = head + tail
+        return if (compressed) total <= 7 else total == 8
+    }
 
     /**
      * Reads `host[:port]` or `[ipv6][:port]`, tolerating a leading `http://` or `https://` and one
@@ -57,7 +86,7 @@ object RemoteEngines {
                 rest.startsWith(":") -> rest.substring(1)
                 else -> return null
             }
-            if (!ipv6.matches(host)) return null
+            if (!isIpv6(host)) return null
         } else {
             val parts = s.split(':')
             if (parts.size > 2) return null

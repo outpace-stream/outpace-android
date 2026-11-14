@@ -112,7 +112,8 @@
     <string name="engine_menu_use">Use this engine</string>
     <string name="engine_menu_edit">Edit</string>
     <string name="engine_menu_remove">Remove</string>
-    <string name="remote_add_title">Remote engine</string>
+    <string name="remote_add_title">Add remote engine</string>
+    <string name="remote_edit_title">Edit remote engine</string>
     <string name="remote_name">Name</string>
     <string name="remote_name_hint">Living room TV</string>
     <string name="remote_address">Address</string>

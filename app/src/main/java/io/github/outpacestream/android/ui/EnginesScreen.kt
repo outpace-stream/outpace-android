@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Every engine the app can use, local versions and remote engines in one list, plus the controls
@@ -65,6 +66,9 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
     /** Remote id to whether its last probe answered; absent until probed. */
     private val health = ConcurrentHashMap<String, Boolean>()
     private var probes: ScheduledFuture<*>? = null
+
+    /** Bumped on every show and hide; a sweep started for an earlier showing stops at the next remote. */
+    private val probeRound = AtomicInteger()
 
     init {
         addButton.setOnClickListener { showAddMenu() }
@@ -134,25 +138,28 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
 
     override fun onVisible() {
         probes?.cancel(false)
-        probes = prober.scheduleWithFixedDelay({ probeRemotes() }, 0, PROBE_INTERVAL_MS, TimeUnit.MILLISECONDS)
+        val round = probeRound.incrementAndGet()
+        probes = prober.scheduleWithFixedDelay({ probeRemotes(round) }, 0, PROBE_INTERVAL_MS, TimeUnit.MILLISECONDS)
     }
 
     override fun onInvisible() {
+        probeRound.incrementAndGet()
         probes?.cancel(false)
         probes = null
     }
 
     /** Runs on [prober]: one bounded health check per remote, skipping the one we are connected to. */
-    private fun probeRemotes() {
+    private fun probeRemotes(round: Int) {
         val connected = (EngineController.target as? EngineTarget.Remote)?.engine?.id
         val remotes = prefs.remotes
         health.keys.retainAll(remotes.map { it.id }.toSet())
         for (r in remotes) {
+            if (round != probeRound.get()) return
             if (r.id == connected) continue
             val ok = try { RemoteHealth.isOk(Http.getWithin(StreamUrls.health(r.endpoint), PROBE_TIMEOUT_MS)) } catch (_: Exception) { false }
             health[r.id] = ok
         }
-        host.onMain { renderList() }
+        host.onMain { if (round == probeRound.get()) renderList() }
     }
 
     private fun sessionActive(): Boolean {
@@ -241,7 +248,11 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
     private fun showEntryMenu(e: Entry, selected: Boolean) {
         val options = ArrayList<Pair<String, () -> Unit>>()
         if (!selected) options += host.getString(R.string.engine_menu_use) to { EngineSelection.select(host, e.choice); render() }
-        if (e is Entry.Remote) options += host.getString(R.string.engine_menu_edit) to { RemoteDialog.show(host, e.engine) { render() } }
+        if (e is Entry.Remote) options += host.getString(R.string.engine_menu_edit) to { RemoteDialog.show(host, e.engine) {
+                health.remove(e.engine.id)
+                render()
+                onVisible()
+            } }
         options += host.getString(R.string.engine_menu_remove) to {
             when (e) {
                 is Entry.Local -> if (!EngineSelection.removeLocal(host, e.version)) host.toast(host.getString(R.string.version_remove_running))
