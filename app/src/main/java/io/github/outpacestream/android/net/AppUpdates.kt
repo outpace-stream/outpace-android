@@ -33,12 +33,18 @@ class AppUpdates(context: Context) {
     }
 
     /** Cleaned notes of every stable release newer than [installed], newest first. Uses the API. */
-    fun changelog(installed: String): String = ReleaseNotes.since(releases(), installed)
+    fun changelog(installed: String): String =
+        ReleaseNotes.since(Releases.parseList(Http.get(AppRelease.REPO.listUrl, accept = GITHUB_JSON)), installed)
 
-    /** Cleaned notes of what an update from [previous] to [current] brought. Uses the API. */
-    fun whatsNew(previous: String?, current: String): String = ReleaseNotes.between(releases(), previous, current)
-
-    private fun releases() = Releases.parseList(Http.get(AppRelease.REPO.listUrl, accept = "application/vnd.github+json"))
+    /**
+     * Cleaned notes of what an update from [previous] to [current] brought. Uses the API, within a
+     * hard deadline: the launch dialog runs on the shared background thread ahead of the release check.
+     */
+    fun whatsNew(previous: String?, current: String): String = ReleaseNotes.between(
+        Releases.parseList(Http.getWithin(AppRelease.REPO.listUrl, WHATS_NEW_MS, accept = GITHUB_JSON)),
+        previous,
+        current,
+    )
 
     /** Downloads and verifies the APK of [version]; returns the verified file. */
     fun download(version: String, cancelled: () -> Boolean, progress: (Long, Long) -> Unit): File {
@@ -68,5 +74,7 @@ class AppUpdates(context: Context) {
 
     companion object {
         @Volatile private var lastFailedAt = 0L
+        private const val GITHUB_JSON = "application/vnd.github+json"
+        private const val WHATS_NEW_MS = 15_000
     }
 }

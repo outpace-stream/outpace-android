@@ -34,6 +34,9 @@ class UpdateFlow(private val activity: Activity) {
     private var pendingVersion: String? = null
     private var progressBar: ProgressBar? = null
     private var progressLabel: TextView? = null
+    /** The automatic What's new while it loads or shows, kept across activity recreation. */
+    private var announcement: Announcement? = null
+    private var announcementDialog: AlertDialog? = null
 
     /** Called when something the Settings screen shows may have changed. */
     var onChanged: (() -> Unit)? = null
@@ -69,10 +72,36 @@ class UpdateFlow(private val activity: Activity) {
      */
     fun saveState(out: Bundle) {
         pendingVersion?.let { out.putString(STATE_PENDING, it) }
+        announcement?.let { a ->
+            out.putString(STATE_WHATS_NEW_CURRENT, a.current)
+            out.putString(STATE_WHATS_NEW_PREVIOUS, a.previous)
+            // Long notes are fetched again rather than risk an oversized saved state.
+            a.text?.takeIf { it.length <= MAX_SAVED_NOTES }?.let { out.putString(STATE_WHATS_NEW_TEXT, it) }
+        }
     }
 
     fun restoreState(state: Bundle?) {
         state?.getString(STATE_PENDING)?.let { pendingVersion = it }
+        state?.getString(STATE_WHATS_NEW_CURRENT)?.let {
+            announcement = Announcement(state.getString(STATE_WHATS_NEW_PREVIOUS), it, state.getString(STATE_WHATS_NEW_TEXT))
+        }
+    }
+
+    /**
+     * Shows again the automatic What's new that a recreated activity (rotation) was loading or
+     * showing, since the launch that decided to show it has already recorded the version.
+     */
+    fun resumeWhatsNew(): Boolean {
+        val a = announcement ?: return false
+        val text = a.text
+        if (text != null) showAnnouncement(a, text) else showWhatsNew(a.previous, a.current, quiet = true)
+        return true
+    }
+
+    /** The activity is going away: close the dialog it owns so its window does not leak. */
+    fun destroy() {
+        announcementDialog?.dismiss()
+        announcementDialog = null
     }
 
     /** Continues an update once the user is back from "Install unknown apps". */
@@ -158,6 +187,7 @@ class UpdateFlow(private val activity: Activity) {
      * Settings entry says why instead.
      */
     fun showWhatsNew(previous: String?, current: String, quiet: Boolean) {
+        val pending = if (quiet) Announcement(previous, current).also { announcement = it } else null
         val loading = if (quiet) null else AlertDialog.Builder(activity)
             .setTitle(activity.getString(R.string.whats_new_title, current))
             .setMessage(R.string.update_changelog_loading)
@@ -172,15 +202,21 @@ class UpdateFlow(private val activity: Activity) {
                 val text = result.getOrNull()
                 val error = result.exceptionOrNull()
                 when {
-                    quiet && text.isNullOrEmpty() -> Unit
+                    pending != null -> if (text.isNullOrEmpty()) announcement = null else showAnnouncement(pending, text)
                     text == null -> showNotesFailed(EngineReleases.describe(error as? Exception ?: Exception(error)), current)
-                    else -> showWhatsNewNotes(text.ifEmpty { activity.getString(R.string.update_changelog_empty) }, current)
+                    else -> showWhatsNewNotes(null, text.ifEmpty { activity.getString(R.string.update_changelog_empty) }, current)
                 }
             }
         }
     }
 
-    private fun showWhatsNewNotes(text: String, current: String) {
+    private fun showAnnouncement(a: Announcement, text: String) {
+        a.text = text
+        announcementDialog = showWhatsNewNotes(a, text, a.current)
+    }
+
+    /** [automatic] is the launch announcement the dialog stands for, null for the Settings entry. */
+    private fun showWhatsNewNotes(automatic: Announcement?, text: String, current: String): AlertDialog {
         val pad = activity.dp(24)
         val notes = TextView(activity).apply {
             this.text = text
@@ -196,6 +232,9 @@ class UpdateFlow(private val activity: Activity) {
             .setTitle(activity.getString(R.string.whats_new_title, current))
             .setView(body)
             .setPositiveButton(android.R.string.ok, null)
+            .setOnDismissListener {
+                if (automatic != null && announcement === automatic) announcement = null
+            }
             .show()
         // One press of the remote's center button dismisses it, from OK or from the notes, which the
         // first key press focuses on a touch device. The arrows still scroll the notes.
@@ -205,6 +244,7 @@ class UpdateFlow(private val activity: Activity) {
             if (select && event.action == KeyEvent.ACTION_UP) dialog.dismiss()
             select
         }
+        return dialog
     }
 
     /** Release notes of every version newer than [installed], fetched on demand. */
@@ -411,6 +451,9 @@ class UpdateFlow(private val activity: Activity) {
             .show()
     }
 
+    /** The range of an automatic What's new, and its notes once loaded. */
+    private class Announcement(val previous: String?, val current: String, var text: String? = null)
+
     /** Download progress and outcome, shared across activity instances (rotation, Home and back). */
     sealed interface DownloadEvent {
         data class Progress(val version: String, val done: Long, val total: Long) : DownloadEvent
@@ -420,6 +463,10 @@ class UpdateFlow(private val activity: Activity) {
 
     private companion object {
         const val STATE_PENDING = "app_update_pending"
+        const val STATE_WHATS_NEW_PREVIOUS = "whats_new_previous"
+        const val STATE_WHATS_NEW_CURRENT = "whats_new_current"
+        const val STATE_WHATS_NEW_TEXT = "whats_new_text"
+        const val MAX_SAVED_NOTES = 32_000
 
         @Volatile var running = false
         @Volatile var cancelled = false

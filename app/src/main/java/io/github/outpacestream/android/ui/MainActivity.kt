@@ -86,7 +86,12 @@ class MainActivity : Activity() {
         buildNav()
         select(savedInstanceState?.getInt(STATE_TAB) ?: tabFrom(intent) ?: TAB_HOME, focus = false)
         navItems[current].requestFocus()
-        if (savedInstanceState == null) maybeShowWhatsNew()
+        if (savedInstanceState == null) maybeShowWhatsNew() else if (updateFlow.resumeWhatsNew()) otherPromptShown = true
+    }
+
+    override fun onDestroy() {
+        updateFlow.destroy()
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {

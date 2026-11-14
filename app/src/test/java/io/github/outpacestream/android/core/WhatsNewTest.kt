@@ -41,6 +41,17 @@ class WhatsNewTest {
         assertEquals("0.2.0\n• B", ReleaseNotes.between(rs, null, "0.2.0"))
     }
 
+    @Test fun betweenLeavesOutReleasesWithoutNotes() {
+        val rs = listOf(rel("0.3.0", ""), rel("0.2.0", "* B"), rel("0.1.0", "* A"))
+        assertEquals("0.2.0\n• B", ReleaseNotes.between(rs, "0.1.0", "0.3.0"))
+    }
+
+    @Test fun betweenEmptyWhenNoReleaseHasNotes() =
+        assertEquals("", ReleaseNotes.between(listOf(rel("0.2.0", "**Full Changelog**: x"), rel("0.1.0", "* A")), "0.1.0", "0.2.0"))
+
+    @Test fun sinceStillListsReleasesWithoutNotes() =
+        assertEquals("0.2.0", ReleaseNotes.since(listOf(rel("0.2.0", "")), "0.1.0"))
+
     @Test fun betweenEmptyWhenCurrentIsNotListed() =
         assertEquals("", ReleaseNotes.between(listOf(rel("0.1.0", "* A")), null, "0.2.0"))
 }
