@@ -23,9 +23,12 @@ Use JDK 21 and Android SDK 36:
 
 App releases are versioned independently of engine releases. `-PappVersion=X.Y.Z` selects
 an app version. Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`, which builds,
-signs and publishes `outpace-android-X.Y.Z.apk` with its `.sha256`. Release signing uses `OUTPACE_ANDROID_KEYSTORE`,
+signs and publishes `outpace-android-X.Y.Z.apk` with its `.sha256`. Release signing reads the environment variables `OUTPACE_ANDROID_KEYSTORE` (keystore path),
 `OUTPACE_ANDROID_KEYSTORE_PASSWORD`, `OUTPACE_ANDROID_KEY_ALIAS` and
-`OUTPACE_ANDROID_KEY_PASSWORD`; never commit a keystore or secret.
+`OUTPACE_ANDROID_KEY_PASSWORD`. In CI, the workflow takes the keystore from the
+`OUTPACE_ANDROID_KEYSTORE_BASE64` secret, decodes it to a temporary file and points
+`OUTPACE_ANDROID_KEYSTORE` at it; the other three are secrets of the same name. Never commit a
+keystore or secret.
 The application ID is `io.github.outpacestream.android`.
 
 ## Icons
