@@ -4,8 +4,9 @@ Companion app for phones and Android TV. It downloads a user-selected
 [Outpace engine](https://github.com/outpace-stream/outpace-engine) release, runs it locally,
 and opens streams in an external player. It bundles neither an engine nor a player.
 
-**Status:** development snapshot migrated from the engine's Android draft PR. No signed APK
-release is published yet; real-device validation and release signing remain required.
+**Status:** early release. Signed APKs are published on the
+[releases page](https://github.com/outpace-stream/outpace-android/releases), starting with
+v0.1.0; real-device validation is still in progress.
 
 - [User guide](docs/Android-App.md)
 - [Design](docs/android-app-design.md)
@@ -21,10 +22,14 @@ Use JDK 21 and Android SDK 36:
 ```
 
 App releases are versioned independently of engine releases. `-PappVersion=X.Y.Z` selects
-an app version. Release signing uses `OUTPACE_ANDROID_KEYSTORE`,
+an app version. Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`, which builds,
+signs and publishes `outpace-android-X.Y.Z.apk` with its `.sha256`. Release signing reads the environment variables `OUTPACE_ANDROID_KEYSTORE` (keystore path),
 `OUTPACE_ANDROID_KEYSTORE_PASSWORD`, `OUTPACE_ANDROID_KEY_ALIAS` and
-`OUTPACE_ANDROID_KEY_PASSWORD`; never commit a keystore or secret.
-The application ID remains unchanged to preserve the existing app identity.
+`OUTPACE_ANDROID_KEY_PASSWORD`. In CI, the workflow takes the keystore from the
+`OUTPACE_ANDROID_KEYSTORE_BASE64` secret, decodes it to a temporary file and points
+`OUTPACE_ANDROID_KEYSTORE` at it; the other three are secrets of the same name. Never commit a
+keystore or secret.
+The application ID is `io.github.outpacestream.android`.
 
 ## Icons
 
