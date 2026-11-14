@@ -160,6 +160,20 @@ You can start playback from:
 
 - **A link.** Tap an `acestream://<id>` or `acestream:?content_id=<id>` link in a browser or chat
   app and choose Outpace.
+- **Another app.** Apps and add-ons that open streams through a local AceStream-compatible engine
+  (`http://127.0.0.1:6878/ace/getstream?id=<id>`, or `localhost`) can open them in Outpace: pick
+  Outpace when Android asks which app to use. Outpace reads the content id (`id=` or
+  `content_id=`), starts its engine if needed and hands the stream to your player as usual, so
+  this works with the AceStream-compatible API turned off. The port in the link does not matter.
+
+  On Android 12 and later, Android treats a `127.0.0.1` link as a web link. It offers that link
+  only to apps approved for the address, and Outpace cannot be verified for it. Unless Outpace is
+  the only app that can open the link, Android skips Outpace and opens it in your browser. If
+  the link has a `video/*` type, Android may open it in a player that accepts any web address.
+  The type does not exempt the link. The same links with `localhost` are not affected, because
+  Android does not treat `localhost` as a web domain. A link that names Outpace's package or
+  activity directly is also unaffected. Outpace does not yet have a confirmed setting that
+  approves it for `127.0.0.1`.
 - **The share menu.** Share text that contains a content id or an `acestream:` link to Outpace.
 - **Home.** Paste a content id or link into the box and press **Play**. On phones, **Paste**
   fills the box from the clipboard.
@@ -175,7 +189,7 @@ You can start playback from:
 The app starts the engine (or connects to the selected remote engine) if needed, waits until it
 answers, then opens Android's "Play with" chooser for `http://127.0.0.1:6878/streams/ace/cid:<id>` (or `ih:<infohash>` for a
 search result). Tick "Always" to go
-straight to your favourite player next time. The same screen also has:
+straight to your favourite player next time. Outpace never lists itself in that chooser. The same screen also has:
 
 - **Open as HLS**, for players that handle `.m3u8` better than a raw MPEG-TS stream.
 - **Copy URL** and **Share URL**, for players that don't appear in the chooser or for another
@@ -183,7 +197,7 @@ straight to your favourite player next time. The same screen also has:
   uses this device's LAN address instead of `127.0.0.1`.
 
 Links, shared text and the paste box take content ids only. Infohashes and magnet links pasted or
-shared there are rejected; to play by infohash, use Search. A bare 40-character hex string is
+shared there, and `getstream` links with `infohash=`, are rejected; to play by infohash, use Search. A bare 40-character hex string is
 treated as a content id, as the engine does.
 
 After the hand-off, the app follows the start for up to 90 seconds and shows how far it got, on
