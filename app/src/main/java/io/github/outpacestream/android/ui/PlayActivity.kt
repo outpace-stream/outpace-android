@@ -77,6 +77,29 @@ class PlayActivity : Activity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        EngineController.addListener(onEngine)
+        showStart()
+    }
+
+    override fun onStop() {
+        EngineController.removeListener(onEngine)
+        super.onStop()
+    }
+
+    private val onEngine: () -> Unit = { showStart() }
+
+    /** Once handed off, the progress or failure of this stream's start, as the service follows it. */
+    private fun showStart() {
+        if (actions.visibility != View.VISIBLE) return
+        val p = EngineController.startProgress
+        // No watch, or one for another stream (a newer hand-off, or the engine stopped): back to ready.
+        val view = p?.takeIf { it.ref == ref }?.view
+        status.text = if (view == null) getString(R.string.play_ready) else startText(view)
+        progress.visibility = if (view != null && p?.done == false && !view.message.failure) View.VISIBLE else View.GONE
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean("launched", launched)
@@ -132,6 +155,7 @@ class PlayActivity : Activity() {
             launched = true
             openPlayer(hls = false)
         }
+        showStart()
     }
 
     private fun settings() = EngineController.effectiveSettings(Prefs(this).settings)
@@ -169,6 +193,7 @@ class PlayActivity : Activity() {
         }
         try {
             startActivity(chooser)
+            ref?.let(EngineController::watchStart)
         } catch (_: ActivityNotFoundException) {
             toast(getString(R.string.play_no_player))
         }

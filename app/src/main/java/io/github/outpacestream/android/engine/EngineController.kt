@@ -12,7 +12,9 @@ import io.github.outpacestream.android.core.EngineChoices
 import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.EngineTarget
 import io.github.outpacestream.android.core.LogRing
+import io.github.outpacestream.android.core.StartView
 import io.github.outpacestream.android.core.StreamInfo
+import io.github.outpacestream.android.core.StreamRef
 import java.util.concurrent.CopyOnWriteArraySet
 
 sealed interface EngineState {
@@ -26,6 +28,8 @@ sealed interface EngineState {
     data class Unreachable(val reason: String) : EngineState
 }
 
+/** The start of [ref] the service is following, or followed last; [view] null shows nothing. */
+data class StartProgress(val ref: StreamRef, val view: StartView?, val done: Boolean)
 
 /** Process-wide view of the engine, shared by the service and the screens. */
 object EngineController {
@@ -82,6 +86,52 @@ object EngineController {
         private set
 
     @Volatile internal var pollNow: (() -> Unit)? = null
+
+    @Volatile internal var watchStartHook: ((StreamRef) -> Unit)? = null
+
+    /** The stream start the service follows after a hand-off to a player; see [watchStart]. */
+    @Volatile var startProgress: StartProgress? = null
+        private set
+
+    /**
+     * Follows [ref]'s start for a bounded time after it was handed to a player, so the play screen
+     * and the notification can show its progress and why it failed. A no-op while no service runs.
+     */
+    fun watchStart(ref: StreamRef) {
+        watchStartHook?.invoke(ref)
+    }
+
+    /** The service instance allowed to publish [startProgress]; null once it is destroyed. */
+    private var startOwner: Any? = null
+
+    /** Makes [owner] (a newly created service) the only publisher of [startProgress]. */
+    @Synchronized
+    internal fun claimStartProgress(owner: Any) {
+        startOwner = owner
+    }
+
+    /**
+     * Publishes [progress] unless [owner] no longer owns it, so a watch tick still in flight when
+     * its service is destroyed cannot republish after [releaseStartProgress]. [then] (a
+     * notification update, never network work) runs under the same lock, so it cannot repost the
+     * notification after the release either.
+     */
+    @Synchronized
+    internal fun publishStartProgress(owner: Any, progress: StartProgress?, then: (() -> Unit)? = null) {
+        if (owner !== startOwner) return
+        startProgress = progress
+        notifyListeners()
+        then?.invoke()
+    }
+
+    /** Clears [startProgress] and stops [owner] publishing it; for the service's onDestroy. */
+    @Synchronized
+    internal fun releaseStartProgress(owner: Any) {
+        if (owner !== startOwner) return
+        startOwner = null
+        startProgress = null
+        notifyListeners()
+    }
 
     fun addListener(l: () -> Unit) {
         listeners += l
