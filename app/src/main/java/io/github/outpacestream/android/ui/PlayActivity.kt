@@ -10,14 +10,15 @@ import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import io.github.outpacestream.android.Device
-import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.ContentId
+import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.RecentEntry
 import io.github.outpacestream.android.core.StreamRef
 import io.github.outpacestream.android.core.StreamUrls
 import io.github.outpacestream.android.engine.EngineController
+import io.github.outpacestream.android.engine.EngineSelection
 import io.github.outpacestream.android.engine.EngineService
 import io.github.outpacestream.android.engine.EngineState
 
@@ -92,17 +93,17 @@ class PlayActivity : Activity() {
         name?.let { nameView.text = it; nameView.visibility = View.VISIBLE }
         refView.text = getString(R.string.play_ref, kindLabel(target), target.hex)
         Prefs(this).addRecent(RecentEntry(target, name))
-        if (EngineFiles.activeVersion(this) == null) {
-            fail(getString(R.string.no_engine_installed))
+        if (EngineSelection.current(this) == null) {
+            fail(getString(R.string.no_engine_selected))
             return
         }
-        status.text = getString(R.string.play_preparing)
+        status.text = getString(if (EngineController.isRemote(this)) R.string.play_connecting else R.string.play_preparing)
         if (EngineController.state != EngineState.Running) EngineController.start(this)
         background.execute {
             val ok = EngineController.awaitRunning(EngineService.START_TIMEOUT_MS + 5_000)
             onMain {
                 if (ok) ready() else {
-                    val reason = (EngineController.state as? EngineState.Crashed)?.reason ?: getString(R.string.state_stopped)
+                    val reason = EngineController.failureReason() ?: getString(R.string.state_stopped)
                     fail(getString(R.string.play_engine_failed, reason))
                 }
             }
@@ -127,18 +128,21 @@ class PlayActivity : Activity() {
 
     private fun activeTitle(): String? = ref?.let { r -> EngineController.streams.firstOrNull { it.id == r.selector }?.title }
 
+    /** For a player on this device: loopback for the local engine, the remote engine's address otherwise. */
     private fun localUrl(hls: Boolean): String {
         val r = ref ?: return ""
-        return if (hls) StreamUrls.hls(StreamUrls.LOOPBACK, port(), r) else StreamUrls.live(StreamUrls.LOOPBACK, port(), r)
+        val e = EngineController.endpointFor(this) ?: Endpoint.loopback(port())
+        return if (hls) StreamUrls.hls(e, r) else StreamUrls.live(e, r)
     }
 
-    /** For other devices: the LAN address when LAN access is on, else loopback with a hint. */
+    /** For other devices: a remote engine's address, else the LAN address when LAN access is on, else loopback with a hint. */
     private fun shareableUrl(): String {
         val r = ref ?: return ""
+        if (EngineController.isRemote(this)) return localUrl(hls = false)
         val settings = settings()
         val host = if (settings.lan) Device.lanAddress() else null
         if (host == null) toast(getString(R.string.play_lan_hint))
-        return StreamUrls.live(host ?: StreamUrls.LOOPBACK, settings.port, r)
+        return StreamUrls.live(Endpoint(host ?: Endpoint.LOOPBACK_HOST, settings.port), r)
     }
 
     private fun openPlayer(hls: Boolean) {

@@ -13,11 +13,12 @@ import io.github.outpacestream.android.Device
 import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
+import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.EngineStore
 import io.github.outpacestream.android.core.Release
 import io.github.outpacestream.android.core.Releases
 import io.github.outpacestream.android.engine.EngineController
-import io.github.outpacestream.android.engine.EngineState
+import io.github.outpacestream.android.engine.EngineSelection
 import io.github.outpacestream.android.net.EngineReleases
 import java.io.InterruptedIOException
 
@@ -109,7 +110,7 @@ class VersionsActivity : Activity() {
     private fun renderList() {
         list.removeAllViews()
         val store = EngineFiles.store(this)
-        val active = EngineFiles.activeVersion(this)
+        val active = EngineSelection.localVersion(this)
         val targets = Device.targets()
         val fromApi = result?.fromApi == true
         for (rel in visibleReleases()) {
@@ -153,21 +154,15 @@ class VersionsActivity : Activity() {
     }
 
     private fun activate(version: String) {
-        prefs.activeVersion = version
-        val s = EngineController.state
-        if ((s == EngineState.Running || s == EngineState.Starting) && EngineController.runningVersion != version) {
-            EngineController.restart(this)
-        }
+        EngineSelection.select(this, EngineChoice.Local(version))
         renderList()
     }
 
     private fun remove(version: String) {
-        if (version == EngineController.runningVersion) {
+        if (!EngineSelection.removeLocal(this, version)) {
             toast(getString(R.string.version_remove_running))
             return
         }
-        EngineFiles.store(this).remove(version)
-        if (prefs.activeVersion == version) prefs.activeVersion = null
         renderList()
     }
 
@@ -206,7 +201,7 @@ class VersionsActivity : Activity() {
                 when (outcome) {
                     null -> {
                         toast(getString(R.string.version_installed, rel.version))
-                        activate(rel.version)
+                        EngineSelection.installed(this, rel.version)
                     }
                     "" -> Unit
                     else -> toast(getString(R.string.version_failed, outcome))

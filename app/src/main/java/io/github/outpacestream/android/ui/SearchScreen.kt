@@ -12,8 +12,8 @@ import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import io.github.outpacestream.android.Device
-import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.R
+import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.RecentList
 import io.github.outpacestream.android.core.Releases
@@ -24,6 +24,7 @@ import io.github.outpacestream.android.core.SearchJson
 import io.github.outpacestream.android.core.SearchPage
 import io.github.outpacestream.android.core.StreamUrls
 import io.github.outpacestream.android.engine.EngineController
+import io.github.outpacestream.android.engine.EngineSelection
 import io.github.outpacestream.android.engine.EngineService
 import io.github.outpacestream.android.engine.EngineState
 import io.github.outpacestream.android.net.Http
@@ -86,7 +87,9 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
 
     /** What stops a search from working, decided from local facts before any request. */
     private fun block(): Block? {
-        val active = EngineFiles.activeVersion(host) ?: return Block.NoEngine
+        val choice = EngineSelection.current(host) ?: return Block.NoEngine
+        // A remote engine's configuration is its own; a refused search says so after the request.
+        val active = (choice as? EngineChoice.Local)?.version ?: return null
         if (!prefs.settings.search) return Block.Off
         val version = EngineController.runningVersion ?: active
         if (Releases.compareVersions(version, EngineSettings.SEARCH_MIN_VERSION) < 0) return Block.Old(version)
@@ -100,8 +103,8 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
         notice.visibility = if (b == null) View.GONE else View.VISIBLE
         when (b) {
             null -> Unit
-            Block.NoEngine -> showNotice(R.string.notice_none_title, host.getString(R.string.notice_none_text), R.string.action_download_engine_short) {
-                host.open(VersionsActivity::class.java)
+            Block.NoEngine -> showNotice(R.string.notice_none_title_any, host.getString(R.string.notice_none_text_any), R.string.action_configure) {
+                host.select(MainActivity.TAB_ENGINES, focus = true)
             }
             Block.Off -> showNotice(R.string.notice_off_title, host.getString(R.string.notice_off_text), R.string.notice_off_action) {
                 prefs.settings = prefs.settings.copy(search = true)
@@ -207,24 +210,27 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
 
     /** Runs on [searchExecutor]: starts the engine if needed, then asks it for one page. */
     private fun fetch(q: String, page: Int): Outcome {
+        val remote = EngineController.isRemote(host)
         if (EngineController.state != EngineState.Running) {
             host.onMain {
-                status.setText(R.string.search_starting_engine)
+                status.setText(if (remote) R.string.search_connecting else R.string.search_starting_engine)
                 host.askNotificationPermission()
             }
             // Started from this thread so the Starting state is set before the wait begins.
             EngineController.start(host)
             if (!EngineController.awaitRunning(EngineService.START_TIMEOUT_MS + 5_000)) {
-                val reason = (EngineController.state as? EngineState.Crashed)?.reason ?: host.getString(R.string.state_stopped)
+                val reason = EngineController.failureReason() ?: host.getString(R.string.state_stopped)
                 return Outcome.Failed(host.getString(R.string.search_err_engine, reason))
             }
             host.onMain { status.setText(R.string.search_searching) }
         }
-        val port = EngineController.effectiveSettings(prefs.settings).port
+        val endpoint = EngineController.endpointFor(host) ?: return Outcome.Failed(host.getString(R.string.no_engine_selected))
         return try {
-            Outcome.Page(SearchJson.parse(Http.get(StreamUrls.search(port, q, page, PAGE_SIZE), readTimeout = READ_TIMEOUT_MS)))
+            Outcome.Page(SearchJson.parse(Http.get(StreamUrls.search(endpoint, q, page, PAGE_SIZE), readTimeout = READ_TIMEOUT_MS)))
         } catch (e: HttpStatusException) {
-            Outcome.Failed(failureText(SearchFailure.fromStatus(e.code), e.message))
+            val failure = SearchFailure.fromStatus(e.code)
+            if (remote && failure == SearchFailure.Unavailable) return Outcome.Failed(host.getString(R.string.search_err_remote_off))
+            Outcome.Failed(failureText(failure, e.message))
         } catch (e: Exception) {
             Outcome.Failed(failureText(SearchFailure.Other, e.message ?: e.javaClass.simpleName))
         }
