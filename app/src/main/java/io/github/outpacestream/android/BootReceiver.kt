@@ -1,11 +1,11 @@
 package io.github.outpacestream.android
 
-import io.github.outpacestream.android.engine.EngineSelection
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.engine.EngineController
+import io.github.outpacestream.android.engine.EngineSelection
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {

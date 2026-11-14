@@ -14,8 +14,8 @@ import android.os.PowerManager
 import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
-import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.Endpoint
+import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.Launch
 import io.github.outpacestream.android.core.RemoteEngine
 import io.github.outpacestream.android.core.RemoteHealth

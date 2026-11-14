@@ -6,9 +6,9 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import io.github.outpacestream.android.Prefs
+import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.EngineSettings
-import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.LogRing
 import io.github.outpacestream.android.core.RemoteEngine
 import io.github.outpacestream.android.core.StreamInfo

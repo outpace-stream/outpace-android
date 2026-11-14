@@ -1,8 +1,8 @@
 package io.github.outpacestream.android.core
 
+import java.util.UUID
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.UUID
 
 /** Where an engine's HTTP API answers. An IPv6 [host] is stored without brackets. */
 data class Endpoint(val host: String, val port: Int) {

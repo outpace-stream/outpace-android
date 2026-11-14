@@ -38,13 +38,19 @@ abstract class Screen(protected val host: MainActivity, parent: ViewGroup, layou
 
     open fun onShown() = Unit
 
+    /** The tab became visible on screen (selected while the activity is started). */
+    open fun onVisible() = Unit
+
+    /** The tab left the screen: another tab was selected, or the activity stopped. */
+    open fun onInvisible() = Unit
+
     /** The view that should take D-pad focus when the tab is opened from the navigation. */
     open fun focusTarget(): View? = null
 }
 
 /**
  * The app's home: a navigation bar (bottom on portrait phones, a side rail on landscape screens
- * and TV) switching between Home, Search and Settings. Versions, Logs and the play hand-off stay
+ * and TV) switching between Home, Search, Engines and Settings. Versions, Logs and the play hand-off stay
  * separate screens.
  */
 class MainActivity : Activity() {
@@ -54,6 +60,7 @@ class MainActivity : Activity() {
     private val navItems = ArrayList<View>()
     private var current = TAB_HOME
     private var backCallback: Any? = null
+    private var started = false
     private val listener: () -> Unit = { screens[current].render() }
 
     /** App update dialogs, shared by the automatic prompt and the Settings screen. */
@@ -61,7 +68,6 @@ class MainActivity : Activity() {
 
     /** Set when another one-time prompt showed during this activity, so the update dialog waits. */
     private var otherPromptShown = false
-    private var started = false
     /** A release check finished while stopped; prompt on the next resume instead. */
     private var promptPending = false
 
@@ -71,7 +77,7 @@ class MainActivity : Activity() {
         prefs = Prefs(this)
         updateFlow.restoreState(savedInstanceState)
         val content = findViewById<FrameLayout>(R.id.content)
-        screens = listOf(HomeScreen(this, content), SearchScreen(this, content), SettingsScreen(this, content))
+        screens = listOf(HomeScreen(this, content), SearchScreen(this, content), EnginesScreen(this, content), SettingsScreen(this, content))
         for (s in screens) {
             s.view.visibility = View.GONE
             content.addView(s.view)
@@ -98,6 +104,7 @@ class MainActivity : Activity() {
         EngineController.addListener(listener)
         EngineController.screenShown()
         EngineSelection.resumeRemote(this)
+        screens[current].onVisible()
         screens[current].render()
         updateFlow.attach()
         checkLatest()
@@ -115,6 +122,7 @@ class MainActivity : Activity() {
     override fun onStop() {
         started = false
         updateFlow.detach()
+        screens[current].onInvisible()
         EngineController.removeListener(listener)
         EngineController.screenHidden()
         super.onStop()
@@ -135,6 +143,7 @@ class MainActivity : Activity() {
         val tabs = listOf(
             R.drawable.ic_home to R.string.tab_home,
             R.drawable.ic_search to R.string.tab_search,
+            R.drawable.ic_engine to R.string.tab_engines,
             R.drawable.ic_tune to R.string.tab_settings,
         )
         tabs.forEachIndexed { i, (icon, label) ->
@@ -155,11 +164,14 @@ class MainActivity : Activity() {
 
     /** Shows [tab]; with [focus], moves D-pad focus into its content. */
     fun select(tab: Int, focus: Boolean) {
+        if (started && tab != current) screens[current].onInvisible()
+        val changed = tab != current
         current = tab
         screens.forEachIndexed { i, s -> s.view.visibility = if (i == tab) View.VISIBLE else View.GONE }
         navItems.forEachIndexed { i, v -> v.isSelected = i == tab }
         val screen = screens[tab]
         screen.onShown()
+        if (started && changed) screen.onVisible()
         screen.render()
         if (focus) screen.focusTarget()?.requestFocus()
         updateBackHandling()
@@ -232,7 +244,8 @@ class MainActivity : Activity() {
     companion object {
         const val TAB_HOME = 0
         const val TAB_SEARCH = 1
-        const val TAB_SETTINGS = 2
+        const val TAB_ENGINES = 2
+        const val TAB_SETTINGS = 3
         const val EXTRA_TAB = "io.github.outpacestream.android.TAB"
         private const val STATE_TAB = "tab"
     }

@@ -1,6 +1,5 @@
 package io.github.outpacestream.android.ui
 
-import io.github.outpacestream.android.engine.EngineSelection
 import android.app.Activity
 import android.app.AlertDialog
 import android.os.Bundle
@@ -19,7 +18,7 @@ import io.github.outpacestream.android.core.EngineStore
 import io.github.outpacestream.android.core.Release
 import io.github.outpacestream.android.core.Releases
 import io.github.outpacestream.android.engine.EngineController
-import io.github.outpacestream.android.engine.EngineState
+import io.github.outpacestream.android.engine.EngineSelection
 import io.github.outpacestream.android.net.EngineReleases
 import java.io.InterruptedIOException
 

@@ -14,8 +14,6 @@
 
     <string name="action_start">Start engine</string>
     <string name="action_stop">Stop engine</string>
-    <string name="action_download_engine">Download engine</string>
-    <string name="action_versions">Engine versions</string>
     <string name="action_versions_short">Versions</string>
     <string name="action_logs">Logs</string>
     <string name="action_play">Play</string>
@@ -80,9 +78,9 @@
     <string name="settings_port_mapping">Router port mapping</string>
     <string name="settings_port_mapping_summary">Ask the router to open the peer port with UPnP or NAT-PMP.</string>
     <string name="settings_boot">Start on boot</string>
-    <string name="settings_boot_summary">Start the engine when the device turns on.</string>
+    <string name="settings_boot_summary">Start this device\'s engine when the device turns on. A remote engine left connected reconnects either way.</string>
     <string name="settings_idle">Stop when idle</string>
-    <string name="settings_idle_summary">Stop the engine after 10 minutes with no streams, to save battery.</string>
+    <string name="settings_idle_summary">Stop this device\'s engine after 10 minutes with no streams, to save battery.</string>
     <string name="settings_battery">Battery optimisation</string>
     <string name="settings_battery_summary">Allow the engine to keep running in the background.</string>
 
@@ -94,13 +92,54 @@
     <string name="tab_home">Home</string>
     <string name="tab_search">Search</string>
     <string name="tab_settings">Settings</string>
+    <string name="tab_engines">Engines</string>
+
+    <!-- Engines -->
+    <string name="engines_title">Engines</string>
+    <string name="engines_intro">Run an engine on this device, or use one running on another device. The selected engine plays everything.</string>
+    <string name="engines_section_local">This device\'s engine</string>
+    <string name="engines_section_remote">Remote engine</string>
+    <string name="engine_local_name">This device</string>
+    <string name="engine_badge_selected">Selected</string>
+    <string name="engine_meta_running">running</string>
+    <string name="engine_meta_online">online</string>
+    <string name="engine_meta_offline">not answering</string>
+    <string name="engine_meta_checking">checking</string>
+    <string name="engine_meta_connected">connected</string>
+    <string name="action_add_engine">Add engine</string>
+    <string name="add_engine_download">Download to this device</string>
+    <string name="add_engine_remote">Add a remote engine</string>
+    <string name="engine_menu_use">Use this engine</string>
+    <string name="engine_menu_edit">Edit</string>
+    <string name="engine_menu_remove">Remove</string>
+    <string name="remote_add_title">Remote engine</string>
+    <string name="remote_name">Name</string>
+    <string name="remote_name_hint">Living room TV</string>
+    <string name="remote_address">Address</string>
+    <string name="remote_address_hint">192.168.1.20:6878</string>
+    <string name="remote_address_help">The IP address or host name and port of a device running Outpace with LAN access on. The port defaults to 6878.</string>
+    <string name="remote_name_invalid">Give it a name of up to 40 characters.</string>
+    <string name="remote_address_invalid">Use host:port, for example 192.168.1.20:6878.</string>
+    <string name="remote_full">Up to %1$d remote engines can be added. Remove one first.</string>
+    <string name="remote_settings_note">This engine uses its own configuration. Change it on the device that runs it.</string>
+    <string name="remote_state_disconnected">Not connected to %1$s</string>
+    <string name="remote_state_connecting">Connecting to %1$s</string>
+    <string name="remote_state_connected">Connected to %1$s</string>
+    <string name="remote_state_unreachable">%1$s is not answering: %2$s</string>
+    <string name="action_connect">Connect</string>
+    <string name="action_configure">Configure</string>
+    <string name="action_save">Save</string>
+
+    <!-- Home engine card -->
+    <string name="home_none">No engine selected</string>
+    <string name="home_none_detail">Download one or add a remote engine.</string>
+    <string name="home_not_connected">Not connected</string>
+    <string name="home_connecting">Connecting</string>
+    <string name="home_connected">Connected</string>
+    <string name="home_unreachable">Not answering</string>
+    <string name="engine_detail_named">%1$s · %2$s</string>
 
     <!-- Home -->
-    <string name="engine_none">No engine installed yet</string>
-    <string name="engine_detail_stopped">Engine v%1$s is ready to start.</string>
-    <string name="engine_detail_starting">Starting engine v%1$s</string>
-    <string name="engine_detail_running">Engine v%1$s. Players on this device use:</string>
-    <string name="engine_detail_none">Download an engine release to get started. It takes a minute.</string>
     <string name="no_engine_selected">No engine selected. Choose one in Engines.</string>
     <string name="remote_not_outpace">It answered, but not like an Outpace engine</string>
     <string name="state_connecting">Connecting</string>
@@ -110,7 +149,6 @@
         <item quantity="other">Connected to %1$s, %2$d streams</item>
     </plurals>
     <string name="notification_remote_unreachable">%1$s is not answering</string>
-    <string name="no_engine_installed">No engine installed. Download one from Engine versions.</string>
     <string name="restart_banner">Settings changed. Restart the engine to apply them.</string>
     <string name="action_restart_short">Restart</string>
     <string name="action_paste">Paste</string>
@@ -167,9 +205,6 @@
     <string name="notice_old_title">Engine too old for search</string>
     <string name="notice_old_text">Search needs engine v%1$s or newer. This device runs v%2$s.</string>
     <string name="notice_old_action">Engine versions</string>
-    <string name="notice_none_title">No engine installed</string>
-    <string name="notice_none_text">Download an engine release first.</string>
-    <string name="action_download_engine_short">Download engine</string>
     <string name="search_err_unavailable">This engine did not accept the search. Restart it, or pick engine v1.0.0 or newer.</string>
     <string name="search_err_invalid">The search text was not accepted. Try fewer or simpler words.</string>
     <string name="search_err_rate">The search index is cooling down. Try again in about 30 seconds.</string>
@@ -180,6 +215,12 @@
     <string name="search_err_engine">The engine is not running: %1$s</string>
 
     <!-- Settings -->
+    <string name="settings_autosave_app">Changes save as you make them. Engine settings are in the Engines tab.</string>
+    <string name="search_err_remote_off">Search is off on this engine. Turn it on in that engine\'s configuration.</string>
+    <string name="search_connecting">Connecting to the engine</string>
+    <string name="play_connecting">Connecting to the engine</string>
+    <string name="notice_none_title_any">No engine selected</string>
+    <string name="notice_none_text_any">Download an engine or add a remote one in Engines.</string>
     <string name="settings_autosave">Changes save as you make them and apply the next time the engine starts.</string>
     <string name="settings_section_search">Search</string>
     <string name="settings_search">Stream search</string>
