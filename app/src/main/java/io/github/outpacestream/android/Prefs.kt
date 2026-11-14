@@ -3,8 +3,10 @@ package io.github.outpacestream.android
 import android.content.Context
 import android.content.SharedPreferences
 import io.github.outpacestream.android.core.EngineSettings
+import io.github.outpacestream.android.core.HlsStart
 import io.github.outpacestream.android.core.RecentEntry
 import io.github.outpacestream.android.core.RecentList
+import io.github.outpacestream.android.core.StartupBuffer
 import org.json.JSONArray
 
 /** Everything the app remembers. Small values only; engine files live in [EngineFiles]. */
@@ -21,11 +23,16 @@ class Prefs(context: Context) {
             portMapping = sp.getBoolean("port_mapping", false),
             aceCompat = sp.getBoolean("ace_compat", false),
             search = sp.getBoolean("search", false),
+            startupBuffer = StartupBuffer.fromKey(sp.getString("startup_buffer", null)),
+            hlsStart = HlsStart.fromKey(sp.getString("hls_start", null)),
+            catalogFallback = sp.getBoolean("catalog_fallback", false),
         )
         set(s) = sp.edit()
             .putBoolean("lan", s.lan).putInt("port", s.port).putBoolean("seeding", s.seeding)
             .putBoolean("inbound", s.inbound).putBoolean("port_mapping", s.portMapping)
-            .putBoolean("ace_compat", s.aceCompat).putBoolean("search", s.search).apply()
+            .putBoolean("ace_compat", s.aceCompat).putBoolean("search", s.search)
+            .putString("startup_buffer", s.startupBuffer.key).putString("hls_start", s.hlsStart.key)
+            .putBoolean("catalog_fallback", s.catalogFallback).apply()
 
     var activeVersion: String?
         get() = sp.getString("active_version", null)

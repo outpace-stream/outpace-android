@@ -9,8 +9,12 @@ data class EngineSettings(
     val aceCompat: Boolean = false,
     /** Opt-in stream-name search through AceStream's public index (engine 1.0.0 and later). */
     val search: Boolean = false,
+    val startupBuffer: StartupBuffer = StartupBuffer.SMOOTH,
+    val hlsStart: HlsStart = HlsStart.DEFAULT,
+    /** Resolve content ids from peer metadata when the catalog lookup fails. */
+    val catalogFallback: Boolean = false,
 ) {
-    fun env(dataDir: String, cacheDir: String): Map<String, String> = linkedMapOf(
+    fun env(dataDir: String, cacheDir: String): Map<String, String> = linkedMapOf<String, String>(
         "OUTPACE_BIND" to "${if (lan) "0.0.0.0" else StreamUrls.LOOPBACK}:$port",
         "OUTPACE_DATA_DIR" to dataDir,
         "OUTPACE_CACHE_DIR" to cacheDir,
@@ -19,7 +23,12 @@ data class EngineSettings(
         "OUTPACE_ENABLE_PORT_MAPPING" to portMapping.toString(),
         "OUTPACE_ACE_COMPAT" to aceCompat.toString(),
         "OUTPACE_COMPAT_ACESTREAM_SERVICES" to search.toString(),
-    )
+    ).apply {
+        // Tuning variables are set only when they differ from the engine default.
+        putAll(startupBuffer.env)
+        putAll(hlsStart.env)
+        if (catalogFallback) put("OUTPACE_BEP9_CONTENT_ID_FALLBACK", "true")
+    }
 
     companion object {
         const val DEFAULT_PORT = 6878

@@ -1,5 +1,6 @@
 package io.github.outpacestream.android.ui
 
+import android.app.AlertDialog
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,7 +14,9 @@ import android.widget.TextView
 import io.github.outpacestream.android.BuildConfig
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.EngineSettings
+import io.github.outpacestream.android.core.HlsStart
 import io.github.outpacestream.android.core.Releases
+import io.github.outpacestream.android.core.StartupBuffer
 import io.github.outpacestream.android.engine.EngineController
 import io.github.outpacestream.android.engine.EngineState
 import java.util.Locale
@@ -28,17 +31,40 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         val switch: Switch = row.findViewById(R.id.toggle)
     }
 
+    /** A row that picks one preset from a dialog; [refresh] redraws its current value. */
+    private class Choice(val refresh: () -> Unit)
+
     private val toggles = ArrayList<Toggle>()
+    private val choices = ArrayList<Choice>()
     private lateinit var batteryRow: View
     private lateinit var searchRow: View
 
     init {
         val search = find<LinearLayout>(R.id.group_search)
+        val playback = find<LinearLayout>(R.id.group_playback)
         val network = find<LinearLayout>(R.id.group_network)
         val peers = find<LinearLayout>(R.id.group_peers)
         val background = find<LinearLayout>(R.id.group_background)
 
         searchRow = engineToggle(search, R.string.settings_search, R.string.settings_search_summary, { it.search }) { s, v -> s.copy(search = v) }
+        engineChoice(
+            playback, R.string.settings_startup_buffer, R.string.settings_startup_buffer_summary,
+            listOf(
+                StartupBuffer.SMOOTH to R.string.settings_startup_buffer_smooth,
+                StartupBuffer.BALANCED to R.string.settings_startup_buffer_balanced,
+                StartupBuffer.FAST to R.string.settings_startup_buffer_fast,
+                StartupBuffer.OFF to R.string.settings_startup_buffer_off,
+            ),
+            { it.startupBuffer },
+        ) { s, v -> s.copy(startupBuffer = v) }
+        engineChoice(
+            playback, R.string.settings_hls_start, R.string.settings_hls_start_summary,
+            listOf(HlsStart.DEFAULT to R.string.settings_hls_start_default, HlsStart.FAST to R.string.settings_hls_start_fast),
+            { it.hlsStart },
+        ) { s, v -> s.copy(hlsStart = v) }
+        engineToggle(playback, R.string.settings_catalog_fallback, R.string.settings_catalog_fallback_summary, { it.catalogFallback }) { s, v ->
+            s.copy(catalogFallback = v)
+        }
         // LAN access goes above the port, which is already in the layout.
         engineToggle(network, R.string.settings_lan, R.string.settings_lan_warning, { it.lan }, index = 0) { s, v -> s.copy(lan = v) }
         engineToggle(peers, R.string.settings_seeding, R.string.settings_seeding_summary, { it.seeding }) { s, v -> s.copy(seeding = v) }
@@ -100,8 +126,42 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         set: (EngineSettings, Boolean) -> EngineSettings,
     ): View = toggle(group, title, summary, { get(prefs.settings) }, index) { v -> prefs.settings = set(prefs.settings, v) }
 
+    /** A row whose summary names the current option; clicking it opens a single-choice dialog. */
+    private fun <T> engineChoice(
+        group: LinearLayout,
+        title: Int,
+        summary: Int,
+        options: List<Pair<T, Int>>,
+        get: (EngineSettings) -> T,
+        set: (EngineSettings, T) -> EngineSettings,
+    ) {
+        val row = row(group, title, summary)
+        val summaryView = row.findViewById<TextView>(R.id.summary)
+        val choice = Choice {
+            val label = options.firstOrNull { it.first == get(prefs.settings) }?.second ?: options.first().second
+            summaryView.text = host.getString(summary, host.getString(label))
+        }
+        row.setOnClickListener {
+            val current = options.indexOfFirst { it.first == get(prefs.settings) }.coerceAtLeast(0)
+            val labels = options.map { host.getString(it.second) }.toTypedArray<CharSequence>()
+            AlertDialog.Builder(host)
+                .setTitle(title)
+                .setSingleChoiceItems(labels, current) { dialog, which ->
+                    prefs.settings = set(prefs.settings, options[which].first)
+                    choice.refresh()
+                    render()
+                    dialog.dismiss()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+        choices += choice
+        choice.refresh()
+    }
+
     override fun onShown() {
         for (t in toggles) t.switch.isChecked = t.read()
+        for (c in choices) c.refresh()
         port.setText(String.format(Locale.ROOT, "%d", prefs.settings.port))
         port.error = null
     }

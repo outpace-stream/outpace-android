@@ -25,6 +25,11 @@
             android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
             android:showDividers="middle" android:divider="@drawable/divider_inset" />
 
+        <TextView style="@style/Section" android:text="@string/settings_section_playback" />
+        <LinearLayout android:id="@+id/group_playback" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
+            android:showDividers="middle" android:divider="@drawable/divider_inset" />
+
         <TextView style="@style/Section" android:text="@string/settings_section_network" />
         <LinearLayout android:id="@+id/group_network" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
