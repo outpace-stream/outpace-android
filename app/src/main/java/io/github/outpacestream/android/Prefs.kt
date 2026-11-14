@@ -10,6 +10,7 @@ import io.github.outpacestream.android.core.RemoteEngine
 import io.github.outpacestream.android.core.RemoteEngines
 import io.github.outpacestream.android.core.StartupBuffer
 import io.github.outpacestream.android.core.UploadLimit
+import io.github.outpacestream.android.core.WhatsNew
 import org.json.JSONArray
 
 /** Everything the app remembers. Small values only; engine files live in [EngineFiles]. */
@@ -103,6 +104,14 @@ class Prefs(context: Context) {
     var appPromptedAt: Long
         get() = sp.getLong("app_prompted_at", 0)
         set(v) = sp.edit().putLong("app_prompted_at", v).apply()
+
+    /** The last app build that ran, so the first launch after an update can show its notes. */
+    var whatsNewSeen: WhatsNew.Seen?
+        get() {
+            val name = sp.getString("seen_version_name", null) ?: return null
+            return WhatsNew.Seen(sp.getInt("seen_version_code", 0), name)
+        }
+        set(v) = sp.edit().putInt("seen_version_code", v?.code ?: 0).putString("seen_version_name", v?.name).apply()
 
     /** Streams played from this device, newest first. Older versions stored bare content ids. */
     val recent: List<RecentEntry>

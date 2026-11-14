@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.graphics.Typeface
 import android.text.format.Formatter
+import android.view.KeyEvent
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
@@ -101,16 +102,7 @@ class UpdateFlow(private val activity: Activity) {
             setText(R.string.update_changelog_loading)
             textSize = 14f
         }
-        // Capped so long notes scroll inside the dialog and the buttons stay on screen.
-        val maxHeight = (activity.resources.displayMetrics.heightPixels * 0.4f).toInt()
-        val scroll = object : ScrollView(activity) {
-            override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) =
-                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(maxHeight, MeasureSpec.AT_MOST))
-        }.apply {
-            // Focusable so a TV remote can scroll the notes.
-            isFocusable = true
-            addView(notes)
-        }
+        val scroll = cappedScroll(notes)
         val body = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(pad, pad / 2, pad, 0)
@@ -144,6 +136,74 @@ class UpdateFlow(private val activity: Activity) {
                     onFailure = { e -> activity.getString(R.string.update_changelog_failed, EngineReleases.describe(e as? Exception ?: Exception(e))) },
                 )
             }
+        }
+    }
+
+    /** Long notes scroll inside a dialog capped in height, so its buttons stay on screen. */
+    private fun cappedScroll(content: TextView): ScrollView {
+        val maxHeight = (activity.resources.displayMetrics.heightPixels * 0.4f).toInt()
+        return object : ScrollView(activity) {
+            override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) =
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(maxHeight, MeasureSpec.AT_MOST))
+        }.apply {
+            // Focusable so a TV remote can scroll the notes.
+            isFocusable = true
+            addView(content)
+        }
+    }
+
+    /**
+     * "What's new in [current]": the notes of the versions after [previous] up to [current]. The
+     * [quiet] launch dialog shows nothing when the notes cannot be loaded or are empty; the
+     * Settings entry says why instead.
+     */
+    fun showWhatsNew(previous: String?, current: String, quiet: Boolean) {
+        val loading = if (quiet) null else AlertDialog.Builder(activity)
+            .setTitle(activity.getString(R.string.whats_new_title, current))
+            .setMessage(R.string.update_changelog_loading)
+            .setNegativeButton(R.string.close, null)
+            .show()
+        val app = activity.applicationContext
+        background.execute {
+            val result = runCatching { AppUpdates(app).whatsNew(previous, current) }
+            activity.onMain {
+                if (loading != null && !loading.isShowing) return@onMain
+                loading?.dismiss()
+                val text = result.getOrNull()
+                val error = result.exceptionOrNull()
+                when {
+                    quiet && text.isNullOrEmpty() -> Unit
+                    text == null -> showNotesFailed(EngineReleases.describe(error as? Exception ?: Exception(error)), current)
+                    else -> showWhatsNewNotes(text.ifEmpty { activity.getString(R.string.update_changelog_empty) }, current)
+                }
+            }
+        }
+    }
+
+    private fun showWhatsNewNotes(text: String, current: String) {
+        val pad = activity.dp(24)
+        val notes = TextView(activity).apply {
+            this.text = text
+            textSize = 15f
+        }
+        val scroll = cappedScroll(notes)
+        val body = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, pad / 2, pad, 0)
+            addView(scroll)
+        }
+        val dialog = AlertDialog.Builder(activity)
+            .setTitle(activity.getString(R.string.whats_new_title, current))
+            .setView(body)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+        // One press of the remote's center button dismisses it, from OK or from the notes, which the
+        // first key press focuses on a touch device. The arrows still scroll the notes.
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.requestFocus()
+        scroll.setOnKeyListener { _, keyCode, event ->
+            val select = keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER
+            if (select && event.action == KeyEvent.ACTION_UP) dialog.dismiss()
+            select
         }
     }
 

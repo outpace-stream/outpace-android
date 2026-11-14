@@ -33,10 +33,12 @@ class AppUpdates(context: Context) {
     }
 
     /** Cleaned notes of every stable release newer than [installed], newest first. Uses the API. */
-    fun changelog(installed: String): String {
-        val json = Http.get(AppRelease.REPO.listUrl, accept = "application/vnd.github+json")
-        return ReleaseNotes.since(Releases.parseList(json), installed)
-    }
+    fun changelog(installed: String): String = ReleaseNotes.since(releases(), installed)
+
+    /** Cleaned notes of what an update from [previous] to [current] brought. Uses the API. */
+    fun whatsNew(previous: String?, current: String): String = ReleaseNotes.between(releases(), previous, current)
+
+    private fun releases() = Releases.parseList(Http.get(AppRelease.REPO.listUrl, accept = "application/vnd.github+json"))
 
     /** Downloads and verifies the APK of [version]; returns the verified file. */
     fun download(version: String, cancelled: () -> Boolean, progress: (Long, Long) -> Unit): File {

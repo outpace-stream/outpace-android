@@ -339,6 +339,11 @@ see "Left to the builder".
 - The app checks its own GitHub releases and offers to update itself, from a once-a-day dialog
   and from **Settings > App updates**. Design:
   [2026-11-14-app-updates-design.md](superpowers/specs/2026-11-14-app-updates-design.md).
+- On the first launch after the version code increases, a "What's new" dialog shows the cleaned
+  release notes of the versions since the last one that ran (stored in preferences). It needs one
+  release-list request per update, never one per launch, and is skipped silently on a fresh
+  install, for development builds, or when the notes cannot be fetched. Settings shows the notes of
+  the installed version on demand.
 
 ## Build, CI and release
 
