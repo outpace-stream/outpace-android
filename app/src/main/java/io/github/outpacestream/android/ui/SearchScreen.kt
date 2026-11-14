@@ -14,6 +14,7 @@ import android.widget.TextView
 import io.github.outpacestream.android.Device
 import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.R
+import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.RecentList
 import io.github.outpacestream.android.core.Releases
@@ -222,7 +223,7 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
         }
         val port = EngineController.effectiveSettings(prefs.settings).port
         return try {
-            Outcome.Page(SearchJson.parse(Http.get(StreamUrls.search(port, q, page, PAGE_SIZE), readTimeout = READ_TIMEOUT_MS)))
+            Outcome.Page(SearchJson.parse(Http.get(StreamUrls.search(Endpoint.loopback(port), q, page, PAGE_SIZE), readTimeout = READ_TIMEOUT_MS)))
         } catch (e: HttpStatusException) {
             Outcome.Failed(failureText(SearchFailure.fromStatus(e.code), e.message))
         } catch (e: Exception) {

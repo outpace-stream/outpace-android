@@ -14,6 +14,7 @@ import android.os.PowerManager
 import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
+import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.Launch
 import io.github.outpacestream.android.core.StreamInfo
 import io.github.outpacestream.android.core.StreamUrls
@@ -122,7 +123,7 @@ class EngineService : Service() {
 
         val deadline = System.currentTimeMillis() + START_TIMEOUT_MS
         while (System.currentTimeMillis() < deadline && process === proc && proc.isAliveCompat()) {
-            val healthy = try { Http.get(StreamUrls.health(port), readTimeout = 2_000).trim() == "ok" } catch (_: IOException) { false }
+            val healthy = try { Http.get(StreamUrls.health(Endpoint.loopback(port)), readTimeout = 2_000).trim() == "ok" } catch (_: IOException) { false }
             if (healthy) {
                 EngineController.log.add("[app] engine is up on port $port")
                 idleSince = System.currentTimeMillis()
@@ -201,7 +202,7 @@ class EngineService : Service() {
     private fun pollStreams() {
         if (EngineController.state != EngineState.Running) return
         val streams = try {
-            StreamsJson.parse(Http.get(StreamUrls.streams(port), readTimeout = 3_000))
+            StreamsJson.parse(Http.get(StreamUrls.streams(Endpoint.loopback(port)), readTimeout = 3_000))
         } catch (_: Exception) {
             null
         }?.let { if (EngineController.visibleScreens > 0) withStatus(it) else it }
@@ -237,7 +238,7 @@ class EngineService : Service() {
             if (i >= MAX_STATUS_STREAMS) return@mapIndexed st
             val timeout = budget.next(STATUS_REQUEST_MS, STATUS_MIN_MS) ?: return@mapIndexed st
             try {
-                val url = StreamUrls.status(port, st.network, st.id)
+                val url = StreamUrls.status(Endpoint.loopback(port), st.network, st.id)
                 StreamsJson.withStatus(st, Http.getWithin(url, timeout))
             } catch (_: Exception) {
                 st

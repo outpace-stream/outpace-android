@@ -14,6 +14,7 @@ import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.ContentId
+import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.RecentEntry
 import io.github.outpacestream.android.core.StreamRef
 import io.github.outpacestream.android.core.StreamUrls
@@ -129,7 +130,8 @@ class PlayActivity : Activity() {
 
     private fun localUrl(hls: Boolean): String {
         val r = ref ?: return ""
-        return if (hls) StreamUrls.hls(StreamUrls.LOOPBACK, port(), r) else StreamUrls.live(StreamUrls.LOOPBACK, port(), r)
+        val e = Endpoint.loopback(port())
+        return if (hls) StreamUrls.hls(e, r) else StreamUrls.live(e, r)
     }
 
     /** For other devices: the LAN address when LAN access is on, else loopback with a hint. */
@@ -138,7 +140,7 @@ class PlayActivity : Activity() {
         val settings = settings()
         val host = if (settings.lan) Device.lanAddress() else null
         if (host == null) toast(getString(R.string.play_lan_hint))
-        return StreamUrls.live(host ?: StreamUrls.LOOPBACK, settings.port, r)
+        return StreamUrls.live(Endpoint(host ?: Endpoint.LOOPBACK_HOST, settings.port), r)
     }
 
     private fun openPlayer(hls: Boolean) {

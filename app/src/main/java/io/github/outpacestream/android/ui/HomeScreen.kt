@@ -19,7 +19,7 @@ import io.github.outpacestream.android.core.RecentEntry
 import io.github.outpacestream.android.core.Releases
 import io.github.outpacestream.android.core.StreamInfo
 import io.github.outpacestream.android.core.StreamRef
-import io.github.outpacestream.android.core.StreamUrls
+import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.engine.EngineController
 import io.github.outpacestream.android.engine.EngineState
 
@@ -122,8 +122,8 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
             else -> host.getString(R.string.engine_detail_stopped, shown)
         }
         val settings = EngineController.effectiveSettings(prefs.settings)
-        val urlHost = if (settings.lan) Device.lanAddress() ?: StreamUrls.LOOPBACK else StreamUrls.LOOPBACK
-        url.text = StreamUrls.base(urlHost, settings.port)
+        val urlHost = if (settings.lan) Device.lanAddress() ?: Endpoint.LOOPBACK_HOST else Endpoint.LOOPBACK_HOST
+        url.text = Endpoint(urlHost, settings.port).base
         url.visibility = if (s == EngineState.Running) View.VISIBLE else View.GONE
 
         val latest = prefs.latestVersion
