@@ -1,5 +1,6 @@
 package io.github.outpacestream.android.ui
 
+import io.github.outpacestream.android.engine.EngineSelection
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -93,7 +94,7 @@ class PlayActivity : Activity() {
         name?.let { nameView.text = it; nameView.visibility = View.VISIBLE }
         refView.text = getString(R.string.play_ref, kindLabel(target), target.hex)
         Prefs(this).addRecent(RecentEntry(target, name))
-        if (EngineFiles.activeVersion(this) == null) {
+        if (EngineSelection.localVersion(this) == null) {
             fail(getString(R.string.no_engine_installed))
             return
         }

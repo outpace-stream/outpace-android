@@ -1,5 +1,6 @@
 package io.github.outpacestream.android.ui
 
+import io.github.outpacestream.android.engine.EngineSelection
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
@@ -87,7 +88,7 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
 
     /** What stops a search from working, decided from local facts before any request. */
     private fun block(): Block? {
-        val active = EngineFiles.activeVersion(host) ?: return Block.NoEngine
+        val active = EngineSelection.localVersion(host) ?: return Block.NoEngine
         if (!prefs.settings.search) return Block.Off
         val version = EngineController.runningVersion ?: active
         if (Releases.compareVersions(version, EngineSettings.SEARCH_MIN_VERSION) < 0) return Block.Old(version)

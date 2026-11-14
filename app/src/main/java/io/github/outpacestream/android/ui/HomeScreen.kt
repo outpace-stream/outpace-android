@@ -1,5 +1,6 @@
 package io.github.outpacestream.android.ui
 
+import io.github.outpacestream.android.engine.EngineSelection
 import android.app.AlertDialog
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -67,7 +68,7 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
     private fun onStartStop() {
         val s = EngineController.state
         when {
-            EngineFiles.activeVersion(host) == null -> host.open(VersionsActivity::class.java)
+            EngineSelection.localVersion(host) == null -> host.open(VersionsActivity::class.java)
             s == EngineState.Running || s == EngineState.Starting -> EngineController.stop(host)
             s == EngineState.Stopping -> Unit
             else -> host.startEngine()
@@ -97,7 +98,7 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
 
     private fun renderEngine() {
         val s = EngineController.state
-        val active = EngineFiles.activeVersion(host)
+        val active = EngineSelection.localVersion(host)
         val shown = EngineController.runningVersion ?: active
         state.text = when (s) {
             EngineState.Stopped -> host.getString(if (active == null) R.string.engine_none else R.string.state_stopped)

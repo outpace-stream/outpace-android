@@ -90,7 +90,7 @@ class EngineService : Service() {
 
     private fun startEngine() {
         if (process?.isAliveCompat() == true) return
-        val version = EngineFiles.activeVersion(this)
+        val version = EngineSelection.localVersion(this)
         if (version == null) {
             EngineController.update(EngineState.Crashed(getString(R.string.no_engine_installed)), emptyList(), clearVersion = true)
             finish()
