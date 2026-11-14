@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
+import android.os.Bundle
 import android.text.format.Formatter
 import android.widget.Button
 import android.widget.LinearLayout
@@ -46,6 +47,18 @@ class UpdateFlow(private val activity: Activity) {
     fun detach() {
         AppInstaller.onUserAction = null
         AppInstaller.onResult = null
+    }
+
+    /**
+     * Android kills the app when "Install unknown apps" changes, so the version waiting for that
+     * permission travels in the activity's saved state rather than only in memory.
+     */
+    fun saveState(out: Bundle) {
+        pendingVersion?.let { out.putString(STATE_PENDING, it) }
+    }
+
+    fun restoreState(state: Bundle?) {
+        state?.getString(STATE_PENDING)?.let { pendingVersion = it }
     }
 
     /** Continues an update once the user is back from "Install unknown apps". */
@@ -156,6 +169,7 @@ class UpdateFlow(private val activity: Activity) {
     /** The Update action: playback warning, install permission, then download and install. */
     fun startUpdate(latest: String) {
         if (busy || !canUpdateTo(latest)) return
+        prompt?.dismiss()
         if (EngineController.streams.isNotEmpty()) {
             AlertDialog.Builder(activity)
                 .setTitle(R.string.update_title)
@@ -250,5 +264,9 @@ class UpdateFlow(private val activity: Activity) {
             .setMessage(text)
             .setPositiveButton(android.R.string.ok, null)
             .show()
+    }
+
+    private companion object {
+        const val STATE_PENDING = "app_update_pending"
     }
 }

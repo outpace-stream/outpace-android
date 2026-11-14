@@ -65,6 +65,7 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         prefs = Prefs(this)
+        updateFlow.restoreState(savedInstanceState)
         val content = findViewById<FrameLayout>(R.id.content)
         screens = listOf(HomeScreen(this, content), SearchScreen(this, content), SettingsScreen(this, content))
         for (s in screens) {
@@ -84,6 +85,7 @@ class MainActivity : Activity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt(STATE_TAB, current)
+        updateFlow.saveState(outState)
     }
 
     override fun onStart() {
