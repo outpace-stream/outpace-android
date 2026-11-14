@@ -99,6 +99,10 @@
     <string name="engines_intro">Run an engine on this device, or use one running on another device. The selected engine plays everything.</string>
     <string name="engines_section_local">This device\'s engine</string>
     <string name="engines_section_remote">Remote engine</string>
+    <string name="engine_settings_title">Engine settings</string>
+    <string name="engine_settings_summary">Search, playback, network and peers</string>
+    <string name="engine_settings_show">Show engine settings</string>
+    <string name="engine_settings_hide">Hide engine settings</string>
     <string name="engine_local_name">This device</string>
     <string name="engine_badge_selected">Selected</string>
     <string name="engine_meta_running">running</string>

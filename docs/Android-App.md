@@ -85,7 +85,7 @@ upright they sit along the bottom; on TV, tablets and landscape phones they form
 left. Back from any other tab returns to Home.
 
 Home shows which engine the app uses and whether it is running or connected, with a coloured dot,
-the engine's name and version, and the address players use. It has one button:
+the engine's name and version, and the address players use. One button sits beside the status:
 
 | Selected engine | Button |
 | --- | --- |
@@ -112,7 +112,8 @@ runs, and selecting another engine disconnects from a remote one first.
 
 When a downloaded version is selected, the tab shows its state with **Start engine** or **Stop
 engine**, **Restart**, **Versions** ([Engine versions](#engine-versions)) and **Logs**, a
-**vX.Y.Z available** button when a newer release exists, and the engine [settings](#engine-settings).
+**vX.Y.Z available** button when a newer release exists. Below that, a collapsed **Engine
+settings** section opens the engine [settings](#engine-settings).
 When you change settings while the engine runs, a banner offers **Restart** to apply them.
 
 ### Remote engines
@@ -237,8 +238,9 @@ that API and keep working.
 
 ## Engine settings
 
-Engine settings sit in the Engines tab, below this device's engine, and appear only while a
-downloaded version is selected. They save as soon as you change them and apply the next time the
+Engine settings sit in the Engines tab, in the **Engine settings** section below this device's
+engine, and appear only while a downloaded version is selected. The section starts collapsed:
+choose it to show or hide the settings. They save as soon as you change them and apply the next time the
 engine starts. While the engine runs with older settings, a banner offers **Restart** to apply
 them right away. Playback presets set an engine variable only when they differ from the engine
 default. **Start on boot** and **Stop when idle** are in the **Settings** tab.
