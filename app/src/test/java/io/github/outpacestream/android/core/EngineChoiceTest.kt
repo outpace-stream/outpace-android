@@ -1,7 +1,9 @@
 package io.github.outpacestream.android.core
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EngineChoiceTest {
@@ -46,5 +48,20 @@ class EngineChoiceTest {
         assertNull(EngineChoices.afterRemove(EngineChoice.Remote("a1"), EngineChoice.Remote("a1")))
         assertNull(EngineChoices.afterRemove(EngineChoice.Local("1.0.1"), EngineChoice.Local("1.0.1")))
         assertEquals(EngineChoice.Local("1.0.1"), EngineChoices.afterRemove(EngineChoice.Local("1.0.1"), EngineChoice.Remote("a1")))
+    }
+
+    @Test fun targetMapsToChoice() {
+        assertEquals(EngineChoice.Local("1.0.1"), EngineChoices.of(EngineTarget.Local("1.0.1")))
+        assertEquals(EngineChoice.Remote("a1"), EngineChoices.of(EngineTarget.Remote(remote)))
+        assertNull(EngineChoices.of(null))
+    }
+
+    @Test fun sessionMatchesOnlyItsOwnSelection() {
+        assertTrue(EngineChoices.sessionMatches(EngineTarget.Remote(remote), EngineChoice.Remote("a1")))
+        assertFalse(EngineChoices.sessionMatches(EngineTarget.Local("1.0.1"), EngineChoice.Remote("a1")))
+        assertFalse(EngineChoices.sessionMatches(EngineTarget.Local("1.0.1"), EngineChoice.Local("1.0.2")))
+        assertFalse(EngineChoices.sessionMatches(EngineTarget.Remote(remote), null))
+        // No session: nothing stale to hide.
+        assertTrue(EngineChoices.sessionMatches(null, EngineChoice.Remote("a1")))
     }
 }

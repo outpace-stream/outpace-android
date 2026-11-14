@@ -219,7 +219,7 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
             // Started from this thread so the Starting state is set before the wait begins.
             EngineController.start(host)
             if (!EngineController.awaitRunning(EngineService.START_TIMEOUT_MS + 5_000)) {
-                val reason = (EngineController.state as? EngineState.Crashed)?.reason ?: host.getString(R.string.state_stopped)
+                val reason = EngineController.failureReason() ?: host.getString(R.string.state_stopped)
                 return Outcome.Failed(host.getString(R.string.search_err_engine, reason))
             }
             host.onMain { status.setText(R.string.search_searching) }

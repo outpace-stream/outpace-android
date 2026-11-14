@@ -12,6 +12,7 @@ import android.widget.TextView
 import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.EngineChoice
+import io.github.outpacestream.android.core.EngineTarget
 import io.github.outpacestream.android.core.HlsStart
 import io.github.outpacestream.android.core.Releases
 import io.github.outpacestream.android.core.RemoteEngine
@@ -22,7 +23,6 @@ import io.github.outpacestream.android.core.UploadLimit
 import io.github.outpacestream.android.engine.EngineController
 import io.github.outpacestream.android.engine.EngineSelection
 import io.github.outpacestream.android.engine.EngineState
-import io.github.outpacestream.android.engine.EngineTarget
 import io.github.outpacestream.android.net.Http
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors

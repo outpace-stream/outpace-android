@@ -7,6 +7,13 @@ sealed interface EngineChoice {
     data class Remote(val id: String) : EngineChoice
 }
 
+/** What the engine service runs or is connected to. */
+sealed interface EngineTarget {
+    data class Local(val version: String) : EngineTarget
+
+    data class Remote(val engine: RemoteEngine) : EngineTarget
+}
+
 /** Storage and the rules for how the selection changes. Null means nothing is selected. */
 object EngineChoices {
     private const val NONE = "none"
@@ -46,4 +53,17 @@ object EngineChoices {
     fun afterInstall(c: EngineChoice?, version: String): EngineChoice? = c ?: EngineChoice.Local(version)
 
     fun afterRemove(c: EngineChoice?, removed: EngineChoice): EngineChoice? = if (c == removed) null else c
+
+    /** The selection a running session belongs to. */
+    fun of(target: EngineTarget?): EngineChoice? = when (target) {
+        null -> null
+        is EngineTarget.Local -> EngineChoice.Local(target.version)
+        is EngineTarget.Remote -> EngineChoice.Remote(target.engine.id)
+    }
+
+    /**
+     * Whether the running session (if any) is the selected engine. Right after a switch the old
+     * session lingers until its queued stop runs; screens must not show or use it as the new one.
+     */
+    fun sessionMatches(target: EngineTarget?, selected: EngineChoice?): Boolean = target == null || of(target) == selected
 }

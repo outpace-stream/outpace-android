@@ -16,6 +16,7 @@ import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.EngineChoice
+import io.github.outpacestream.android.core.EngineTarget
 import io.github.outpacestream.android.core.Launch
 import io.github.outpacestream.android.core.RemoteEngine
 import io.github.outpacestream.android.core.RemoteHealth
@@ -45,6 +46,9 @@ class EngineService : Service() {
 
     /** Bumped on every start and stop, so a poll scheduled for an earlier session drops its result. */
     private var generation = 0
+
+    /** The startId of the command the worker is handling; [finish] stops only for the newest one. */
+    @Volatile private var commandId = 0
     private var stopping = false
     private var autoRestarted = false
     private var idleSince = 0L
@@ -64,6 +68,7 @@ class EngineService : Service() {
             ACTION_START -> {
                 goForeground()
                 worker.execute {
+                    commandId = startId
                     autoRestarted = false
                     startEngine()
                 }
@@ -71,12 +76,14 @@ class EngineService : Service() {
             ACTION_RESTART -> {
                 goForeground()
                 worker.execute {
+                    commandId = startId
                     stopEngine()
                     autoRestarted = false
                     startEngine()
                 }
             }
             ACTION_STOP -> worker.execute {
+                commandId = startId
                 stopEngine()
                 finish()
             }
@@ -90,7 +97,7 @@ class EngineService : Service() {
         process?.let { terminate(it) }
         process = null
         releaseWakeLock()
-        if (EngineController.state != EngineState.Stopped && EngineController.state !is EngineState.Crashed) {
+        if (EngineController.sessionState != EngineState.Stopped && EngineController.sessionState !is EngineState.Crashed) {
             EngineController.update(EngineState.Stopped, emptyList(), clearVersion = true)
         }
         super.onDestroy()
@@ -99,7 +106,9 @@ class EngineService : Service() {
     // Worker thread only below this line, except goForeground and finish.
 
     private fun startEngine() {
-        if (process?.isAliveCompat() == true || remote != null) return
+        if (process?.isAliveCompat() == true) return
+        // Already connected: check now, so a waiter learns at once whether the remote answers.
+        if (remote != null) return schedulePoll(0)
         when (val choice = EngineSelection.current(this)) {
             is EngineChoice.Local -> startLocal(choice.version)
             is EngineChoice.Remote -> EngineSelection.remote(this)?.let(::startRemote) ?: noSelection()
@@ -240,7 +249,7 @@ class EngineService : Service() {
 
     private fun schedulePoll(delayMs: Long) {
         cancelPoll()
-        if (remote == null && EngineController.state != EngineState.Running) return
+        if (remote == null && EngineController.sessionState != EngineState.Running) return
         val gen = generation
         poll = worker.schedule({ if (gen == generation) poll() }, delayMs, TimeUnit.MILLISECONDS)
     }
@@ -261,13 +270,13 @@ class EngineService : Service() {
         val error = remoteHealthError(engine.endpoint)
         if (gen != generation) return
         if (error != null) {
-            if (EngineController.state !is EngineState.Unreachable) {
+            if (EngineController.sessionState !is EngineState.Unreachable) {
                 EngineController.log.add("[app] ${engine.name} is not answering: $error")
             }
             EngineController.update(EngineState.Unreachable(error), emptyList())
             updateNotification()
         } else {
-            if (EngineController.state != EngineState.Running) {
+            if (EngineController.sessionState != EngineState.Running) {
                 val version = try { VersionJson.parse(Http.getWithin(StreamUrls.version(engine.endpoint), VERSION_MS)) } catch (_: Exception) { null }
                 if (gen != generation) return
                 EngineController.log.add("[app] connected to ${engine.name}" + (version?.let { ", v$it" } ?: ""))
@@ -303,7 +312,7 @@ class EngineService : Service() {
     }
 
     private fun pollStreams() {
-        if (EngineController.state != EngineState.Running) return
+        if (EngineController.sessionState != EngineState.Running) return
         val streams = try {
             StreamsJson.parse(Http.get(StreamUrls.streams(Endpoint.loopback(port)), readTimeout = 3_000))
         } catch (_: Exception) {
@@ -393,9 +402,13 @@ class EngineService : Service() {
         }
     }
 
+    /**
+     * Stops the service unless a newer command arrived after the one being handled: a START queued
+     * right behind a STOP must not be dropped by the STOP's teardown.
+     */
     private fun finish() {
+        if (!stopSelfResult(commandId)) return
         if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE) else @Suppress("DEPRECATION") stopForeground(true)
-        stopSelf()
     }
 
     private fun updateNotification() {
@@ -414,15 +427,15 @@ class EngineService : Service() {
         val stop = PendingIntent.getService(this, 1, Intent(this, EngineService::class.java).setAction(ACTION_STOP), immutable)
         val version = EngineController.runningVersion?.let { "v$it" } ?: ""
         val n = EngineController.streams.size
-        val connected = (EngineController.target as? EngineTarget.Remote)?.engine
+        val connected = (EngineController.sessionTarget as? EngineTarget.Remote)?.engine
         val text = if (connected != null) {
-            when (EngineController.state) {
+            when (EngineController.sessionState) {
                 EngineState.Running -> resources.getQuantityString(R.plurals.notification_remote, n, connected.name, n)
                 is EngineState.Unreachable -> getString(R.string.notification_remote_unreachable, connected.name)
                 else -> getString(R.string.state_connecting)
             }
         } else {
-            when (EngineController.state) {
+            when (EngineController.sessionState) {
                 EngineState.Running -> resources.getQuantityString(R.plurals.notification_running, n, version, n)
                 EngineState.Stopping -> getString(R.string.state_stopping)
                 else -> getString(R.string.state_starting)

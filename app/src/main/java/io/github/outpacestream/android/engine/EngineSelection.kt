@@ -5,6 +5,7 @@ import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.EngineChoices
+import io.github.outpacestream.android.core.EngineTarget
 import io.github.outpacestream.android.core.RemoteEngine
 import io.github.outpacestream.android.core.RemoteEngines
 
@@ -20,7 +21,13 @@ object EngineSelection {
         val raw = prefs.engineChoiceRaw ?: EngineChoices.encode(EngineChoices.migrate(prefs.legacyActiveVersion, installed)).also {
             prefs.engineChoiceRaw = it
         }
-        return EngineChoices.resolve(EngineChoices.decode(raw), installed, prefs.remotes)
+        return EngineChoices.resolve(EngineChoices.decode(raw), installed, prefs.remotes).also(EngineController::selectionChanged)
+    }
+
+    /** Every selection write goes through here, so the controller never shows a stale session as the new one. */
+    private fun store(context: Context, choice: EngineChoice?) {
+        Prefs(context).engineChoiceRaw = EngineChoices.encode(choice)
+        EngineController.selectionChanged(choice)
     }
 
     /** The selected local version, or null when a remote or nothing is selected. */
@@ -34,17 +41,17 @@ object EngineSelection {
     /** Reconnects to the selected remote when the user left it connected and nothing runs now. */
     fun resumeRemote(context: Context) {
         if (current(context) !is EngineChoice.Remote || !Prefs(context).remoteConnected) return
-        if (EngineController.state == EngineState.Stopped || EngineController.state is EngineState.Crashed) EngineController.start(context)
+        val s = EngineController.sessionState
+        if (s == EngineState.Stopped || s is EngineState.Crashed) EngineController.start(context)
     }
 
     /** Makes [choice] the selection, stopping or restarting what runs so it matches. */
     fun select(context: Context, choice: EngineChoice?) {
         val before = current(context)
-        val prefs = Prefs(context)
-        prefs.engineChoiceRaw = EngineChoices.encode(choice)
+        store(context, choice)
         if (choice == before) return
-        if (before is EngineChoice.Remote) prefs.remoteConnected = false
-        val s = EngineController.state
+        if (before is EngineChoice.Remote) Prefs(context).remoteConnected = false
+        val s = EngineController.sessionState
         val active = s != EngineState.Stopped && s !is EngineState.Crashed
         if (!active) return
         when {
@@ -57,16 +64,14 @@ object EngineSelection {
 
     /** A finished download; it becomes the selection only when nothing is selected. */
     fun installed(context: Context, version: String) {
-        val next = EngineChoices.afterInstall(current(context), version)
-        Prefs(context).engineChoiceRaw = EngineChoices.encode(next)
+        store(context, EngineChoices.afterInstall(current(context), version))
     }
 
     /** Deletes a downloaded version; false (and nothing removed) while that version runs. */
     fun removeLocal(context: Context, version: String): Boolean {
         if (version == EngineController.runningVersion) return false
         EngineFiles.store(context).remove(version)
-        val next = EngineChoices.afterRemove(current(context), EngineChoice.Local(version))
-        Prefs(context).engineChoiceRaw = EngineChoices.encode(next)
+        store(context, EngineChoices.afterRemove(current(context), EngineChoice.Local(version)))
         return true
     }
 
@@ -86,7 +91,7 @@ object EngineSelection {
         if (i < 0 && list.size >= RemoteEngines.MAX_REMOTES) return false
         prefs.remotes = if (i < 0) list + r else list.toMutableList().also { it[i] = r }
         // A new address for the engine we are connected to takes effect at once.
-        val connected = (EngineController.target as? EngineTarget.Remote)?.engine
+        val connected = (EngineController.sessionTarget as? EngineTarget.Remote)?.engine
         if (connected?.id == r.id && connected.endpoint != r.endpoint) EngineController.restart(context)
         return true
     }

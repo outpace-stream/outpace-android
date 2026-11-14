@@ -103,7 +103,7 @@ class PlayActivity : Activity() {
             val ok = EngineController.awaitRunning(EngineService.START_TIMEOUT_MS + 5_000)
             onMain {
                 if (ok) ready() else {
-                    val reason = (EngineController.state as? EngineState.Crashed)?.reason ?: getString(R.string.state_stopped)
+                    val reason = EngineController.failureReason() ?: getString(R.string.state_stopped)
                     fail(getString(R.string.play_engine_failed, reason))
                 }
             }

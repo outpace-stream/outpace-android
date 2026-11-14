@@ -8,9 +8,10 @@ import android.os.Looper
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.EngineChoice
+import io.github.outpacestream.android.core.EngineChoices
 import io.github.outpacestream.android.core.EngineSettings
+import io.github.outpacestream.android.core.EngineTarget
 import io.github.outpacestream.android.core.LogRing
-import io.github.outpacestream.android.core.RemoteEngine
 import io.github.outpacestream.android.core.StreamInfo
 import java.util.concurrent.CopyOnWriteArraySet
 
@@ -25,12 +26,6 @@ sealed interface EngineState {
     data class Unreachable(val reason: String) : EngineState
 }
 
-/** What the engine service runs or is connected to. */
-sealed interface EngineTarget {
-    data class Local(val version: String) : EngineTarget
-
-    data class Remote(val engine: RemoteEngine) : EngineTarget
-}
 
 /** Process-wide view of the engine, shared by the service and the screens. */
 object EngineController {
@@ -38,8 +33,15 @@ object EngineController {
 
     val log = LogRing(LOG_LINES)
 
-    @Volatile var state: EngineState = EngineState.Stopped
+    /** The running session's own state; the service and the selection logic use this one. */
+    @Volatile var sessionState: EngineState = EngineState.Stopped
         private set
+
+    /**
+     * The state screens show and act on: [sessionState], but Stopping while the session still
+     * belongs to an engine the user has switched away from and its queued stop has not run yet.
+     */
+    val state: EngineState get() = if (stale()) EngineState.Stopping else sessionState
 
     @Volatile var streams: List<StreamInfo> = emptyList()
         private set
@@ -52,12 +54,21 @@ object EngineController {
         private set
 
     /** What the service runs or is connected to now; null while stopped. */
-    @Volatile var target: EngineTarget? = null
+    @Volatile var sessionTarget: EngineTarget? = null
         private set
 
-    /** Where the current engine answers; null while stopped. */
-    @Volatile var endpoint: Endpoint? = null
-        private set
+    /** [sessionTarget], hidden while it is not the selected engine (see [state]). */
+    val target: EngineTarget? get() = if (stale()) null else sessionTarget
+
+    /** Where the current session answers; null while stopped. */
+    @Volatile private var sessionEndpoint: Endpoint? = null
+
+    /** Where the current engine answers; null while stopped or while it is not the selected one. */
+    val endpoint: Endpoint? get() = if (stale()) null else sessionEndpoint
+
+    /** The selection as last written through [EngineSelection]; unknown until the first write. */
+    @Volatile private var selected: EngineChoice? = null
+    @Volatile private var selectionKnown = false
 
     /** The connected remote engine's version, when it reports one. */
     @Volatile var remoteVersion: String? = null
@@ -102,18 +113,35 @@ object EngineController {
         if (clearVersion) {
             runningVersion = null
             runningSettings = null
-            this.target = null
-            this.endpoint = null
+            sessionTarget = null
+            sessionEndpoint = null
             this.remoteVersion = null
         }
-        if (target != null) this.target = target
-        if (endpoint != null) this.endpoint = endpoint
+        if (target != null) sessionTarget = target
+        if (endpoint != null) sessionEndpoint = endpoint
         if (remoteVersion != null) this.remoteVersion = remoteVersion
-        if (state != null) this.state = state
+        if (state != null) sessionState = state
         if (streams != null) this.streams = streams
         if (version != null) runningVersion = version
         if (settings != null) runningSettings = settings
         notifyListeners()
+    }
+
+    /** Records the selection [EngineSelection] just stored, so [state] can tell a lingering session apart. */
+    internal fun selectionChanged(choice: EngineChoice?) {
+        val changed = !selectionKnown || selected != choice
+        selected = choice
+        selectionKnown = true
+        if (changed) notifyListeners()
+    }
+
+    private fun stale(): Boolean = selectionKnown && !EngineChoices.sessionMatches(sessionTarget, selected)
+
+    /** Why the last start or connection failed, when it did. */
+    fun failureReason(): String? = when (val s = state) {
+        is EngineState.Crashed -> s.reason
+        is EngineState.Unreachable -> s.reason
+        else -> null
     }
 
     /** Settings that describe where the engine is reachable now: the running ones, else the saved ones. */
@@ -141,7 +169,7 @@ object EngineController {
 
     fun start(context: Context) {
         // Mark the start now, so a waiter never mistakes an earlier crash for this attempt's result.
-        val s = state
+        val s = sessionState
         if (s != EngineState.Running && s != EngineState.Starting) update(EngineState.Starting)
         send(context, EngineService.ACTION_START)
     }
@@ -149,7 +177,7 @@ object EngineController {
     fun restart(context: Context) = send(context, EngineService.ACTION_RESTART)
 
     fun stop(context: Context) {
-        if (state == EngineState.Stopped) return
+        if (sessionState == EngineState.Stopped) return
         send(context, EngineService.ACTION_STOP)
     }
 
