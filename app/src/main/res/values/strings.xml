@@ -40,6 +40,19 @@
     <string name="play_no_id">No content id found.</string>
     <string name="play_engine_failed">The engine is not running: %1$s</string>
     <string name="play_lan_hint">Other devices need LAN access turned on in Engines.</string>
+    <string name="start_waiting">Waiting for the player to open the stream…</string>
+    <string name="start_resolving">Looking up the stream…</string>
+    <string name="start_connecting">Finding peers (%1$d)…</string>
+    <string name="start_buffering">Buffering…</string>
+    <string name="start_no_peers_yet">No peers yet. This stream may be offline.</string>
+    <string name="start_no_peers">No one is sharing this stream right now. Try again later.</string>
+    <string name="start_network">Can\'t reach the peer network. Check your connection or try another network.</string>
+    <string name="start_not_a_stream">This id isn\'t a stream Outpace can open.</string>
+    <string name="start_protected">This stream is protected, so Outpace can\'t play it.</string>
+    <string name="start_capacity">The engine is already playing the maximum number of streams.</string>
+    <string name="start_no_space">Not enough free storage for this download.</string>
+    <string name="start_failed">The engine couldn\'t start this stream.</string>
+    <string name="start_with_detail">%1$s (%2$s)</string>
 
     <string name="versions_title">Engine versions</string>
     <string name="versions_running">Running: %1$s</string>
