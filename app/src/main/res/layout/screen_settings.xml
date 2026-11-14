@@ -63,6 +63,11 @@
             android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
             android:showDividers="middle" android:divider="@drawable/divider_inset" />
 
+        <TextView style="@style/Section" android:text="@string/settings_section_updates" />
+        <LinearLayout android:id="@+id/group_updates" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
+            android:showDividers="middle" android:divider="@drawable/divider_inset" />
+
         <TextView style="@style/Section" android:text="@string/settings_section_about" />
         <LinearLayout style="@style/Card" android:padding="16dp">
             <TextView android:id="@+id/about" style="@style/Text.Muted" android:layout_width="match_parent"

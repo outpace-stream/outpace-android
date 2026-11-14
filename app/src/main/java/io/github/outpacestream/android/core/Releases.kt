@@ -10,18 +10,31 @@ data class Release(
     val publishedAt: String,
     val prerelease: Boolean,
     val assetNames: Set<String>,
+    /** Release notes as GitHub returns them (Markdown); empty when unknown. */
+    val body: String = "",
 )
+
+/** A GitHub repository that publishes `vX.Y.Z` releases. */
+data class GithubRepo(val slug: String) {
+    val latestUrl: String get() = "https://github.com/$slug/releases/latest"
+    val listUrl: String get() = "https://api.github.com/repos/$slug/releases?per_page=30"
+
+    fun downloadUrl(version: String, name: String) = "https://github.com/$slug/releases/download/v$version/$name"
+
+    fun releasePage(version: String) = "https://github.com/$slug/releases/tag/v$version"
+}
 
 object Releases {
     const val REPO = "outpace-stream/outpace-engine"
-    const val LIST_URL = "https://api.github.com/repos/$REPO/releases?per_page=30"
-    const val LATEST_URL = "https://github.com/$REPO/releases/latest"
+    val ENGINE = GithubRepo(REPO)
+    val LIST_URL = ENGINE.listUrl
+    val LATEST_URL = ENGINE.latestUrl
 
     fun archiveName(version: String, target: String) = "outpace-$version-$target.tar.gz"
 
     fun checksumName(version: String, target: String) = archiveName(version, target) + ".sha256"
 
-    fun downloadUrl(version: String, name: String) = "https://github.com/$REPO/releases/download/v$version/$name"
+    fun downloadUrl(version: String, name: String) = ENGINE.downloadUrl(version, name)
 
     fun versionOf(tag: String): String = tag.removePrefix("v")
 
@@ -42,7 +55,9 @@ object Releases {
         val assets = o.optJSONArray("assets") ?: JSONArray()
         val names = HashSet<String>()
         for (i in 0 until assets.length()) names += assets.getJSONObject(i).getString("name")
-        return Release(tag, versionOf(tag), o.optString("published_at", ""), o.optBoolean("prerelease", false), names)
+        // Android's org.json turns a JSON null into the string "null", so check it explicitly.
+        val body = if (o.isNull("body")) "" else o.optString("body", "")
+        return Release(tag, versionOf(tag), o.optString("published_at", ""), o.optBoolean("prerelease", false), names, body)
     }
 
     /** `https://github.com/<repo>/releases/tag/v1.2.3` to `1.2.3`, or null for anything else. */

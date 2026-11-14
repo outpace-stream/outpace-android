@@ -20,16 +20,7 @@ class EngineReleases(private val context: Context) {
     fun latest(force: Boolean = false): String? {
         val cached = prefs.latestVersion
         if (!force && cached != null && System.currentTimeMillis() - prefs.latestCheckedAt < Prefs.DAY_MS) return cached
-        // A renamed or transferred repository answers with an extra redirect first; follow a few hops.
-        var url = Releases.LATEST_URL
-        var version: String? = null
-        for (hop in 0 until MAX_REDIRECTS) {
-            val location = Http.redirectLocation(url) ?: break
-            version = Releases.versionFromLatestRedirect(location)
-            if (version != null) break
-            url = java.net.URL(java.net.URL(url), location).toString()
-        }
-        if (version == null) throw IOException("unexpected latest-release redirect")
+        val version = GithubLatest.version(Releases.ENGINE)
         prefs.latestVersion = version
         return version
     }
@@ -94,9 +85,8 @@ class EngineReleases(private val context: Context) {
     }
 
     companion object {
-        private const val MAX_REDIRECTS = 4
-
         fun describe(e: Exception): String = when (e) {
+            is NoReleaseException -> "no release published yet"
             is HttpStatusException -> if (e.code == 403 || e.code == 429) "GitHub rate limit reached, try again later" else "HTTP ${e.code}"
             else -> e.message ?: e.javaClass.simpleName
         }

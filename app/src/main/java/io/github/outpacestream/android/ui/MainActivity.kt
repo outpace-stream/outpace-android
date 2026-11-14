@@ -16,10 +16,13 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
+import io.github.outpacestream.android.BuildConfig
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.StreamRef
+import io.github.outpacestream.android.core.UpdatePolicy
 import io.github.outpacestream.android.engine.EngineController
+import io.github.outpacestream.android.net.AppUpdates
 import io.github.outpacestream.android.net.EngineReleases
 
 /** One tab of the main screen. Its view is inflated once and kept while the activity lives. */
@@ -52,10 +55,20 @@ class MainActivity : Activity() {
     private var backCallback: Any? = null
     private val listener: () -> Unit = { screens[current].render() }
 
+    /** App update dialogs, shared by the automatic prompt and the Settings screen. */
+    val updateFlow by lazy { UpdateFlow(this) }
+
+    /** Set when another one-time prompt showed during this activity, so the update dialog waits. */
+    private var otherPromptShown = false
+    private var started = false
+    /** A release check finished while stopped; prompt on the next resume instead. */
+    private var promptPending = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         prefs = Prefs(this)
+        updateFlow.restoreState(savedInstanceState)
         val content = findViewById<FrameLayout>(R.id.content)
         screens = listOf(HomeScreen(this, content), SearchScreen(this, content), SettingsScreen(this, content))
         for (s in screens) {
@@ -75,17 +88,31 @@ class MainActivity : Activity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putInt(STATE_TAB, current)
+        updateFlow.saveState(outState)
     }
 
     override fun onStart() {
         super.onStart()
+        started = true
         EngineController.addListener(listener)
         EngineController.screenShown()
         screens[current].render()
+        updateFlow.attach()
         checkLatest()
     }
 
+    override fun onResume() {
+        super.onResume()
+        updateFlow.onResumed()
+        if (promptPending) {
+            promptPending = false
+            maybePromptUpdate()
+        }
+    }
+
     override fun onStop() {
+        started = false
+        updateFlow.detach()
         EngineController.removeListener(listener)
         EngineController.screenHidden()
         super.onStop()
@@ -164,15 +191,40 @@ class MainActivity : Activity() {
     /** Starts the engine from a screen, with the one-time prompts that a first start needs. */
     fun startEngine() {
         askNotificationPermission()
-        BatteryPrompt.maybeShow(this)
+        if (BatteryPrompt.maybeShow(this)) otherPromptShown = true
         EngineController.start(this)
     }
 
     private fun checkLatest() {
         background.execute {
             runCatching { EngineReleases(this).latest() }
-            onMain { screens[current].render() }
+            val app = AppUpdates(this)
+            runCatching { app.cleanUp() }
+            app.latest(force = false)
+            onMain {
+                screens[current].render()
+                // A dialog shown while stopped could be lost and still use up the day's prompt.
+                if (started) maybePromptUpdate() else promptPending = true
+            }
         }
+    }
+
+    private fun maybePromptUpdate() {
+        val now = System.currentTimeMillis()
+        val latest = prefs.appLatestVersion ?: return
+        val inputs = UpdatePolicy.PromptInputs(
+            installed = BuildConfig.VERSION_NAME,
+            latest = latest,
+            notify = prefs.appUpdateNotify,
+            streamActive = EngineController.streams.isNotEmpty(),
+            otherPromptShown = otherPromptShown,
+            promptedAt = prefs.appPromptedAt,
+            now = now,
+        )
+        if (!UpdatePolicy.shouldPrompt(inputs) || updateFlow.isPromptShowing() || updateFlow.busy) return
+        // Record first, so a rotation or quick return to the screen never shows a second dialog.
+        prefs.appPromptedAt = now
+        updateFlow.showPrompt(BuildConfig.VERSION_NAME, latest)
     }
 
     companion object {
