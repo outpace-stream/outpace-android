@@ -216,7 +216,10 @@ Entry points, all leading to the same flow:
   matches a typed intent only against a filter with a type). The app reads `id=` or `content_id=`;
   `infohash=` is refused like other explicit infohash forms. The port is ignored, and the hand-off
   uses the native route, so it works with the compat API off. The native `/streams/...` URL never
-  matches these filters.
+  matches these filters. On API 31+, `127.0.0.1` passes `Patterns.DOMAIN_NAME`, so an implicit
+  intent for it is a domain-verification intent whatever its MIME type. When there is more than
+  one candidate, Outpace (unapproved) is dropped in favour of browsers and match-all-web players.
+  `localhost` fails that pattern and is not filtered, and explicit (package) intents are not filtered either.
 - **Share sheet:** `ACTION_SEND` with `text/plain`. The app extracts the first content id from the
   text: an `acestream://<id>` or `acestream:?content_id=<id>` link, or a bare 40-hex string (the
   engine also treats bare hex as a content id).

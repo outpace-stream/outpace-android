@@ -164,6 +164,15 @@ You can start playback from:
   Outpace when Android asks which app to use. Outpace reads the content id (`id=` or
   `content_id=`), starts its engine if needed and hands the stream to your player as usual, so
   this works with the AceStream-compatible API turned off. The port in the link does not matter.
+
+  On Android 12 and later, Android treats a `127.0.0.1` link as a web link. It offers that link
+  only to apps approved for the address, and Outpace cannot be verified for it. Unless Outpace is
+  the only app that can open the link, Android skips Outpace and opens it in your browser. If
+  the link has a `video/*` type, Android may open it in a player that accepts any web address.
+  The type does not exempt the link. The same links with `localhost` are not affected, because
+  Android does not treat `localhost` as a web domain. A link that names Outpace's package or
+  activity directly is also unaffected. Outpace does not yet have a confirmed setting that
+  approves it for `127.0.0.1`.
 - **The share menu.** Share text that contains a content id or an `acestream:` link to Outpace.
 - **Home.** Paste a content id or link into the box and press **Play**. On phones, **Paste**
   fills the box from the clipboard.
