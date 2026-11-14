@@ -60,18 +60,18 @@ object RemoteEngines {
         return if (compressed) total <= 7 else total == 8
     }
 
+    /** True when [text] asks for HTTPS, which engines do not serve; [parseAddress] rejects it. */
+    fun isHttps(text: String): Boolean = text.trim().startsWith("https://", ignoreCase = true)
+
     /**
-     * Reads `host[:port]` or `[ipv6][:port]`, tolerating a leading `http://` or `https://` and one
-     * trailing slash. The port defaults to the engine's. Returns null for anything else.
+     * Reads `host[:port]` or `[ipv6][:port]`, tolerating a leading `http://` and one trailing
+     * slash. The port defaults to the engine's. Returns null for anything else, including
+     * `https://`: engines serve plain HTTP, and silently downgrading would mislead the user.
      */
     fun parseAddress(text: String): Endpoint? {
         var s = text.trim()
-        for (scheme in listOf("http://", "https://")) {
-            if (s.startsWith(scheme, ignoreCase = true)) {
-                s = s.substring(scheme.length)
-                break
-            }
-        }
+        if (isHttps(s)) return null
+        if (s.startsWith("http://", ignoreCase = true)) s = s.substring("http://".length)
         s = s.removeSuffix("/")
         if (s.isEmpty()) return null
         val host: String

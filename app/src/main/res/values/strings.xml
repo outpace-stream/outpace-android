@@ -39,7 +39,7 @@
     <string name="state_error">Engine error</string>
     <string name="play_no_id">No content id found.</string>
     <string name="play_engine_failed">The engine is not running: %1$s</string>
-    <string name="play_lan_hint">Other devices need LAN access turned on in Settings.</string>
+    <string name="play_lan_hint">Other devices need LAN access turned on in Engines.</string>
 
     <string name="versions_title">Engine versions</string>
     <string name="versions_running">Running: %1$s</string>
@@ -121,6 +121,7 @@
     <string name="remote_address_help">The IP address or host name and port of a device running Outpace with LAN access on. The port defaults to 6878.</string>
     <string name="remote_name_invalid">Give it a name of up to 40 characters.</string>
     <string name="remote_address_invalid">Use host:port, for example 192.168.1.20:6878.</string>
+    <string name="remote_address_https">Outpace engines serve plain HTTP, not HTTPS. Enter host:port without https://.</string>
     <string name="remote_full">Up to %1$d remote engines can be added. Remove one first.</string>
     <string name="remote_settings_note">This engine uses its own configuration. Change it on the device that runs it.</string>
     <string name="remote_state_disconnected">Not connected to %1$s</string>
@@ -217,6 +218,7 @@
 
     <!-- Settings -->
     <string name="settings_autosave_app">Changes save as you make them. Engine settings are in the Engines tab.</string>
+    <string name="search_engine_changed">The engine changed. Search again to see its results.</string>
     <string name="search_err_remote_off">Search is off on this engine. Turn it on in that engine\'s configuration.</string>
     <string name="search_connecting">Connecting to the engine</string>
     <string name="play_connecting">Connecting to the engine</string>

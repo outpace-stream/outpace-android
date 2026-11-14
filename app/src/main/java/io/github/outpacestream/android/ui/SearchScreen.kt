@@ -61,6 +61,9 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
     /** Bumped per request, so a late answer for an older query is dropped. */
     private var generation = 0
 
+    /** The engine the shown results and [nextPage] came from; results never mix two engines. */
+    private var resultsEngine: EngineChoice? = null
+
     init {
         searchButton.setOnClickListener { submit(query.text.toString()) }
         query.setOnEditorActionListener { _, action, event ->
@@ -73,6 +76,7 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
     override fun focusTarget(): View = query
 
     override fun render() {
+        dropIfEngineChanged()
         renderNotice()
         renderQueries()
         searchButton.isEnabled = !inFlight
@@ -164,7 +168,27 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
         groupsSeen = 0
         results.removeAllViews()
         more.visibility = View.GONE
-        run(q, 0)
+        run(q, 0, EngineSelection.current(host))
+    }
+
+    /**
+     * Results, paging and any request in flight belong to the engine that was selected when the
+     * search ran. After a switch they are dropped, so Load more never appends another engine's page.
+     */
+    private fun dropIfEngineChanged() {
+        if (shownQuery == null && !inFlight) return
+        if (EngineSelection.current(host) == resultsEngine) return
+        generation++
+        inFlight = false
+        progress.visibility = View.GONE
+        more.isEnabled = true
+        more.visibility = View.GONE
+        results.removeAllViews()
+        shownQuery = null
+        nextPage = 0
+        resultsEngine = null
+        status.visibility = View.VISIBLE
+        status.setText(R.string.search_engine_changed)
     }
 
     /** Next page, under the same checks as a new search: search may have been turned off since. */
@@ -175,12 +199,13 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
             noticeAction.requestFocus()
             return
         }
-        run(q, nextPage)
+        run(q, nextPage, resultsEngine)
     }
 
-    private fun run(q: String, page: Int) {
+    private fun run(q: String, page: Int, engine: EngineChoice?) {
         if (inFlight) return
         inFlight = true
+        resultsEngine = engine
         val gen = ++generation
         progress.visibility = View.VISIBLE
         status.visibility = View.VISIBLE
@@ -188,9 +213,10 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
         more.isEnabled = false
         render()
         searchExecutor.execute {
-            val outcome = fetch(q, page)
+            val outcome = fetch(q, page, engine)
             host.onMain {
                 if (gen != generation) return@onMain
+                if (EngineSelection.current(host) != engine) return@onMain dropIfEngineChanged()
                 inFlight = false
                 progress.visibility = View.GONE
                 more.isEnabled = true
@@ -209,7 +235,7 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
     }
 
     /** Runs on [searchExecutor]: starts the engine if needed, then asks it for one page. */
-    private fun fetch(q: String, page: Int): Outcome {
+    private fun fetch(q: String, page: Int, engine: EngineChoice?): Outcome {
         val remote = EngineController.isRemote(host)
         if (EngineController.state != EngineState.Running) {
             host.onMain {
@@ -224,6 +250,9 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
             }
             host.onMain { status.setText(R.string.search_searching) }
         }
+        // The user may have switched engines while this one started; never ask the new one for
+        // the old one's page. The main thread drops this answer anyway.
+        if (EngineSelection.current(host) != engine) return Outcome.Failed(host.getString(R.string.search_engine_changed))
         val endpoint = EngineController.endpointFor(host) ?: return Outcome.Failed(host.getString(R.string.no_engine_selected))
         return try {
             Outcome.Page(SearchJson.parse(Http.get(StreamUrls.search(endpoint, q, page, PAGE_SIZE), readTimeout = READ_TIMEOUT_MS)))

@@ -121,7 +121,8 @@ A remote engine is an Outpace engine running on another device of your network. 
 make its HTTP API reachable from the network, for example `OUTPACE_BIND=0.0.0.0:6878` (in the
 Android app: **Allow LAN access**). Then choose **Add engine > Add a remote engine** and enter a
 name and its address, such as `192.168.1.20:6878`. The port defaults to `6878`; a pasted
-`http://` prefix is accepted. Up to 16 remote engines can be added.
+`http://` prefix is accepted. Engines serve plain HTTP, so an `https://` address is refused rather
+than quietly downgraded. Up to 16 remote engines can be added.
 
 While the Engines tab is open, each remote engine shows whether it answers: a green dot for
 online, a red one for not answering. The app checks each one every 15 seconds, and only while the

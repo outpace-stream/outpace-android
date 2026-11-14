@@ -16,7 +16,13 @@ class RemoteEngineTest {
     @Test fun parsesSchemeAndTrailingSlash() =
         assertEquals(Endpoint("192.168.1.5", 6878), RemoteEngines.parseAddress("  http://192.168.1.5:6878/ "))
 
-    @Test fun parsesHttpsScheme() = assertEquals(Endpoint("tv.local", 7000), RemoteEngines.parseAddress("https://tv.local:7000"))
+    /** Engines serve plain HTTP; accepting https:// would silently downgrade what the user asked for. */
+    @Test fun rejectsHttpsScheme() {
+        assertNull(RemoteEngines.parseAddress("https://tv.local:7000"))
+        assertNull(RemoteEngines.parseAddress("HTTPS://tv.local"))
+        assertTrue(RemoteEngines.isHttps(" https://tv.local:7000"))
+        assertFalse(RemoteEngines.isHttps("http://tv.local:7000"))
+    }
 
     @Test fun parsesBracketedIpv6() = assertEquals(Endpoint("fd00::5", 7000), RemoteEngines.parseAddress("[fd00::5]:7000"))
 

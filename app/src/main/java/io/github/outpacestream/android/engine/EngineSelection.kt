@@ -21,7 +21,7 @@ object EngineSelection {
         val raw = prefs.engineChoiceRaw ?: EngineChoices.encode(EngineChoices.migrate(prefs.legacyActiveVersion, installed)).also {
             prefs.engineChoiceRaw = it
         }
-        return EngineChoices.resolve(EngineChoices.decode(raw), installed, prefs.remotes).also(EngineController::selectionChanged)
+        return EngineChoices.resolve(EngineChoices.decode(raw), installed, prefs.remotes).also(EngineController::selectionObserved)
     }
 
     /** Every selection write goes through here, so the controller never shows a stale session as the new one. */

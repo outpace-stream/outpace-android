@@ -128,11 +128,24 @@ object EngineController {
     }
 
     /** Records the selection [EngineSelection] just stored, so [state] can tell a lingering session apart. */
+    @Synchronized
     internal fun selectionChanged(choice: EngineChoice?) {
         val changed = !selectionKnown || selected != choice
         selected = choice
         selectionKnown = true
         if (changed) notifyListeners()
+    }
+
+    /**
+     * A selection read from storage, published only while no write has been seen: a read on a
+     * background thread can predate a newer write and must not replace it.
+     */
+    @Synchronized
+    internal fun selectionObserved(choice: EngineChoice?) {
+        if (selectionKnown) return
+        selected = choice
+        selectionKnown = true
+        notifyListeners()
     }
 
     private fun stale(): Boolean = selectionKnown && !EngineChoices.sessionMatches(sessionTarget, selected)
