@@ -72,6 +72,23 @@ class Prefs(context: Context) {
 
     val releaseListAt: Long get() = sp.getLong("release_list_at", 0)
 
+    /** Whether the main screen may show the app update dialog ("Never ask again" turns it off). */
+    var appUpdateNotify: Boolean
+        get() = sp.getBoolean("app_update_notify", true)
+        set(v) = sp.edit().putBoolean("app_update_notify", v).apply()
+
+    /** Latest app release from the last successful check, and when that check ran. */
+    var appLatestVersion: String?
+        get() = sp.getString("app_latest_version", null)
+        set(v) = sp.edit().putString("app_latest_version", v).putLong("app_latest_checked_at", System.currentTimeMillis()).apply()
+
+    val appLatestCheckedAt: Long get() = sp.getLong("app_latest_checked_at", 0)
+
+    /** When the app update dialog was last shown. */
+    var appPromptedAt: Long
+        get() = sp.getLong("app_prompted_at", 0)
+        set(v) = sp.edit().putLong("app_prompted_at", v).apply()
+
     /** Streams played from this device, newest first. Older versions stored bare content ids. */
     val recent: List<RecentEntry>
         get() = if (sp.contains("recent_streams")) RecentList.decode(sp.getString("recent_streams", null))
