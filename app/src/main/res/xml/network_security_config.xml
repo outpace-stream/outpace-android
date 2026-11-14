@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<network-security-config>
-    <base-config cleartextTrafficPermitted="false" />
-    <!-- The engine serves plain HTTP on the device itself. -->
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">127.0.0.1</domain>
-        <domain includeSubdomains="false">localhost</domain>
-    </domain-config>
+<network-security-config xmlns:tools="http://schemas.android.com/tools">
+    <!-- Engines serve plain HTTP: on this device, and remote Outpace engines on other devices of
+         the local network, which Android cannot allow by address range. Release downloads use
+         HTTPS URLs. -->
+    <base-config cleartextTrafficPermitted="true" tools:ignore="InsecureBaseConfiguration" />
 </network-security-config>
