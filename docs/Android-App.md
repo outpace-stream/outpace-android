@@ -85,7 +85,7 @@ upright they sit along the bottom; on TV, tablets and landscape phones they form
 left. Back from any other tab returns to Home.
 
 Home shows which engine the app uses and whether it is running or connected, with a coloured dot,
-the engine's name and version, and the address players use. It has one button:
+the engine's name and version, and the address players use. One button sits beside the status:
 
 | Selected engine | Button |
 | --- | --- |
