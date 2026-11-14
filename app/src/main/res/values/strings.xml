@@ -206,4 +206,8 @@
     <string name="settings_section_background">Background</string>
     <string name="settings_section_about">About</string>
     <string name="settings_about">Outpace for Android %1$s\nEngine releases come from github.com/%2$s</string>
+
+    <string name="update_failed_signature">This build can\'t be updated in place. Install the new version from the release page.</string>
+    <string name="update_cancelled">Update cancelled.</string>
+    <string name="update_failed_generic">The update could not be installed.</string>
 </resources>
