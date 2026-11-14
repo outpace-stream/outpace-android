@@ -24,7 +24,39 @@ Many Android TV devices run 32-bit Android even on 64-bit chips; the app picks t
 build for you. 32-bit engine builds are published from the engine release after v1.0.1.
 
 The APK is sideloaded only. It isn't on the Play Store, because Play policy doesn't allow apps
-that download programs to run.
+that download programs to run. Once installed, the app can update itself from the same releases
+page; see [App updates](#app-updates).
+
+## App updates
+
+The app checks the [releases page](https://github.com/outpace-stream/outpace-android/releases) for
+a newer stable version at most once a day, when you open its main screen. Pre-releases are
+ignored. A failed check stays silent and is retried later.
+
+When a newer version exists, a dialog shows the version you have and the latest one, at most once
+a day, never while a stream is playing:
+
+- **Changelog** shows the release notes of every version newer than yours.
+- **Update** downloads the APK, checks it against its `.sha256` file and opens Android's install
+  screen. Nothing installs without your confirmation.
+- **Not now** closes the dialog until the next day.
+- **Never ask again** turns the dialog off. You can still update from Settings.
+
+The first update asks you to allow **Install unknown apps** for Outpace (Android 8 and newer).
+The app explains this and opens that setting; come back to the app and the update continues. If
+your device has no such screen, turn it on in the device settings. On Android 5 to 7 the global
+**Unknown sources** setting applies instead.
+
+Updating restarts the app, so the engine and any stream playing stop. The app warns you first when
+a stream is playing.
+
+**Settings > App updates** works whatever you chose in the dialog. It shows the installed and
+latest versions and when the app last checked, and has **Check for updates**, **Changelog**,
+**Update**, and the **Notify me about updates** switch that **Never ask again** turns off.
+
+Only signed release builds update this way. A build you compiled yourself is signed with a
+different key, so Android refuses the update; the app then says so and you can install the new
+APK from the releases page by hand. Development builds (version `0.0.0`) don't check at all.
 
 ## First start
 
@@ -151,6 +183,9 @@ Playback presets set an engine variable only when they differ from the engine de
 | Stream search | Off | [`OUTPACE_COMPAT_ACESTREAM_SERVICES`](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search). Sends queries and your IP address to AceStream's public index over plain HTTP. |
 | Start on boot | On for TV, off for phones | Starts the engine when the device boots. |
 | Stop when idle | On for phones, off for TV | Stops the engine after 10 minutes with no streams, to save battery. |
+
+**App updates** has its own group in Settings; see [App updates](#app-updates). The update
+notification switch is on by default.
 
 The engine's data and cache live in the app's private storage (`OUTPACE_DATA_DIR` and
 `OUTPACE_CACHE_DIR`). Uninstalling the app removes them. The peer listener uses `0.0.0.0:8621`

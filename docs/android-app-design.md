@@ -322,6 +322,12 @@ see "Left to the builder".
 - HTTP errors map to short messages: `429` cooling down, `503` busy, `502` index failure, `504`
   timeout, `400` invalid text, `404` search not enabled on the running engine.
 
+### 10. App updates
+
+- The app checks its own GitHub releases and offers to update itself, from a once-a-day dialog
+  and from **Settings > App updates**. Design:
+  [2026-11-14-app-updates-design.md](superpowers/specs/2026-11-14-app-updates-design.md).
+
 ## Build, CI and release
 
 - CI gains an `armv7-linux-androideabi` engine build next to the existing best-effort
