@@ -7,6 +7,15 @@ import org.junit.Test
 class ContentIdTest {
     private val id = "0123456789abcdef0123456789abcdef01234567"
 
+    @Test fun contentIdLinkIsAcestreamUrl() = assertEquals("acestream://$id", StreamRef.contentId(id).link)
+
+    @Test fun contentIdLinkLowercasesHex() = assertEquals("acestream://$id", StreamRef.contentId(id.uppercase()).link)
+
+    @Test fun infohashHasNoLink() = assertEquals(null, StreamRef.infohash(id).link)
+
+    @Test fun copiedLinkReadsBackAsTheSameId() =
+        assertEquals(Result.Id(id), ContentId.extract(StreamRef.contentId(id).link!!))
+
     @Test fun acceptsSchemeLink() = assertEquals(Result.Id(id), ContentId.extract("acestream://$id"))
 
     @Test fun acceptsSchemeLinkWithCidPrefix() = assertEquals(Result.Id(id), ContentId.extract("acestream://cid:$id"))

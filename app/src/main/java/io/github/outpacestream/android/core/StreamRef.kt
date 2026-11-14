@@ -17,6 +17,13 @@ data class StreamRef(val kind: Kind, val hex: String) {
     /** The engine's selector, as `/streams` lists it and the stream URL path uses it. */
     val selector: String get() = "${kind.prefix}:$hex"
 
+    /**
+     * An `acestream://` link that opens this stream in a player app or in Outpace on another
+     * device. Null for an infohash: links carry content ids only, and the app rejects
+     * infohash links on the way in.
+     */
+    val link: String? get() = if (kind == Kind.ContentId) "acestream://$hex" else null
+
     /** A short form for screens: the first and last few characters. */
     val short: String get() = "${hex.take(6)}…${hex.takeLast(4)}"
 

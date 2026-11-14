@@ -181,9 +181,11 @@
     <string name="stream_buffer">%.1f s buffered</string>
     <string name="meta_separator">" · "</string>
     <string name="recent_menu_play">Play</string>
+    <string name="recent_menu_copy_link">Copy link</string>
     <string name="recent_menu_copy">Copy id</string>
     <string name="recent_menu_remove">Remove from recent</string>
     <string name="id_copied">Id copied</string>
+    <string name="copied_value">Copied %1$s</string>
 
     <!-- Search -->
     <string name="search_title">Search</string>
