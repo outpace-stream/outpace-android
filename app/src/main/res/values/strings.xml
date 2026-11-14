@@ -101,6 +101,15 @@
     <string name="engine_detail_starting">Starting engine v%1$s</string>
     <string name="engine_detail_running">Engine v%1$s. Players on this device use:</string>
     <string name="engine_detail_none">Download an engine release to get started. It takes a minute.</string>
+    <string name="no_engine_selected">No engine selected. Choose one in Engines.</string>
+    <string name="remote_not_outpace">It answered, but not like an Outpace engine</string>
+    <string name="state_connecting">Connecting</string>
+    <string name="action_disconnect">Disconnect</string>
+    <plurals name="notification_remote">
+        <item quantity="one">Connected to %1$s, %2$d stream</item>
+        <item quantity="other">Connected to %1$s, %2$d streams</item>
+    </plurals>
+    <string name="notification_remote_unreachable">%1$s is not answering</string>
     <string name="no_engine_installed">No engine installed. Download one from Engine versions.</string>
     <string name="restart_banner">Settings changed. Restart the engine to apply them.</string>
     <string name="action_restart_short">Restart</string>

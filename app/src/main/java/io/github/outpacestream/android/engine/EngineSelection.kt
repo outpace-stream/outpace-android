@@ -31,6 +31,12 @@ object EngineSelection {
         return Prefs(context).remotes.firstOrNull { it.id == c.id }
     }
 
+    /** Reconnects to the selected remote when the user left it connected and nothing runs now. */
+    fun resumeRemote(context: Context) {
+        if (current(context) !is EngineChoice.Remote || !Prefs(context).remoteConnected) return
+        if (EngineController.state == EngineState.Stopped || EngineController.state is EngineState.Crashed) EngineController.start(context)
+    }
+
     /** Makes [choice] the selection, stopping or restarting what runs so it matches. */
     fun select(context: Context, choice: EngineChoice?) {
         val before = current(context)
@@ -79,6 +85,9 @@ object EngineSelection {
         val i = list.indexOfFirst { it.id == r.id }
         if (i < 0 && list.size >= RemoteEngines.MAX_REMOTES) return false
         prefs.remotes = if (i < 0) list + r else list.toMutableList().also { it[i] = r }
+        // A new address for the engine we are connected to takes effect at once.
+        val connected = (EngineController.target as? EngineTarget.Remote)?.engine
+        if (connected?.id == r.id && connected.endpoint != r.endpoint) EngineController.restart(context)
         return true
     }
 }

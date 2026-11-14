@@ -22,6 +22,7 @@ import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.StreamRef
 import io.github.outpacestream.android.core.UpdatePolicy
 import io.github.outpacestream.android.engine.EngineController
+import io.github.outpacestream.android.engine.EngineSelection
 import io.github.outpacestream.android.net.AppUpdates
 import io.github.outpacestream.android.net.EngineReleases
 
@@ -96,6 +97,7 @@ class MainActivity : Activity() {
         started = true
         EngineController.addListener(listener)
         EngineController.screenShown()
+        EngineSelection.resumeRemote(this)
         screens[current].render()
         updateFlow.attach()
         checkLatest()

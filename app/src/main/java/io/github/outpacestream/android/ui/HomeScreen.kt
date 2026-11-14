@@ -106,11 +106,12 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
             EngineState.Running -> host.getString(R.string.state_running)
             EngineState.Stopping -> host.getString(R.string.state_stopping)
             is EngineState.Crashed -> host.getString(R.string.state_error)
+            is EngineState.Unreachable -> host.getString(R.string.state_error)
         }
         val color = when (s) {
             EngineState.Running -> R.color.ok
             EngineState.Starting, EngineState.Stopping -> R.color.warn
-            is EngineState.Crashed -> R.color.err
+            is EngineState.Crashed, is EngineState.Unreachable -> R.color.err
             EngineState.Stopped -> R.color.text_muted
         }
         @Suppress("DEPRECATION") // Context.getColor needs API 23; colors here do not depend on the theme.
