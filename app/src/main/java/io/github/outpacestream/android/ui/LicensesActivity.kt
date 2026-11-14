@@ -7,8 +7,10 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import io.github.outpacestream.android.BuildConfig
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.License
+import io.github.outpacestream.android.core.Notice
 import io.github.outpacestream.android.core.Notices
 
 /**
@@ -20,18 +22,19 @@ class LicensesActivity : Activity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_licenses)
         val list = findViewById<LinearLayout>(R.id.list)
-        val notice = Notices.ALL.getOrNull(intent.getIntExtra(EXTRA_NOTICE, -1))
+        val notices = Notices.all(BuildConfig.VERSION_NAME)
+        val notice = notices.getOrNull(intent.getIntExtra(EXTRA_NOTICE, -1))
         if (notice == null) {
             setTitle(R.string.licenses_title)
             findViewById<TextView>(R.id.intro).visibility = View.VISIBLE
-            Notices.ALL.forEachIndexed { i, n ->
-                list.addRow(getString(R.string.licenses_row, n.name, n.license.title, n.copyright)) {
+            notices.forEachIndexed { i, n ->
+                list.addRow(getString(R.string.licenses_row, label(n), n.license.title, n.copyright)) {
                     startActivity(Intent(this, LicensesActivity::class.java).putExtra(EXTRA_NOTICE, i))
                 }
             }
             return
         }
-        title = notice.name
+        title = label(notice)
         val text = resources.openRawResource(rawOf(notice.license)).bufferedReader().use { it.readText() }
         findViewById<TextView>(R.id.detail).apply {
             this.text = getString(R.string.licenses_detail, notice.copyright, notice.detail, notice.url, text)
@@ -41,6 +44,9 @@ class LicensesActivity : Activity() {
         // A TV remote scrolls the text only when the scroll view holds focus.
         findViewById<ScrollView>(R.id.scroll).apply { isFocusable = true; requestFocus() }
     }
+
+    private fun label(notice: Notice): String =
+        notice.version?.let { getString(R.string.licenses_name_version, notice.name, it) } ?: notice.name
 
     private fun rawOf(license: License): Int = when (license) {
         License.AGPL_3_0 -> R.raw.license_agpl_3_0

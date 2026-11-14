@@ -77,32 +77,23 @@ dependencies {
     testImplementation("org.json:json:20250517")
 }
 
-// Every library in the release APK needs an entry in Notices.ALL, which the licenses screen shows.
-// This fails the build when a runtime dependency lands without one.
-val checkLicenseNotices = tasks.register("checkLicenseNotices") {
-    description = "Checks that Notices.kt names every library on the release runtime classpath."
-    val notices = layout.projectDirectory.file("src/main/java/io/github/outpacestream/android/core/Notices.kt")
-    val modules = configurations.named("releaseRuntimeClasspath").flatMap { classpath ->
-        classpath.incoming.resolutionResult.rootComponent.map { root ->
-            val seen = sortedSetOf<String>()
-            fun walk(component: org.gradle.api.artifacts.result.ResolvedComponentResult) {
-                component.dependencies.filterIsInstance<org.gradle.api.artifacts.result.ResolvedDependencyResult>().forEach { dep ->
-                    val id = dep.selected.id
-                    if (id is org.gradle.api.artifacts.component.ModuleComponentIdentifier && seen.add("${id.group}:${id.module}")) walk(dep.selected)
-                }
+// Every library in the release APK needs an entry in Notices, which the licenses screen shows.
+// NoticesTest compares the real catalog against this list, so a library without an active
+// entry, including one whose entry is commented out, fails the unit tests.
+val releaseRuntimeModules = provider { configurations.getByName("releaseRuntimeClasspath") }.flatMap { classpath ->
+    classpath.incoming.resolutionResult.rootComponent.map { root ->
+        val seen = sortedSetOf<String>()
+        fun walk(component: org.gradle.api.artifacts.result.ResolvedComponentResult) {
+            component.dependencies.filterIsInstance<org.gradle.api.artifacts.result.ResolvedDependencyResult>().forEach { dep ->
+                val id = dep.selected.id
+                if (id is org.gradle.api.artifacts.component.ModuleComponentIdentifier && seen.add("${id.group}:${id.module}")) walk(dep.selected)
             }
-            walk(root)
-            seen.toList()
         }
-    }
-    inputs.file(notices)
-    inputs.property("modules", modules)
-    doLast {
-        val text = notices.asFile.readText()
-        val missing = modules.get().filterNot { text.contains("maven = \"$it\"") }
-        if (missing.isNotEmpty()) {
-            throw GradleException("No license notice in Notices.kt for: ${missing.joinToString()}")
-        }
+        walk(root)
+        seen.joinToString(",")
     }
 }
-tasks.named("preBuild") { dependsOn(checkLicenseNotices) }
+tasks.withType<Test>().configureEach {
+    inputs.property("releaseRuntimeModules", releaseRuntimeModules)
+    jvmArgumentProviders.add(CommandLineArgumentProvider { listOf("-Doutpace.releaseRuntimeModules=${releaseRuntimeModules.get()}") })
+}

@@ -7,12 +7,13 @@ enum class License(val spdx: String, val title: String) {
 }
 
 /**
- * One component of the app, or one it runs, and the license it comes under. [maven] is the
- * `group:name` of a runtime library; the build fails when the release runtime classpath holds a
- * library that no notice names, so a new dependency can't ship without its notice.
+ * One component of the app, or one it runs, and the license it comes under. [version] is null
+ * when it isn't known at run time. [maven] is the `group:name` of a runtime library; NoticesTest
+ * fails when the release runtime classpath holds a library that no notice names.
  */
 data class Notice(
     val name: String,
+    val version: String?,
     val copyright: String,
     val license: License,
     val url: String,
@@ -21,9 +22,11 @@ data class Notice(
 )
 
 object Notices {
-    val ALL: List<Notice> = listOf(
+    /** Every notice, in display order. [appVersion] is this build's version name. */
+    fun all(appVersion: String): List<Notice> = listOf(
         Notice(
             name = "Outpace for Android",
+            version = appVersion,
             copyright = "Copyright Outpace contributors",
             license = License.AGPL_3_0,
             url = "https://github.com/outpace-stream/outpace-android",
@@ -31,6 +34,7 @@ object Notices {
         ),
         Notice(
             name = "Outpace engine",
+            version = null,
             copyright = "Copyright Outpace contributors",
             license = License.AGPL_3_0,
             url = "https://github.com/outpace-stream/outpace-engine",
@@ -39,6 +43,7 @@ object Notices {
         ),
         Notice(
             name = "Kotlin Standard Library",
+            version = KotlinVersion.CURRENT.toString(),
             copyright = "Copyright 2010-2025 JetBrains s.r.o. and Kotlin Programming Language contributors",
             license = License.APACHE_2_0,
             url = "https://github.com/JetBrains/kotlin",
@@ -47,6 +52,7 @@ object Notices {
         ),
         Notice(
             name = "JetBrains Java Annotations",
+            version = null,
             copyright = "Copyright 2000-2013 JetBrains s.r.o.",
             license = License.APACHE_2_0,
             url = "https://github.com/JetBrains/java-annotations",
@@ -55,6 +61,7 @@ object Notices {
         ),
         Notice(
             name = "Material Design icons",
+            version = null,
             copyright = "Copyright Google LLC",
             license = License.APACHE_2_0,
             url = "https://github.com/google/material-design-icons",

@@ -26,8 +26,8 @@ The app uses only the platform SDK: no AndroidX (`android.useAndroidX=false`), n
 third-party runtime libraries. Test dependencies are JUnit and `org.json` (android.jar's copy is a
 stub on the JVM). Adding any runtime dependency is a maintainer decision; state its APK-size cost
 in the PR. The APK should stay well under 5 MB. Every runtime library and every piece of bundled
-third-party artwork needs an entry in `core/Notices.kt`, with its license text in `res/raw`; the
-build fails when the release runtime classpath holds a library without one.
+third-party artwork needs an entry in `core/Notices.kt`, with its license text in `res/raw`;
+`NoticesTest` fails when the release runtime classpath holds a library without one.
 
 ## Engine boundary
 
