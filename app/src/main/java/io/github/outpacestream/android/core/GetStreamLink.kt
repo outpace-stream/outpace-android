@@ -13,15 +13,12 @@ object GetStreamLink {
     private val loopbackHosts = setOf("127.0.0.1", "localhost")
     private val idParams = listOf("id", "content_id")
 
-    /** True for an `http` link to a loopback `/ace/getstream`, the shape the manifest filters accept. */
-    fun matches(link: String): Boolean = rawQuery(link) != null
-
     /** The content id a getstream link names, or null when [link] is not a getstream link at all. */
     fun parse(link: String): ContentId.Result? {
         val params = query(rawQuery(link) ?: return null)
         for (name in idParams) {
-            val value = params[name]?.lowercase() ?: continue
-            if (ContentId.isValid(value)) return ContentId.Result.Id(value)
+            val value = params[name]?.firstOrNull { ContentId.isValid(it) } ?: continue
+            return ContentId.Result.Id(value)
         }
         return if (params.containsKey("infohash")) ContentId.Result.Infohash else ContentId.Result.None
     }
@@ -43,16 +40,19 @@ object GetStreamLink {
         return pathAndQuery.substringAfter('?', "")
     }
 
-    /** First value of each parameter, names lowercased; malformed escapes drop the parameter. */
-    private fun query(raw: String): Map<String, String> {
+    /**
+     * Every value of each parameter in link order, names and values lowercased (hex ids are
+     * case-insensitive); malformed escapes drop that one value.
+     */
+    private fun query(raw: String): Map<String, List<String>> {
         if (raw.isEmpty()) return emptyMap()
-        val out = HashMap<String, String>()
+        val out = HashMap<String, MutableList<String>>()
         for (pair in raw.split('&')) {
             val eq = pair.indexOf('=')
             if (eq <= 0) continue
             val name = decode(pair.substring(0, eq))?.lowercase() ?: continue
-            val value = decode(pair.substring(eq + 1))?.trim() ?: continue
-            if (name !in out) out[name] = value
+            val value = decode(pair.substring(eq + 1))?.trim()?.lowercase() ?: continue
+            out.getOrPut(name) { ArrayList(1) }.add(value)
         }
         return out
     }

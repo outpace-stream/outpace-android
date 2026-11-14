@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -29,9 +30,9 @@ import io.github.outpacestream.android.engine.EngineState
 /**
  * Turns a link, shared text, pasted id or an in-app stream (search result, recent, active) into a
  * hand-off to an external player. Links (including other apps' `http://127.0.0.1/ace/getstream`
- * links) and shared text are only read for content ids. The app's
- * own screens open it through the non-exported [IN_APP_ALIAS] and pass an explicit [EXTRA_REF],
- * which may be an infohash from search; those extras are ignored on any other entry.
+ * links) and shared text are only read for content ids. The app's own screens open it through
+ * the non-exported [IN_APP_ALIAS] and pass an explicit [EXTRA_REF], which may be an infohash from
+ * search; those extras are ignored on any other entry.
  */
 class PlayActivity : Activity() {
     private lateinit var status: TextView
@@ -179,9 +180,10 @@ class PlayActivity : Activity() {
      * other apps' activities. Null when no other app can play [view].
      */
     private fun playerChooser(view: Intent): Intent? {
-        val others = packageManager.queryIntentActivities(view, 0)
+        // MATCH_DEFAULT_ONLY: only activities an implicit startActivity (and so the chooser) can reach.
+        val others = packageManager.queryIntentActivities(view, PackageManager.MATCH_DEFAULT_ONLY)
             .map { it.activityInfo }
-            .filter { it.packageName != packageName }
+            .filter { it.packageName != packageName && it.exported }
         if (others.isEmpty()) return null
         val title = getString(R.string.play_choose)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {

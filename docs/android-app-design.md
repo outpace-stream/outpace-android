@@ -211,7 +211,8 @@ Entry points, all leading to the same flow:
 - **Link taps:** intent filter for the `acestream` scheme (`acestream://<id>` and
   `acestream:?content_id=<id>`).
 - **Compat links from other apps:** `ACTION_VIEW` for `http://127.0.0.1:<port>/ace/getstream` or
-  `http://localhost:<port>/ace/getstream`, declared both untyped and with `video/*` (Android
+  `http://localhost:<port>/ace/getstream` (exact path, with or without a trailing slash),
+  declared both untyped and with `video/*` (Android
   matches a typed intent only against a filter with a type). The app reads `id=` or `content_id=`;
   `infohash=` is refused like other explicit infohash forms. The port is ignored, and the hand-off
   uses the native route, so it works with the compat API off. The native `/streams/...` URL never

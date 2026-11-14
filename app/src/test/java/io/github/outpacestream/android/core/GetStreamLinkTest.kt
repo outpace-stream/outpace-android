@@ -2,9 +2,7 @@ package io.github.outpacestream.android.core
 
 import io.github.outpacestream.android.core.ContentId.Result
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class GetStreamLinkTest {
@@ -68,15 +66,19 @@ class GetStreamLinkTest {
         assertNull(GetStreamLink.parse("http://127.0.0.1@example.org/ace/getstream?id=$id"))
     }
 
-    @Test fun matchesOnlyGetstream() {
-        assertTrue(GetStreamLink.matches("$base?id=$id"))
-        assertFalse(GetStreamLink.matches("http://127.0.0.1:6878/streams/ace/cid:$id"))
-    }
-
     /** The native hand-off URL must never look like a getstream link, or Outpace could catch its own intent. */
     @Test fun handOffUrlsAreNotGetstreamLinks() {
         val ref = StreamRef.contentId(id)
-        assertFalse(GetStreamLink.matches(StreamUrls.live(Endpoint.loopback(6878), ref)))
-        assertFalse(GetStreamLink.matches(StreamUrls.hls(Endpoint.loopback(6878), ref)))
+        assertNull(GetStreamLink.parse(StreamUrls.live(Endpoint.loopback(6878), ref)))
+        assertNull(GetStreamLink.parse(StreamUrls.hls(Endpoint.loopback(6878), ref)))
     }
+
+    @Test fun duplicateIdUsesFirstValidValue() =
+        assertEquals(Result.Id(id), GetStreamLink.parse("$base?id=bad&id=${id.uppercase()}&id=${id.reversed()}"))
+
+    @Test fun invalidIdFallsBackToContentId() =
+        assertEquals(Result.Id(id), GetStreamLink.parse("$base?id=bad&content_id=$id"))
+
+    @Test fun decodesUppercasePercentHex() =
+        assertEquals(Result.Id(id), GetStreamLink.parse("$base?content%5Fid=${id.take(39)}%3${id.last()}"))
 }
