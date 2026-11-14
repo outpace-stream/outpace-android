@@ -122,6 +122,9 @@ It must work equally well on a phone and on an Android TV box.
   visible. While the engine runs with no screen visible, the service does one slow poll of
   `GET /streams` (suggested every 30 s) to drive the notification, the wake lock and idle
   auto-stop; the engine has no push signal, and a localhost request every 30 s is negligible.
+  One bounded exception: after a hand-off to a player, the service follows that stream's start
+  with one `GET /streams/ace/<id>/status` a second (each with a 1 s deadline) until `playing`,
+  `failed` or 90 s, even with no screen visible, so the notification can say why a start failed.
   Nothing polls while the engine is stopped. The engine's stderr goes into a bounded in-memory
   ring buffer (a few hundred lines); the app never parses it.
 - **Kotlin**, minimal dependencies (AndroidX core, the leanback launcher bits for TV). No
@@ -245,6 +248,8 @@ Flow:
    `EXTRA_EXCLUDE_COMPONENTS` on API 24+, and below that a chooser built from the other apps'
    activities returned by `queryIntentActivities`.
 
+5. Follow the start (feature 4a below).
+
 Secondary actions on the same screen: **Copy URL**, **Share URL** (plain text, for sending to
 another device), and **Open as HLS** (`/streams/ace/<id>.m3u8`, MIME
 `application/vnd.apple.mpegurl`), for players that prefer HLS.
@@ -257,6 +262,23 @@ Live vs VOD: the native live route is `/streams/ace/<id>`; VOD content uses
 `/vod/ace/cid:<id>`. The app cannot tell which a content id is before resolving it. v1 targets
 live content. Whether to add VOD in v1 depends on what the live route returns for a VOD id;
 see "Left to the builder".
+
+### 4a. Start progress and failure reasons
+
+After the hand-off ([#25](https://github.com/outpace-stream/outpace-android/issues/25)), the
+service polls the stream's `/status` once a second and shows the result on the play screen and in
+its notification: the engine's `phase` (`resolving`, `connecting` with the peer count,
+`buffering`) while starting, and a localized message per `error.code` on `failed` (the engine's
+own message is shown only as detail for `unresolvable` and `protected`). Polling stops at
+`playing`, `failed`, a `404` after the stream was seen, 30 s without the stream appearing, or 90 s
+overall; a newer hand-off replaces it. A failure stays in the notification for 60 s. The engine
+keeps a failure on `/status` for 60 s, so a `failed` answer before anything else may belong to an
+earlier attempt: it ends the watch only once it changes, or is still there after 30 s, by which
+time the player's new request would have replaced it. Deadlines use `SystemClock.elapsedRealtime()`.
+
+Engines without `phase` get a fallback: when `peers` stays `0` for 20 s, "No peers yet. This
+stream may be offline." The decision logic is `core/StartStatus.kt` (`StartWatch`), covered by
+JVM tests.
 
 ### 5. Logs
 
