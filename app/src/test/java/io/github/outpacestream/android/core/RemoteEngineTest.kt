@@ -16,12 +16,29 @@ class RemoteEngineTest {
     @Test fun parsesSchemeAndTrailingSlash() =
         assertEquals(Endpoint("192.168.1.5", 6878), RemoteEngines.parseAddress("  http://192.168.1.5:6878/ "))
 
-    /** Engines serve plain HTTP; accepting https:// would silently downgrade what the user asked for. */
-    @Test fun rejectsHttpsScheme() {
-        assertNull(RemoteEngines.parseAddress("https://tv.local:7000"))
-        assertNull(RemoteEngines.parseAddress("HTTPS://tv.local"))
-        assertTrue(RemoteEngines.isHttps(" https://tv.local:7000"))
-        assertFalse(RemoteEngines.isHttps("http://tv.local:7000"))
+    /** An operator may put the engine behind an HTTPS reverse proxy; the scheme must survive. */
+    @Test fun parsesHttpsScheme() {
+        assertEquals(Endpoint("tv.local", 7000, secure = true), RemoteEngines.parseAddress("https://tv.local:7000"))
+        assertEquals(Endpoint("tv.local", 7000, secure = true), RemoteEngines.parseAddress(" HTTPS://tv.local:7000/ "))
+    }
+
+    @Test fun httpsDefaultsToPort443() = assertEquals(Endpoint("engine.example", 443, secure = true), RemoteEngines.parseAddress("https://engine.example"))
+
+    @Test fun httpsUrlsUseHttps() {
+        val e = Endpoint("engine.example", 443, secure = true)
+        assertEquals("https://engine.example:443", e.base)
+        assertEquals("https://engine.example:443/healthz", StreamUrls.health(e))
+    }
+
+    @Test fun httpsDisplayRoundTrips() {
+        val e = Endpoint("fd00::5", 8443, secure = true)
+        assertEquals("https://[fd00::5]:8443", e.display)
+        assertEquals(e, RemoteEngines.parseAddress(e.display))
+    }
+
+    @Test fun httpsSurvivesStorage() {
+        val list = listOf(RemoteEngine("a", "Proxy", Endpoint("engine.example", 443, secure = true)), RemoteEngine("b", "Lan", Endpoint("192.168.1.5", 6878)))
+        assertEquals(list, RemoteEngines.decode(RemoteEngines.encode(list)))
     }
 
     @Test fun parsesBracketedIpv6() = assertEquals(Endpoint("fd00::5", 7000), RemoteEngines.parseAddress("[fd00::5]:7000"))

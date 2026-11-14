@@ -29,11 +29,7 @@ object RemoteDialog {
                 val n = name.text.toString().trim()
                 val endpoint = RemoteEngines.parseAddress(address.text.toString())
                 name.error = if (RemoteEngines.validName(n)) null else host.getString(R.string.remote_name_invalid)
-                address.error = when {
-                    endpoint != null -> null
-                    RemoteEngines.isHttps(address.text.toString()) -> host.getString(R.string.remote_address_https)
-                    else -> host.getString(R.string.remote_address_invalid)
-                }
+                address.error = if (endpoint != null) null else host.getString(R.string.remote_address_invalid)
                 if (name.error != null || endpoint == null) return@setOnClickListener
                 val saved = RemoteEngine(existing?.id ?: RemoteEngines.newId(), n, endpoint)
                 if (!EngineSelection.saveRemote(host, saved)) {

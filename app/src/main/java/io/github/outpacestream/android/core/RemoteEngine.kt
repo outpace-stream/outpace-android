@@ -4,15 +4,18 @@ import java.util.UUID
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** Where an engine's HTTP API answers. An IPv6 [host] is stored without brackets. */
-data class Endpoint(val host: String, val port: Int) {
-    private val hostPart: String get() = if (':' in host) "[$host]" else host
+/**
+ * Where an engine's HTTP API answers. An IPv6 [host] is stored without brackets. [secure] is set
+ * for an engine an operator serves through an HTTPS reverse proxy; engines themselves speak HTTP.
+ */
+data class Endpoint(val host: String, val port: Int, val secure: Boolean = false) {
+    private val authority: String get() = (if (':' in host) "[$host]" else host) + ":$port"
 
-    /** `host:port`, as the user types it. */
-    val display: String get() = "$hostPart:$port"
+    /** `host:port`, or `https://host:port`, as the user types it; [RemoteEngines.parseAddress] reads it back. */
+    val display: String get() = if (secure) "https://$authority" else authority
 
     /** The URL prefix requests and players use. */
-    val base: String get() = "http://$display"
+    val base: String get() = (if (secure) "https://" else "http://") + authority
 
     companion object {
         const val LOOPBACK_HOST = "127.0.0.1"
@@ -27,6 +30,9 @@ data class RemoteEngine(val id: String, val name: String, val endpoint: Endpoint
 object RemoteEngines {
     const val MAX_REMOTES = 16
     const val MAX_NAME = 40
+
+    /** The port an `https://` address without one uses: a reverse proxy's, not the engine's. */
+    const val HTTPS_PORT = 443
 
     private val hostName = Regex("[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?")
     private val hexGroup = Regex("[0-9A-Fa-f]{1,4}")
@@ -60,18 +66,20 @@ object RemoteEngines {
         return if (compressed) total <= 7 else total == 8
     }
 
-    /** True when [text] asks for HTTPS, which engines do not serve; [parseAddress] rejects it. */
-    fun isHttps(text: String): Boolean = text.trim().startsWith("https://", ignoreCase = true)
-
     /**
-     * Reads `host[:port]` or `[ipv6][:port]`, tolerating a leading `http://` and one trailing
-     * slash. The port defaults to the engine's. Returns null for anything else, including
-     * `https://`: engines serve plain HTTP, and silently downgrading would mislead the user.
+     * Reads `host[:port]` or `[ipv6][:port]`, with an optional `http://` or `https://` and one
+     * trailing slash. `https://` keeps HTTPS (an engine behind a reverse proxy) and defaults to
+     * port 443; otherwise the port defaults to the engine's. Returns null for anything else.
      */
     fun parseAddress(text: String): Endpoint? {
         var s = text.trim()
-        if (isHttps(s)) return null
-        if (s.startsWith("http://", ignoreCase = true)) s = s.substring("http://".length)
+        var secure = false
+        if (s.startsWith("https://", ignoreCase = true)) {
+            secure = true
+            s = s.substring("https://".length)
+        } else if (s.startsWith("http://", ignoreCase = true)) {
+            s = s.substring("http://".length)
+        }
         s = s.removeSuffix("/")
         if (s.isEmpty()) return null
         val host: String
@@ -94,16 +102,17 @@ object RemoteEngines {
             portText = parts.getOrNull(1)
             if (!hostName.matches(host)) return null
         }
-        val port = if (portText == null) EngineSettings.DEFAULT_PORT else portText.toIntOrNull() ?: return null
+        val defaultPort = if (secure) HTTPS_PORT else EngineSettings.DEFAULT_PORT
+        val port = if (portText == null) defaultPort else portText.toIntOrNull() ?: return null
         if (port !in 1..65535) return null
-        return Endpoint(host, port)
+        return Endpoint(host, port, secure)
     }
 
     fun validName(name: String): Boolean = name.isNotBlank() && name.trim().length <= MAX_NAME
 
     fun encode(list: List<RemoteEngine>): String = JSONArray().apply {
         for (r in list) {
-            put(JSONObject().put("id", r.id).put("name", r.name).put("host", r.endpoint.host).put("port", r.endpoint.port))
+            put(JSONObject().put("id", r.id).put("name", r.name).put("host", r.endpoint.host).put("port", r.endpoint.port).put("secure", r.endpoint.secure))
         }
     }.toString()
 
@@ -117,7 +126,7 @@ object RemoteEngines {
             val id = o.optString("id").takeIf { it.isNotBlank() } ?: continue
             val name = o.optString("name").takeIf(::validName)?.trim() ?: continue
             val host = o.optString("host").takeIf { it.isNotBlank() } ?: continue
-            val endpoint = parseAddress(Endpoint(host, o.optInt("port", 0)).display) ?: continue
+            val endpoint = parseAddress(Endpoint(host, o.optInt("port", 0), o.optBoolean("secure", false)).display) ?: continue
             out += RemoteEngine(id, name, endpoint)
             if (out.size == MAX_REMOTES) break
         }
