@@ -233,7 +233,6 @@
     <string name="update_action">Update</string>
     <string name="update_not_now">Not now</string>
     <string name="update_never">Never ask again</string>
-    <string name="update_changelog">Changelog</string>
     <string name="update_never_toast">Update prompts are off. You can still update from Settings.</string>
     <string name="update_changelog_title">What\'s new</string>
     <string name="update_changelog_loading">Loading the release notes…</string>

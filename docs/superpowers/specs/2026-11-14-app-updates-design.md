@@ -15,12 +15,13 @@ This is about the **app** itself. Engine versions (the `outpace` binary the app 
 ## Goals
 
 1. **Automatic prompt.** When a newer stable app release exists, the main screen shows a dialog
-   with:
-   - the installed version and the latest version;
-   - **Changelog**: shows the release notes inside the app;
+   with the installed and latest versions, the release notes shown inline (scrollable, loaded in
+   the background), and three buttons, left to right:
    - **Update**: downloads, verifies and installs the new APK;
    - **Not now**: closes the dialog for now (it can come back after the next daily check);
    - **Never ask again**: turns the automatic dialog off.
+   (Revised 2026-11-14 after review of the first build: a separate Changelog button made four
+   actions, which was too busy.)
 2. **Updates section in Settings**, always available whatever was dismissed:
    - installed version and latest known version (with when it was last checked);
    - **Check now**;
@@ -108,7 +109,8 @@ This is about the **app** itself. Engine versions (the `outpace` binary the app 
 
 - Shown in an in-app dialog or screen, scrollable and readable with a D-pad.
 - Content: the notes of every stable release newer than the installed one, newest first, each
-  under its version heading. Fetched on demand only (when the user opens it) from
+  under its version heading. Fetched when the dialog opens (so at most once a day) or when the user
+  opens the Settings changelog, from
   `https://api.github.com/repos/outpace-stream/outpace-android/releases?per_page=30`, using the
   existing list parsing extended with `body`. This is the only API use.
 - Markdown is rendered as plain readable text: strip link syntax down to the link text, drop the

@@ -5,8 +5,8 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.graphics.Typeface
 import android.text.format.Formatter
-import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.ScrollView
@@ -83,7 +83,7 @@ class UpdateFlow(private val activity: Activity) {
 
     fun isPromptShowing() = prompt?.isShowing == true
 
-    /** The automatic dialog: Changelog, Update, Not now, Never ask again. */
+    /** The automatic dialog: versions, the release notes inline, then Update, Not now, Never ask again. */
     fun showPrompt(installed: String, latest: String) {
         if (isPromptShowing() || busy) return
         val pad = activity.dp(24)
@@ -91,32 +91,60 @@ class UpdateFlow(private val activity: Activity) {
             text = activity.getString(R.string.update_available, installed, latest)
             textSize = 16f
         }
-        // A fourth action does not fit AlertDialog's three buttons; it sits in the body, reachable by D-pad.
-        val changelog = Button(activity).apply {
-            setText(R.string.update_changelog)
-            setOnClickListener { showChangelog(installed, latest) }
+        val heading = TextView(activity).apply {
+            setText(R.string.update_changelog_title)
+            textSize = 14f
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(0, pad / 2, 0, pad / 4)
+        }
+        val notes = TextView(activity).apply {
+            setText(R.string.update_changelog_loading)
+            textSize = 14f
+        }
+        // Capped so long notes scroll inside the dialog and the buttons stay on screen.
+        val maxHeight = (activity.resources.displayMetrics.heightPixels * 0.4f).toInt()
+        val scroll = object : ScrollView(activity) {
+            override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) =
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(maxHeight, MeasureSpec.AT_MOST))
+        }.apply {
+            // Focusable so a TV remote can scroll the notes.
+            isFocusable = true
+            addView(notes)
         }
         val body = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(pad, pad / 2, pad, 0)
             addView(message)
-            addView(changelog, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-                topMargin = pad / 2
-            })
+            addView(heading)
+            addView(scroll)
         }
-        prompt = AlertDialog.Builder(activity)
+        // AlertDialog lays buttons out as [neutral] ... [negative] [positive], so the roles are picked
+        // for position: Update on the left, Not now next, Never ask again on the right.
+        val dialog = AlertDialog.Builder(activity)
             .setTitle(R.string.update_title)
             .setView(body)
-            .setPositiveButton(R.string.update_action) { _, _ -> startUpdate(latest) }
+            .setNeutralButton(R.string.update_action) { _, _ -> startUpdate(latest) }
             .setNegativeButton(R.string.update_not_now, null)
-            .setNeutralButton(R.string.update_never) { _, _ ->
+            .setPositiveButton(R.string.update_never) { _, _ ->
                 prefs.appUpdateNotify = false
                 activity.toast(activity.getString(R.string.update_never_toast))
                 onChanged?.invoke()
             }
             .setOnDismissListener { prompt = null }
             .show()
-        prompt?.getButton(AlertDialog.BUTTON_POSITIVE)?.requestFocus()
+        prompt = dialog
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.requestFocus()
+        val app = activity.applicationContext
+        background.execute {
+            val result = runCatching { AppUpdates(app).changelog(installed) }
+            activity.onMain {
+                if (!dialog.isShowing) return@onMain
+                notes.text = result.fold(
+                    onSuccess = { it.ifEmpty { activity.getString(R.string.update_changelog_empty) } },
+                    onFailure = { e -> activity.getString(R.string.update_changelog_failed, EngineReleases.describe(e as? Exception ?: Exception(e))) },
+                )
+            }
+        }
     }
 
     /** Release notes of every version newer than [installed], fetched on demand. */

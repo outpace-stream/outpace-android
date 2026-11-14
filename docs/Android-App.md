@@ -33,10 +33,10 @@ The app checks the [releases page](https://github.com/outpace-stream/outpace-and
 a newer stable version at most once a day, when you open its main screen. Pre-releases are
 ignored. A failed check stays silent and is retried later.
 
-When a newer version exists, a dialog shows the version you have and the latest one, at most once
-a day, never while a stream is playing:
+When a newer version exists, a dialog shows the version you have, the latest one, and the release
+notes of every version newer than yours. It appears at most once a day, never while a stream is
+playing. Its buttons:
 
-- **Changelog** shows the release notes of every version newer than yours.
 - **Update** downloads the APK, checks it against its `.sha256` file and opens Android's install
   screen. Nothing installs without your confirmation.
 - **Not now** closes the dialog until the next day.
