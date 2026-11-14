@@ -3,7 +3,7 @@
 > **Unreleased:** this is development documentation. APKs will be published in this repository
 > after signing and device validation; app versions are independent of engine versions.
 
-The outpace Android app runs the engine on a phone or an Android TV box without root and
+The Outpace Android app runs the engine on a phone or an Android TV box without root and
 without Termux. It downloads the engine release you choose, keeps it running in the background,
 and hands streams to the video player you already use, such as VLC, MX Player, Just Player or
 Kodi. It has no player of its own.
@@ -34,23 +34,38 @@ runs it.
 The engine listens on `127.0.0.1:6878`, the same address as on any other platform, so players on
 the same device reach it with the usual [URLs](https://github.com/outpace-stream/outpace-engine/wiki/Playing-Streams).
 
+## Finding your way around
+
+The main screen has three tabs: **Home**, **Search** and **Settings**. On a phone held upright
+they sit along the bottom; on TV, tablets and landscape phones they form a rail on the left.
+Back from Search or Settings returns to Home. **Versions** (Engine versions) and **Logs** sit next
+to the start button on Home.
+
+Home shows the engine state with a coloured dot, the start/stop button, the address players use,
+what is playing now and what you played recently. When you change settings while the engine runs,
+a banner offers **Restart** to apply them.
+
 ## Playing a stream
 
 You can start playback from:
 
 - **A link.** Tap an `acestream://<id>` or `acestream:?content_id=<id>` link in a browser or chat
-  app and choose outpace.
-- **The share menu.** Share text that contains a content id or an `acestream:` link to outpace.
-- **The main screen.** Paste a content id or link into the box and press **Play**.
-- **Recent streams.** The main screen lists the last 10 content ids you played. This is the easy
-  way to replay on a TV remote. **Clear recent** forgets them.
-- **Active streams.** While the engine runs, the main screen lists what it is playing, with the
-  title, the number of clients, peers and seconds buffered. Choose one to open it again. Few or no
+  app and choose Outpace.
+- **The share menu.** Share text that contains a content id or an `acestream:` link to Outpace.
+- **Home.** Paste a content id or link into the box and press **Play**. On phones, **Paste**
+  fills the box from the clipboard.
+- **Search.** Find a stream by name and press its **Play** button; see [Search](#search).
+- **Recently played.** Home lists the last 12 streams you played, with their names when known.
+  This is the easy way to replay on a TV remote. **Clear** forgets them; long press a row's
+  **Play** button to copy its id or remove just that one.
+- **Now playing.** While the engine runs, Home lists what it is playing, with the title, the
+  number of clients, peers and seconds buffered. **Play** opens it again. Few or no
   peers usually means the stream is hard to find; see
   [Troubleshooting](https://github.com/outpace-stream/outpace-engine/wiki/Troubleshooting).
 
 The app starts the engine if it isn't running, waits until it answers, then opens Android's
-"Play with" chooser for `http://127.0.0.1:6878/streams/ace/cid:<id>`. Tick "Always" to go
+"Play with" chooser for `http://127.0.0.1:6878/streams/ace/cid:<id>` (or `ih:<infohash>` for a
+search result). Tick "Always" to go
 straight to your favourite player next time. The same screen also has:
 
 - **Open as HLS**, for players that handle `.m3u8` better than a raw MPEG-TS stream.
@@ -58,15 +73,35 @@ straight to your favourite player next time. The same screen also has:
   device. To play on another device, turn on **Allow LAN access** first; the copied URL then
   uses this device's LAN address instead of `127.0.0.1`.
 
-Only content ids are supported. Infohashes and magnet links are rejected, because the content id
-path is the reliable one. A bare 40-character hex string is treated as a content id, as the
-engine does.
+Links, shared text and the paste box take content ids only. Infohashes and magnet links pasted or
+shared there are rejected; to play by infohash, use Search. A bare 40-character hex string is
+treated as a content id, as the engine does.
 
 The app plays live streams. VOD content ids are not handled yet.
 
+## Search
+
+**Search** looks up streams by name through the engine's
+[stream search](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search), which needs
+engine v1.0.0 or newer. It is off by default: your query and this device's IP address go to
+AceStream's public index over plain HTTP, where the index and anyone on the network path can see
+them. Turn it on with **Turn on search** on the Search tab or **Stream search** in Settings; a
+running engine restarts to pick it up.
+
+Type a name and press **Search** (or the keyboard's search key). The app starts the engine if
+needed. Results are grouped by channel and show categories, languages and availability where the
+index has them. Each stream has a **Play** button; long press it to copy the infohash. **Load more
+results** fetches the next 10 channels. Your last 8 searches appear as buttons so you can repeat
+one without typing.
+
+Results are discovery data, not a promise that a stream plays. A result plays only if the engine
+finds a verified descriptor for its infohash; otherwise the player reports an error (`422`). The
+index also limits how often it answers: after a failure, wait about 30 seconds before searching
+again.
+
 ## Engine versions
 
-**Engine versions** lists outpace releases, newest first. Each row shows the release date and
+**Engine versions** lists Outpace releases, newest first. Each row shows the release date and
 badges:
 
 | Badge | Meaning |
@@ -93,7 +128,8 @@ that API and keep working.
 
 ## Settings
 
-Settings apply the next time the engine starts. **Restart engine** applies them right away.
+Settings save as soon as you change them and apply the next time the engine starts. While the
+engine runs with older settings, a banner offers **Restart** to apply them right away.
 
 | Setting | Default | What it sets |
 | --- | --- | --- |
@@ -103,8 +139,9 @@ Settings apply the next time the engine starts. **Restart engine** applies them 
 | Accept inbound peers | On | [`OUTPACE_ENABLE_INBOUND`](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers) |
 | Router port mapping | Off | [`OUTPACE_ENABLE_PORT_MAPPING`](https://github.com/outpace-stream/outpace-engine/wiki/NAT-and-Port-Mapping) |
 | AceStream-compatible API | Off | [`OUTPACE_ACE_COMPAT`](https://github.com/outpace-stream/outpace-engine/wiki/Playing-Streams#acestream-compatible-api) |
+| Stream search | Off | [`OUTPACE_COMPAT_ACESTREAM_SERVICES`](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search). Sends queries and your IP address to AceStream's public index over plain HTTP. |
 | Start on boot | On for TV, off for phones | Starts the engine when the device boots. |
-| Stop after 10 minutes with no streams | On for phones, off for TV | Saves battery when nothing is playing. |
+| Stop when idle | On for phones, off for TV | Stops the engine after 10 minutes with no streams, to save battery. |
 
 The engine's data and cache live in the app's private storage (`OUTPACE_DATA_DIR` and
 `OUTPACE_CACHE_DIR`). Uninstalling the app removes them. The peer listener keeps its usual

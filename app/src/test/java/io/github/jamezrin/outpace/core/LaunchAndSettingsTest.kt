@@ -46,7 +46,11 @@ class LaunchAndSettingsTest {
         assertEquals("false", env["OUTPACE_ENABLE_INBOUND"])
         assertEquals("true", env["OUTPACE_ENABLE_PORT_MAPPING"])
         assertEquals("true", env["OUTPACE_ACE_COMPAT"])
+        assertEquals("false", env["OUTPACE_COMPAT_ACESTREAM_SERVICES"])
     }
+
+    @Test fun envSearch() =
+        assertEquals("true", EngineSettings(search = true).env("/d", "/c")["OUTPACE_COMPAT_ACESTREAM_SERVICES"])
 
     @Test fun ringDropsOldest() {
         val ring = LogRing(3)
@@ -71,6 +75,8 @@ class LaunchAndSettingsTest {
         assertNull(s[1].title)
         assertNull(s[1].bitrate)
         assertNull(s[1].contentId)
+        assertEquals(StreamRef.contentId(id), s[0].ref)
+        assertEquals(StreamRef.infohash(id), s[1].ref)
     }
 
     @Test fun addsStatusPeersAndBuffer() {
@@ -93,6 +99,7 @@ class LaunchAndSettingsTest {
         val s = StreamsJson.parse("""{"streams":[{"network":"fix","id":"chan","clients":0}]}""")
         assertEquals("fix", s[0].network)
         assertNull(s[0].contentId)
+        assertNull(s[0].ref)
     }
 
     @Test fun parsesEmptyStreams() = assertEquals(emptyList<StreamInfo>(), StreamsJson.parse("""{"streams":[]}"""))

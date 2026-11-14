@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- TV is always the dark palette: the television qualifier ranks above night mode. -->
+    <color name="bg">#FF0E1116</color>
+    <color name="surface">#FF171B22</color>
+    <color name="surface_alt">#FF222833</color>
+    <color name="stroke">#FF2B323D</color>
+    <color name="text">#FFE8EBF0</color>
+    <color name="text_muted">#FF9AA4B2</color>
+    <color name="accent">#FF4C8DFF</color>
+    <color name="accent_soft">#334C8DFF</color>
+    <color name="on_accent">#FF0B1220</color>
+    <color name="focus">#FFFFFFFF</color>
+    <color name="ok">#FF3FB950</color>
+    <color name="warn">#FFD29922</color>
+    <color name="err">#FFF85149</color>
+    <color name="warn_soft">#26D29922</color>
+</resources>

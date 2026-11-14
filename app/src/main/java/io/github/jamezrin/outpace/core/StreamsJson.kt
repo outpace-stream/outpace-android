@@ -17,6 +17,9 @@ data class StreamInfo(
 ) {
     /** The bare content id, when the stream is addressed by one. */
     val contentId: String? get() = id.removePrefix("cid:").takeIf { network == "ace" && id.startsWith("cid:") }
+
+    /** The stream as the app can reopen it, for `cid:` and `ih:` streams on the AceStream network. */
+    val ref: StreamRef? get() = if (network == "ace") StreamRef.parse(id) else null
 }
 
 object StreamsJson {

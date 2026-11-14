@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One settings row: title and summary on the left, an optional switch on the right. The row takes
+     focus and clicks; the switch only shows the state, so D-pad and touch both act on the whole row. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="64dp"
+    android:orientation="horizontal" android:gravity="center_vertical" android:baselineAligned="false"
+    android:background="@drawable/bg_setting_row" android:focusable="true" android:clickable="true"
+    android:paddingStart="16dp" android:paddingEnd="16dp" android:paddingTop="12dp" android:paddingBottom="12dp">
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+        android:orientation="vertical">
+        <TextView android:id="@+id/title" style="@style/Text.Body" android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+        <TextView android:id="@+id/summary" style="@style/Text.Muted" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="2dp" android:visibility="gone" />
+    </LinearLayout>
+    <Switch android:id="@+id/toggle" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_marginStart="16dp" android:clickable="false" android:focusable="false"
+        android:importantForAccessibility="no" android:visibility="gone" />
+</LinearLayout>

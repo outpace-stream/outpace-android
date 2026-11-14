@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:paddingStart="@dimen/page_padding" android:paddingEnd="@dimen/page_padding"
+        android:paddingTop="@dimen/page_top" android:paddingBottom="32dp">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <ImageView android:layout_width="40dp" android:layout_height="40dp" android:src="@drawable/logo_mark"
+                android:importantForAccessibility="no" />
+            <TextView style="@style/Text.Title" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="12dp" android:text="@string/app_name" />
+        </LinearLayout>
+
+        <LinearLayout style="@style/Card" android:layout_marginTop="16dp" android:padding="16dp">
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical" android:baselineAligned="false">
+                <ImageView android:id="@+id/state_dot" android:layout_width="12dp" android:layout_height="12dp"
+                    android:src="@drawable/dot" android:importantForAccessibility="no" />
+                <TextView android:id="@+id/state" style="@style/Text.Headline" android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1" android:layout_marginStart="12dp" />
+                <Button android:id="@+id/update" style="@style/Button.Text" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:visibility="gone" />
+            </LinearLayout>
+            <TextView android:id="@+id/state_detail" style="@style/Text.Muted" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="4dp" />
+            <TextView android:id="@+id/url" style="@style/Text.Mono" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="2dp" android:visibility="gone" />
+            <!-- One row of actions keeps the card short, leaving room for the play sections. -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginTop="12dp"
+                android:baselineAligned="false">
+                <Button android:id="@+id/start_stop" style="@style/Button.Primary" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+                <Button android:id="@+id/versions" style="@style/Button.Text" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/action_versions_short" />
+                <Button android:id="@+id/logs" style="@style/Button.Text" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="@string/action_logs" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout android:id="@+id/restart_banner" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="12dp" android:background="@drawable/bg_notice"
+            android:orientation="horizontal" android:gravity="center_vertical" android:padding="14dp"
+            android:visibility="gone">
+            <TextView style="@style/Text.Body" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="@string/restart_banner" />
+            <Button android:id="@+id/restart" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="12dp" android:text="@string/action_restart_short" />
+        </LinearLayout>
+
+        <TextView style="@style/Section" android:text="@string/play_section" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <EditText android:id="@+id/id_input" android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:hint="@string/play_hint" android:imeOptions="actionGo"
+                android:inputType="textUri|textNoSuggestions" android:importantForAutofill="no" android:maxLines="1" />
+            <Button android:id="@+id/paste" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginStart="8dp" android:text="@string/action_paste" />
+            <Button android:id="@+id/play" style="@style/Button.Primary" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/action_play" />
+        </LinearLayout>
+        <TextView style="@style/Text.Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="6dp" android:text="@string/play_input_help" />
+
+        <TextView android:id="@+id/streams_title" style="@style/Section" android:text="@string/streams_title" />
+        <LinearLayout android:id="@+id/streams" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <!-- Not baseline-aligned: matching the button's text baseline would push the heading out of the row. -->
+        <LinearLayout android:id="@+id/recent_header" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="20dp" android:layout_marginBottom="4dp"
+            android:orientation="horizontal" android:gravity="center_vertical" android:baselineAligned="false">
+            <TextView style="@style/Section" android:layout_width="0dp" android:layout_weight="1"
+                android:layout_marginTop="0dp" android:layout_marginBottom="0dp" android:text="@string/recent_title" />
+            <Button android:id="@+id/clear_recent" style="@style/Button.Text" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:text="@string/action_clear_recent" />
+        </LinearLayout>
+        <LinearLayout android:id="@+id/recent" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <LinearLayout android:id="@+id/empty" style="@style/Card" android:layout_marginTop="28dp" android:gravity="center_horizontal">
+            <TextView style="@style/Text.Body" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:gravity="center" android:text="@string/home_empty" />
+            <Button android:id="@+id/go_search" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:layout_marginTop="12dp" android:text="@string/action_find_streams" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

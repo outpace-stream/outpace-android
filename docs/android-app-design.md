@@ -6,11 +6,11 @@ Migrated from the engine Android draft PR #454 with the maintainer-approved repo
 
 ## Intent
 
-Today, running outpace on Android means Termux, a manual download, `termux-wake-lock` and a
+Today, running Outpace on Android means Termux, a manual download, `termux-wake-lock` and a
 terminal. That works for people who already live in Termux and is a wall for everyone else,
 especially on Android TV, where there is no comfortable terminal at all.
 
-The app is a thin, installable wrapper that makes outpace a normal Android citizen: install an
+The app is a thin, installable wrapper that makes Outpace a normal Android citizen: install an
 APK, press start, and the engine runs in the background on `127.0.0.1:6878`. Its second job is
 to turn a content id or `acestream://` link into playback in whatever player the user already
 has (VLC, MX Player, Just Player, Kodi), without the user ever seeing or copying a URL.
@@ -19,7 +19,7 @@ It must work equally well on a phone and on an Android TV box.
 
 ## Goals
 
-1. Start, stop and supervise the outpace engine on the device, without root and without Termux.
+1. Start, stop and supervise the Outpace engine on the device, without root and without Termux.
 2. Keep the engine alive in the background reliably (foreground service).
 3. Show whether the engine is healthy and which streams are active.
 4. Accept a content id or `acestream://` link from link taps, the system share sheet, a paste
@@ -33,7 +33,8 @@ It must work equally well on a phone and on an Android TV box.
 ## Non-goals
 
 - No built-in player, ever. Playback is always delegated to another app.
-- No stream search or channel lists.
+- No channel lists, playlists or EPG. Stream-name search is the one discovery feature, and only
+  through the engine's own opt-in `GET /search` (feature 9).
 - No broadcasting UI (RTMP, SRT, `outpace broadcast`).
 - No self-update of the app itself in v1 (a newer APK is installed by hand). Engine versions are
   managed in-app, see feature 7.
@@ -160,7 +161,13 @@ These were agreed with the maintainer:
   alive by playlist fetches rather than connections, so `clients` is not a reliable viewer
   signal. VOD sessions do not appear in `/streams` at all; see the VOD note in feature 4.
 
-### 2. Status screen (the main screen)
+### 2. Main screen and navigation
+
+The main screen has three tabs: **Home**, **Search** and **Settings**. Portrait phones show them
+as a bottom bar, landscape screens and TV as a side rail. Back from Search or Settings returns to
+Home. Engine versions, Logs and the play hand-off are separate screens opened from there.
+
+Home holds:
 
 - Big start/stop control and current state.
 - Active streams from `GET /streams`, which returns `network`, `id` (prefixed, `cid:<hex>` or
@@ -170,7 +177,12 @@ These were agreed with the maintainer:
 - The base URL players should use (`http://127.0.0.1:6878`, or the LAN address when LAN access
   is on).
 - The paste box and the recent-streams list (feature 4) live here too, so the main screen is
-  also the "play something" screen.
+  also the "play something" screen. Every stream row has its own **Play** button.
+- A banner with **Restart** when the saved settings differ from the ones the running engine
+  started with.
+
+Rows that refresh with the poll are rebound in place rather than rebuilt, so D-pad focus does not
+jump while a stream is playing.
 
 ### 3. Settings
 
@@ -184,10 +196,11 @@ Each maps to an existing variable; see `docs/wiki/Environment-Variables.md` for 
 | Accept inbound peers | `OUTPACE_ENABLE_INBOUND` | engine default (on) |
 | Router port mapping | `OUTPACE_ENABLE_PORT_MAPPING` | engine default (off) |
 | AceStream-compatible API | `OUTPACE_ACE_COMPAT` | off |
+| Stream search | `OUTPACE_COMPAT_ACESTREAM_SERVICES` | off |
 | Start on boot | app only | on for TV, off for phone |
 | Stop when idle | app only | on for phone (suggested 10 min with no active streams), off for TV |
 
-Turning on LAN access shows a one-line warning to use it only on a trusted network.
+Settings save as soon as they change; there is no Save button. Turning on LAN access shows a one-line warning to use it only on a trusted network.
 An "advanced" free-form list of extra `KEY=value` variables is the builder's call; if added, it
 only accepts `OUTPACE_*` keys.
 
@@ -201,19 +214,22 @@ Entry points, all leading to the same flow:
   text: an `acestream://<id>` or `acestream:?content_id=<id>` link, or a bare 40-hex string (the
   engine also treats bare hex as a content id).
 - **Paste box** on the main screen.
-- **Recent streams:** the last N (suggested 10) ids the user played, stored locally, one click to
-  replay. Essential on TV, where typing is painful. The user can clear it.
+- **Recent streams:** the last 12 streams the user played, stored locally with their kind
+  (`cid:` or `ih:`) and the name they were shown under, one click to replay. Essential on TV,
+  where typing is painful. The user can clear the list or remove one entry (long press).
+- **Search results** (feature 9), which pass an explicit `ih:` selector.
 
-Only content ids are accepted. A bare 40-hex string cannot be told apart from an infohash, so it
-is treated as a content id, matching the engine. Explicit infohash forms
-(`acestream:?infohash=`, `magnet:` links) are rejected with a short explanation, because the
-content-id path is the reliable one.
+Links, shared text and the paste box accept content ids only. A bare 40-hex string cannot be told
+apart from an infohash, so it is treated as a content id, matching the engine. Explicit infohash
+forms (`acestream:?infohash=`, `magnet:` links) are rejected with a short explanation. Infohashes
+reach playback only as typed selectors from the app's own screens, never by guessing from hex.
 
 Flow:
 
 1. Validate the id (40 hex characters).
 2. If the engine is not running, start it and wait for `/healthz` (bounded by the start timeout).
-3. Build `http://127.0.0.1:<port>/streams/ace/<id>` (or the LAN address, see below).
+3. Build `http://127.0.0.1:<port>/streams/ace/cid:<id>` (or `ih:<infohash>` for a search result,
+   or the LAN address, see below).
 4. Fire `ACTION_VIEW` with that URI and MIME type `video/mp2t`, through the system chooser so the
    user can pick a player and tick "always".
 
@@ -286,6 +302,25 @@ see "Left to the builder".
   required. Phone: normal launcher icon.
 - Every screen is fully navigable with a D-pad: large focusable controls, visible focus, no
   gesture-only actions. Phone layouts are the same screens with touch, not a separate UI.
+
+### 9. Stream search
+
+- The **Search** tab sends a name to the engine's `GET /search` (engine v1.0.0 and later), which
+  is off unless `OUTPACE_COMPAT_ACESTREAM_SERVICES` is set. The app's **Stream search** setting
+  sets it; it is off by default because queries and the device's IP address go to AceStream's
+  public index over plain HTTP. The tab and the setting both say so.
+- Before any request the tab checks local facts and explains what blocks a search: no engine,
+  search off (with a **Turn on search** button), an engine older than v1.0.0, or a running engine
+  started without search (with **Restart**). A stopped engine is started for the search.
+- Searches run on submit only, one at a time, on their own thread so they never queue behind an
+  engine start. Pages hold 10 groups, the engine default, because a page over 200 streams fails
+  with `502`. **Load more results** fetches the next one.
+- Results are grouped by channel. Each stream has a **Play** button that opens the play hand-off
+  with its `ih:<infohash>` selector; long press copies the infohash. The engine plays it only if it
+  finds a verified descriptor, otherwise the player sees `422`.
+- The last 8 queries are kept on the device as chips, for TV remotes.
+- HTTP errors map to short messages: `429` cooling down, `503` busy, `502` index failure, `504`
+  timeout, `400` invalid text, `404` search not enabled on the running engine.
 
 ## Build, CI and release
 

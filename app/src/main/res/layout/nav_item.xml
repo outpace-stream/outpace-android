@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+    android:orientation="vertical" android:gravity="center" android:minHeight="56dp"
+    android:paddingTop="6dp" android:paddingBottom="6dp" android:layout_margin="2dp"
+    android:background="@drawable/bg_nav_item" android:focusable="true" android:clickable="true">
+    <ImageView android:id="@+id/nav_icon" android:layout_width="24dp" android:layout_height="24dp"
+        android:duplicateParentState="true" android:tint="@color/nav_content" android:importantForAccessibility="no" />
+    <TextView android:id="@+id/nav_label" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" android:duplicateParentState="true" android:textColor="@color/nav_content"
+        android:textSize="12sp" android:fontFamily="sans-serif-medium" />
+</LinearLayout>

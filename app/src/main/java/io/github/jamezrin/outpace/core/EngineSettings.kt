@@ -7,6 +7,8 @@ data class EngineSettings(
     val inbound: Boolean = true,
     val portMapping: Boolean = false,
     val aceCompat: Boolean = false,
+    /** Opt-in stream-name search through AceStream's public index (engine 1.0.0 and later). */
+    val search: Boolean = false,
 ) {
     fun env(dataDir: String, cacheDir: String): Map<String, String> = linkedMapOf(
         "OUTPACE_BIND" to "${if (lan) "0.0.0.0" else StreamUrls.LOOPBACK}:$port",
@@ -16,10 +18,14 @@ data class EngineSettings(
         "OUTPACE_ENABLE_INBOUND" to inbound.toString(),
         "OUTPACE_ENABLE_PORT_MAPPING" to portMapping.toString(),
         "OUTPACE_ACE_COMPAT" to aceCompat.toString(),
+        "OUTPACE_COMPAT_ACESTREAM_SERVICES" to search.toString(),
     )
 
     companion object {
         const val DEFAULT_PORT = 6878
+
+        /** The first engine release with `GET /search`. */
+        const val SEARCH_MIN_VERSION = "1.0.0"
 
         fun validPort(p: Int) = p in 1024..65535
     }

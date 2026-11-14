@@ -1,25 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:orientation="vertical" android:padding="24dp">
-    <TextView android:id="@+id/status" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:textAppearance="@android:style/TextAppearance.DeviceDefault.Medium" />
-    <ProgressBar android:id="@+id/progress" style="@android:style/Widget.DeviceDefault.ProgressBar.Horizontal"
+    android:orientation="vertical" android:padding="24dp" android:background="@color/surface">
+    <TextView android:id="@+id/name" style="@style/Text.Headline" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:maxLines="2" android:ellipsize="end" />
+    <TextView android:id="@+id/ref" style="@style/Text.Mono" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_marginTop="2dp" />
+    <TextView android:id="@+id/status" style="@style/Text.Body" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_marginTop="16dp" />
+    <ProgressBar android:id="@+id/progress" style="@android:style/Widget.Material.ProgressBar.Horizontal"
         android:layout_width="match_parent" android:layout_height="wrap_content" android:indeterminate="true"
-        android:layout_marginTop="12dp" />
-    <TextView android:id="@+id/url" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_marginTop="8dp" android:textIsSelectable="true" />
+        android:layout_marginTop="8dp" />
+    <TextView android:id="@+id/url" style="@style/Text.Mono" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_marginTop="8dp" android:textIsSelectable="true" />
     <LinearLayout android:id="@+id/actions" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:layout_marginTop="12dp" android:visibility="gone">
-        <Button android:id="@+id/open" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="@string/play_open_player" />
+        android:orientation="vertical" android:layout_marginTop="16dp" android:visibility="gone">
+        <Button android:id="@+id/open" style="@style/Button.Primary" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="@string/play_open_player" />
         <Button android:id="@+id/open_hls" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="@string/play_open_hls" />
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            android:layout_marginTop="8dp" android:text="@string/play_open_hls" />
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginTop="8dp">
             <Button android:id="@+id/copy" android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:text="@string/play_copy" />
             <Button android:id="@+id/share" android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:text="@string/play_share" />
+                android:layout_weight="1" android:layout_marginStart="8dp" android:text="@string/play_share" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

@@ -35,6 +35,7 @@
 
         <activity
             android:name=".ui.MainActivity"
+            android:theme="@style/AppTheme.Main"
             android:exported="true"
             android:launchMode="singleTask">
             <intent-filter>
@@ -62,8 +63,15 @@
             </intent-filter>
         </activity>
 
+        <!-- In-app entry to PlayActivity. Not exported, so only this app can pass a typed stream
+             (an infohash from search, or a name) through it; the exported PlayActivity reads content
+             ids from links and shared text only. -->
+        <activity-alias
+            android:name=".ui.InAppPlayActivity"
+            android:exported="false"
+            android:targetActivity=".ui.PlayActivity" />
+
         <activity android:name=".ui.VersionsActivity" android:exported="false" />
-        <activity android:name=".ui.SettingsActivity" android:exported="false" />
         <activity android:name=".ui.LogsActivity" android:exported="false" />
 
         <service

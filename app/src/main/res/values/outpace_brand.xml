@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- GENERATED FILE: edit logo/outpace-logo.svg, then run tools/build-android-icons.py. -->
+<resources>
+    <color name="logo_bg">#FF0A0A0A</color>
+</resources>

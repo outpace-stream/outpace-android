@@ -14,18 +14,28 @@ import io.github.jamezrin.outpace.EngineFiles
 import io.github.jamezrin.outpace.Prefs
 import io.github.jamezrin.outpace.R
 import io.github.jamezrin.outpace.core.ContentId
+import io.github.jamezrin.outpace.core.RecentEntry
+import io.github.jamezrin.outpace.core.StreamRef
 import io.github.jamezrin.outpace.core.StreamUrls
 import io.github.jamezrin.outpace.engine.EngineController
 import io.github.jamezrin.outpace.engine.EngineService
 import io.github.jamezrin.outpace.engine.EngineState
 
-/** Turns a link, shared text or pasted id into a hand-off to an external player. */
+/**
+ * Turns a link, shared text, pasted id or an in-app stream (search result, recent, active) into a
+ * hand-off to an external player. Links and shared text are only read for content ids. The app's
+ * own screens open it through the non-exported [IN_APP_ALIAS] and pass an explicit [EXTRA_REF],
+ * which may be an infohash from search; those extras are ignored on any other entry.
+ */
 class PlayActivity : Activity() {
     private lateinit var status: TextView
+    private lateinit var nameView: TextView
+    private lateinit var refView: TextView
     private lateinit var progress: ProgressBar
     private lateinit var urlView: TextView
     private lateinit var actions: View
-    private var id: String? = null
+    private var ref: StreamRef? = null
+    private var name: String? = null
     private var launched = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +46,8 @@ class PlayActivity : Activity() {
         progress = findViewById(R.id.progress)
         urlView = findViewById(R.id.url)
         actions = findViewById(R.id.actions)
+        nameView = findViewById(R.id.name)
+        refView = findViewById(R.id.ref)
         launched = savedInstanceState?.getBoolean("launched") ?: false
 
         findViewById<Button>(R.id.open).setOnClickListener { openPlayer(hls = false) }
@@ -43,8 +55,16 @@ class PlayActivity : Activity() {
         findViewById<Button>(R.id.copy).setOnClickListener { copyUrl() }
         findViewById<Button>(R.id.share).setOnClickListener { shareUrl() }
 
+        nameView.visibility = View.GONE
+        // Only trust typed extras when launched through the alias other apps cannot start.
+        val inApp = intent.component?.className == IN_APP_ALIAS
+        val explicit = if (inApp) intent.getStringExtra(EXTRA_REF)?.let(StreamRef::parse) else null
+        if (explicit != null) {
+            prepare(explicit, intent.getStringExtra(EXTRA_NAME))
+            return
+        }
         when (val r = ContentId.extract(inputText())) {
-            is ContentId.Result.Id -> prepare(r.hex)
+            is ContentId.Result.Id -> prepare(StreamRef.contentId(r.hex), null)
             ContentId.Result.Infohash -> fail(getString(R.string.play_infohash))
             ContentId.Result.None -> fail(getString(R.string.play_no_id))
         }
@@ -66,9 +86,12 @@ class PlayActivity : Activity() {
         status.text = message
     }
 
-    private fun prepare(hex: String) {
-        id = hex
-        Prefs(this).addRecent(hex)
+    private fun prepare(target: StreamRef, label: String?) {
+        ref = target
+        name = label ?: activeTitle()
+        name?.let { nameView.text = it; nameView.visibility = View.VISIBLE }
+        refView.text = getString(R.string.play_ref, kindLabel(target), target.hex)
+        Prefs(this).addRecent(RecentEntry(target, name))
         if (EngineFiles.activeVersion(this) == null) {
             fail(getString(R.string.no_engine_installed))
             return
@@ -102,24 +125,26 @@ class PlayActivity : Activity() {
 
     private fun port() = settings().port
 
+    private fun activeTitle(): String? = ref?.let { r -> EngineController.streams.firstOrNull { it.id == r.selector }?.title }
+
     private fun localUrl(hls: Boolean): String {
-        val hex = id ?: return ""
-        return if (hls) StreamUrls.hls(StreamUrls.LOOPBACK, port(), hex) else StreamUrls.live(StreamUrls.LOOPBACK, port(), hex)
+        val r = ref ?: return ""
+        return if (hls) StreamUrls.hls(StreamUrls.LOOPBACK, port(), r) else StreamUrls.live(StreamUrls.LOOPBACK, port(), r)
     }
 
     /** For other devices: the LAN address when LAN access is on, else loopback with a hint. */
     private fun shareableUrl(): String {
-        val hex = id ?: return ""
+        val r = ref ?: return ""
         val settings = settings()
         val host = if (settings.lan) Device.lanAddress() else null
         if (host == null) toast(getString(R.string.play_lan_hint))
-        return StreamUrls.live(host ?: StreamUrls.LOOPBACK, settings.port, hex)
+        return StreamUrls.live(host ?: StreamUrls.LOOPBACK, settings.port, r)
     }
 
     private fun openPlayer(hls: Boolean) {
         val type = if (hls) "application/vnd.apple.mpegurl" else "video/mp2t"
         val view = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(localUrl(hls)), type)
-        val title = EngineController.streams.firstOrNull { it.contentId == id }?.title
+        val title = name ?: activeTitle()
         if (title != null) view.putExtra("title", title)
         if (packageManager.queryIntentActivities(view, 0).isEmpty()) {
             toast(getString(R.string.play_no_player))
@@ -148,5 +173,12 @@ class PlayActivity : Activity() {
 
     companion object {
         const val EXTRA_TEXT = "io.github.jamezrin.outpace.TEXT"
+
+        /** The non-exported alias the app's own screens use; see the manifest. */
+        const val IN_APP_ALIAS = "io.github.jamezrin.outpace.ui.InAppPlayActivity"
+
+        /** A prefixed selector (`cid:` or `ih:`), honoured only through [IN_APP_ALIAS]. */
+        const val EXTRA_REF = "io.github.jamezrin.outpace.REF"
+        const val EXTRA_NAME = "io.github.jamezrin.outpace.NAME"
     }
 }
