@@ -51,4 +51,42 @@ class PresetsTest {
         for (p in StartupBuffer.entries) assertEquals(p, StartupBuffer.fromKey(p.key))
         for (p in HlsStart.entries) assertEquals(p, HlsStart.fromKey(p.key))
     }
+
+    @Test fun lowMemoryEmitsDiskCacheAndSmallerBuffers() {
+        val env = EngineSettings(lowMemory = true).env("/d", "/c")
+        assertEquals("disk", env["OUTPACE_CACHE_TYPE"])
+        assertEquals("33554432", env["OUTPACE_SEED_STORE_BYTES"])
+        assertEquals("33554432", env["OUTPACE_PREBUFFER_BYTES"])
+        assertEquals("64", env["OUTPACE_SESSION_BUFFER"])
+        assertEquals("/c", env["OUTPACE_CACHE_DIR"])
+    }
+
+    @Test fun uploadLimitValues() {
+        assertTrue(UploadLimit.NORMAL.env.isEmpty())
+        val low = EngineSettings(uploadLimit = UploadLimit.LOW).env("/d", "/c")
+        assertEquals("16", low["OUTPACE_MAX_INBOUND"])
+        assertEquals("4", low["OUTPACE_MAX_INBOUND_PER_STREAM"])
+        assertEquals("2", low["OUTPACE_MAX_UNCHOKED"])
+        assertEquals("0", UploadLimit.MINIMAL.env["OUTPACE_MAX_UNCHOKED"])
+        for (p in UploadLimit.entries) {
+            val total = p.env["OUTPACE_MAX_INBOUND"]?.toInt() ?: 64
+            val perStream = p.env["OUTPACE_MAX_INBOUND_PER_STREAM"]?.toInt() ?: 16
+            assertTrue(p.key, perStream in 1..total)
+        }
+        assertEquals(listOf("normal", "low", "minimal"), UploadLimit.entries.map { it.key })
+        assertEquals(UploadLimit.NORMAL, UploadLimit.fromKey("bogus"))
+    }
+
+    @Test fun peerPortOnlyWhenChanged() {
+        assertFalse(base.containsKey("OUTPACE_PEER_LISTEN"))
+        assertEquals("0.0.0.0:9000", EngineSettings(peerPort = 9000).env("/d", "/c")["OUTPACE_PEER_LISTEN"])
+    }
+
+    @Test fun portsMustNotCollide() {
+        assertTrue(EngineSettings.validPorts(EngineSettings.DEFAULT_PORT, EngineSettings.DEFAULT_PEER_PORT))
+        assertFalse(EngineSettings.validPorts(7000, 7000))
+        assertFalse(EngineSettings.validPorts(1935, 8621))
+        assertFalse(EngineSettings.validPorts(6878, 1935))
+        assertFalse(EngineSettings.validPorts(6878, 80))
+    }
 }

@@ -17,6 +17,7 @@ import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.HlsStart
 import io.github.outpacestream.android.core.Releases
 import io.github.outpacestream.android.core.StartupBuffer
+import io.github.outpacestream.android.core.UploadLimit
 import io.github.outpacestream.android.engine.EngineController
 import io.github.outpacestream.android.engine.EngineState
 import java.util.Locale
@@ -38,6 +39,7 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
     private val choices = ArrayList<Choice>()
     private lateinit var batteryRow: View
     private lateinit var searchRow: View
+    private val peerPort: EditText
 
     init {
         val search = find<LinearLayout>(R.id.group_search)
@@ -65,21 +67,37 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         engineToggle(playback, R.string.settings_catalog_fallback, R.string.settings_catalog_fallback_summary, { it.catalogFallback }) { s, v ->
             s.copy(catalogFallback = v)
         }
+        engineToggle(playback, R.string.settings_low_memory, R.string.settings_low_memory_summary, { it.lowMemory }) { s, v ->
+            s.copy(lowMemory = v)
+        }
         // LAN access goes above the port, which is already in the layout.
         engineToggle(network, R.string.settings_lan, R.string.settings_lan_warning, { it.lan }, index = 0) { s, v -> s.copy(lan = v) }
         engineToggle(peers, R.string.settings_seeding, R.string.settings_seeding_summary, { it.seeding }) { s, v -> s.copy(seeding = v) }
+        engineChoice(
+            peers, R.string.settings_upload_limit, R.string.settings_upload_limit_summary,
+            listOf(
+                UploadLimit.NORMAL to R.string.settings_upload_limit_normal,
+                UploadLimit.LOW to R.string.settings_upload_limit_low,
+                UploadLimit.MINIMAL to R.string.settings_upload_limit_minimal,
+            ),
+            { it.uploadLimit },
+        ) { s, v -> s.copy(uploadLimit = v) }
         engineToggle(peers, R.string.settings_inbound, R.string.settings_inbound_summary, { it.inbound }) { s, v -> s.copy(inbound = v) }
         engineToggle(peers, R.string.settings_port_mapping, R.string.settings_port_mapping_summary, { it.portMapping }) { s, v -> s.copy(portMapping = v) }
+        peerPort = LayoutInflater.from(host).inflate(R.layout.item_setting_number, peers, false).let { row ->
+            row.findViewById<TextView>(R.id.title).setText(R.string.settings_peer_port)
+            row.findViewById<TextView>(R.id.summary).setText(R.string.settings_peer_port_summary)
+            peers.addView(row)
+            row.findViewById(R.id.number)
+        }
         engineToggle(peers, R.string.settings_ace_compat, R.string.settings_ace_compat_summary, { it.aceCompat }) { s, v -> s.copy(aceCompat = v) }
         toggle(background, R.string.settings_boot, R.string.settings_boot_summary, { prefs.startOnBoot }) { prefs.startOnBoot = it }
         toggle(background, R.string.settings_idle, R.string.settings_idle_summary, { prefs.idleStop }) { prefs.idleStop = it }
         batteryRow = row(background, R.string.settings_battery, R.string.settings_battery_summary)
         batteryRow.setOnClickListener { BatteryPrompt.request(host) }
 
-        port.setOnEditorActionListener { _, action, _ ->
-            if (action == EditorInfo.IME_ACTION_DONE) { savePort(); port.hideKeyboard(); true } else false
-        }
-        port.setOnFocusChangeListener { _, focused -> if (!focused) savePort() }
+        portField(port, { it.port }) { s, v -> s.copy(port = v) }
+        portField(peerPort, { it.peerPort }) { s, v -> s.copy(peerPort = v) }
         find<Button>(R.id.restart).setOnClickListener { EngineController.restart(host) }
         find<TextView>(R.id.about).text = host.getString(R.string.settings_about, BuildConfig.VERSION_NAME, Releases.REPO)
     }
@@ -164,6 +182,8 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         for (c in choices) c.refresh()
         port.setText(String.format(Locale.ROOT, "%d", prefs.settings.port))
         port.error = null
+        peerPort.setText(String.format(Locale.ROOT, "%d", prefs.settings.peerPort))
+        peerPort.error = null
     }
 
     override fun render() {
@@ -173,15 +193,27 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         batteryRow.visibility = if (BatteryPrompt.isExempt(host)) View.GONE else View.VISIBLE
     }
 
-    private fun savePort() {
-        val value = port.text.toString().toIntOrNull()
+    private fun portField(field: EditText, get: (EngineSettings) -> Int, set: (EngineSettings, Int) -> EngineSettings) {
+        field.setOnEditorActionListener { _, action, _ ->
+            if (action == EditorInfo.IME_ACTION_DONE) { savePort(field, get, set); field.hideKeyboard(); true } else false
+        }
+        field.setOnFocusChangeListener { _, focused -> if (!focused) savePort(field, get, set) }
+    }
+
+    private fun savePort(field: EditText, get: (EngineSettings) -> Int, set: (EngineSettings, Int) -> EngineSettings) {
+        val value = field.text.toString().toIntOrNull()
         if (value == null || !EngineSettings.validPort(value)) {
-            port.error = host.getString(R.string.settings_port_invalid)
+            field.error = host.getString(R.string.settings_port_invalid)
             return
         }
-        port.error = null
-        if (value != prefs.settings.port) {
-            prefs.settings = prefs.settings.copy(port = value)
+        val next = set(prefs.settings, value)
+        if (!EngineSettings.validPorts(next.port, next.peerPort)) {
+            field.error = host.getString(R.string.settings_port_conflict)
+            return
+        }
+        field.error = null
+        if (value != get(prefs.settings)) {
+            prefs.settings = next
             render()
         }
     }

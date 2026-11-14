@@ -36,3 +36,37 @@ enum class HlsStart(override val key: String, override val env: Map<String, Stri
         fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: DEFAULT
     }
 }
+
+/** How many peers may download from this device. Seeding off overrides all of these. */
+enum class UploadLimit(override val key: String, override val env: Map<String, String>) : EnginePreset {
+    NORMAL("normal", emptyMap()),
+    LOW(
+        "low",
+        mapOf("OUTPACE_MAX_INBOUND" to "16", "OUTPACE_MAX_INBOUND_PER_STREAM" to "4", "OUTPACE_MAX_UNCHOKED" to "2"),
+    ),
+    /** `0` unchoked still leaves the engine's single rotating optimistic slot. */
+    MINIMAL(
+        "minimal",
+        mapOf("OUTPACE_MAX_INBOUND" to "4", "OUTPACE_MAX_INBOUND_PER_STREAM" to "2", "OUTPACE_MAX_UNCHOKED" to "0"),
+    ),
+    ;
+
+    companion object {
+        fun fromKey(key: String?) = entries.firstOrNull { it.key == key } ?: NORMAL
+    }
+}
+
+/**
+ * Low-memory mode: seeding pieces go to the app's cache directory instead of RAM, and the
+ * per-stream startup queue, seed store and per-viewer queue shrink from 128 MiB, 128 MiB and 256.
+ */
+object LowMemory {
+    const val BYTES = 32L * 1024 * 1024
+
+    val env: Map<String, String> = mapOf(
+        "OUTPACE_CACHE_TYPE" to "disk",
+        "OUTPACE_SEED_STORE_BYTES" to BYTES.toString(),
+        "OUTPACE_PREBUFFER_BYTES" to BYTES.toString(),
+        "OUTPACE_SESSION_BUFFER" to "64",
+    )
+}
