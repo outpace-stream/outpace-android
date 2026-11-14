@@ -75,6 +75,7 @@
 
         <activity android:name=".ui.VersionsActivity" android:exported="false" />
         <activity android:name=".ui.LogsActivity" android:exported="false" />
+        <activity android:name=".ui.LicensesActivity" android:exported="false" />
 
         <service
             android:name=".engine.EngineService"

@@ -96,6 +96,12 @@ the engine's name and version, and the address players use. It has one button:
 Below it, Home lists what is playing now and what you played recently. Versions, logs, restarts
 and engine settings live in the [Engines](#engines) tab.
 
+**Settings > About** shows the app version and where app and engine releases come from.
+**Open-source licenses** lists the app, the engine it downloads, and the components the app
+includes, with each one's copyright, license and source; select one to read its full license.
+The app is under the GNU AGPL v3.0, the Kotlin standard library and Material Design icons under
+the Apache License 2.0.
+
 ## Engines
 
 The **Engines** tab lists every engine the app can use in one list: each engine version downloaded
