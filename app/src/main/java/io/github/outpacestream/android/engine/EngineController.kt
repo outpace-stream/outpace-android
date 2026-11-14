@@ -101,8 +101,35 @@ object EngineController {
         watchStartHook?.invoke(ref)
     }
 
-    internal fun publishStartProgress(progress: StartProgress?) {
+    /** The service instance allowed to publish [startProgress]; null once it is destroyed. */
+    private var startOwner: Any? = null
+
+    /** Makes [owner] (a newly created service) the only publisher of [startProgress]. */
+    @Synchronized
+    internal fun claimStartProgress(owner: Any) {
+        startOwner = owner
+    }
+
+    /**
+     * Publishes [progress] unless [owner] no longer owns it, so a watch tick still in flight when
+     * its service is destroyed cannot republish after [releaseStartProgress]. [then] (a
+     * notification update, never network work) runs under the same lock, so it cannot repost the
+     * notification after the release either.
+     */
+    @Synchronized
+    internal fun publishStartProgress(owner: Any, progress: StartProgress?, then: (() -> Unit)? = null) {
+        if (owner !== startOwner) return
         startProgress = progress
+        notifyListeners()
+        then?.invoke()
+    }
+
+    /** Clears [startProgress] and stops [owner] publishing it; for the service's onDestroy. */
+    @Synchronized
+    internal fun releaseStartProgress(owner: Any) {
+        if (owner !== startOwner) return
+        startOwner = null
+        startProgress = null
         notifyListeners()
     }
 

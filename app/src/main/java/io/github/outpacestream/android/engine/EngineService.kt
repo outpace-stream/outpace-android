@@ -74,6 +74,7 @@ class EngineService : Service() {
     override fun onCreate() {
         super.onCreate()
         EngineController.pollNow = { worker.execute { schedulePoll(0) } }
+        EngineController.claimStartProgress(this)
         EngineController.watchStartHook = { ref -> worker.execute { watchStart(ref) } }
     }
 
@@ -109,8 +110,8 @@ class EngineService : Service() {
         EngineController.pollNow = null
         EngineController.watchStartHook = null
         worker.shutdownNow()
-        // After the worker stops taking work, so no queued watch tick republishes progress.
-        EngineController.publishStartProgress(null)
+        // shutdownNow does not wait for a tick in flight; releasing ownership stops it publishing.
+        EngineController.releaseStartProgress(this)
         process?.let { terminate(it) }
         process = null
         releaseWakeLock()
@@ -388,8 +389,7 @@ class EngineService : Service() {
         if (remote == null && EngineController.sessionState != EngineState.Running) return
         val w = StartWatch(SystemClock.elapsedRealtime())
         watch = w
-        EngineController.publishStartProgress(StartProgress(ref, StartView(StartMessage.Waiting), done = false))
-        updateNotification()
+        EngineController.publishStartProgress(this, StartProgress(ref, StartView(StartMessage.Waiting), done = false), ::updateNotification)
         scheduleWatch(w, ref, 0)
     }
 
@@ -422,21 +422,19 @@ class EngineService : Service() {
         val before = EngineController.startProgress
         val now = StartProgress(ref, step.view, step.done)
         if (before == now) return
-        EngineController.publishStartProgress(now)
-        if (before?.view != now.view) updateNotification()
+        EngineController.publishStartProgress(this, now, if (before?.view != now.view) ::updateNotification else null)
     }
 
     private fun clearStartProgress() {
         if (EngineController.startProgress == null) return
-        EngineController.publishStartProgress(null)
-        updateNotification()
+        EngineController.publishStartProgress(this, null, ::updateNotification)
     }
 
     private fun endWatch() {
         watchTask?.cancel(false)
         watchTask = null
         watch = null
-        if (EngineController.startProgress != null) EngineController.publishStartProgress(null)
+        if (EngineController.startProgress != null) EngineController.publishStartProgress(this, null)
     }
 
     private fun terminate(proc: Process) {
