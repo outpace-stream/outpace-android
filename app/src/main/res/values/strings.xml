@@ -190,11 +190,11 @@
     <string name="settings_catalog_fallback_summary">If the catalog can\'t resolve a content id, ask peers for its details. Needed to play an Outpace broadcast started on another device.</string>
     <string name="settings_low_memory">Low-memory mode</string>
     <string name="settings_low_memory_summary">Keep seeding data in storage instead of memory and use smaller buffers. For devices with little RAM. A 32 MiB startup cap shortens the startup buffer on high-bitrate streams.</string>
-    <string name="settings_upload_limit">Upload limit</string>
-    <string name="settings_upload_limit_summary">%1$s. How many peers may download from this device at once. Lower it on mobile data.</string>
+    <string name="settings_upload_limit">Inbound upload limit</string>
+    <string name="settings_upload_limit_summary">%1$s. How many peers that connect to this device may download from it at once. Uploads to peers this device connected to are not limited; turn off Seeding to stop all uploads.</string>
     <string name="settings_upload_limit_normal">Normal (default)</string>
-    <string name="settings_upload_limit_low">Low (up to 3 uploads per stream)</string>
-    <string name="settings_upload_limit_minimal">Minimal (1 upload per stream)</string>
+    <string name="settings_upload_limit_low">Low (up to 3 inbound peers per stream)</string>
+    <string name="settings_upload_limit_minimal">Minimal (1 inbound peer per stream)</string>
     <string name="settings_peer_port">Peer port</string>
     <string name="settings_peer_port_summary">The TCP port other peers connect to and the router maps. Default 8621.</string>
     <string name="settings_port_conflict">The HTTP and peer ports must differ, and neither can be 1935.</string>

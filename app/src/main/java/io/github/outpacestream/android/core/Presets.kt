@@ -37,7 +37,10 @@ enum class HlsStart(override val key: String, override val env: Map<String, Stri
     }
 }
 
-/** How many peers may download from this device. Seeding off overrides all of these. */
+/**
+ * How many inbound peers may download from this device. Reciprocal uploads to peers this device
+ * connected to are not counted; seeding off stops every upload.
+ */
 enum class UploadLimit(override val key: String, override val env: Map<String, String>) : EnginePreset {
     NORMAL("normal", emptyMap()),
     LOW(
