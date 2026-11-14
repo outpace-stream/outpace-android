@@ -269,6 +269,9 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
         // the old one's page. The main thread drops this answer anyway.
         if (searchEngine() != engine) return changed
         val endpoint = EngineController.endpointFor(host) ?: return Outcome.Failed(host.getString(R.string.no_engine_selected))
+        // An address edit restarts the connection asynchronously; until it runs, the session still
+        // answers at the old address, which is not the engine these results would be filed under.
+        if (engine?.endpoint != null && endpoint != engine.endpoint) return changed
         return try {
             Outcome.Page(SearchJson.parse(Http.get(StreamUrls.search(endpoint, q, page, PAGE_SIZE), readTimeout = READ_TIMEOUT_MS)))
         } catch (e: HttpStatusException) {
