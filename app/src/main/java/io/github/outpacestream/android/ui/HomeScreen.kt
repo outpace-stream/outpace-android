@@ -12,15 +12,15 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.outpacestream.android.Device
-import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.ContentId
+import io.github.outpacestream.android.core.Endpoint
+import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.RecentEntry
-import io.github.outpacestream.android.core.Releases
 import io.github.outpacestream.android.core.StreamInfo
 import io.github.outpacestream.android.core.StreamRef
-import io.github.outpacestream.android.core.StreamUrls
 import io.github.outpacestream.android.engine.EngineController
+import io.github.outpacestream.android.engine.EngineSelection
 import io.github.outpacestream.android.engine.EngineState
 
 /** Engine status and controls, the id box, what is playing now and what played recently. */
@@ -30,8 +30,6 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
     private val detail = find<TextView>(R.id.state_detail)
     private val url = find<TextView>(R.id.url)
     private val startStop = find<Button>(R.id.start_stop)
-    private val update = find<Button>(R.id.update)
-    private val restartBanner = find<View>(R.id.restart_banner)
     private val idInput = find<EditText>(R.id.id_input)
     private val streamsTitle = find<View>(R.id.streams_title)
     private val streams = find<LinearLayout>(R.id.streams)
@@ -40,11 +38,7 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
     private val empty = find<View>(R.id.empty)
 
     init {
-        startStop.setOnClickListener { onStartStop() }
-        update.setOnClickListener { host.open(VersionsActivity::class.java) }
-        find<Button>(R.id.versions).setOnClickListener { host.open(VersionsActivity::class.java) }
-        find<Button>(R.id.logs).setOnClickListener { host.open(LogsActivity::class.java) }
-        find<Button>(R.id.restart).setOnClickListener { EngineController.restart(host) }
+        startStop.setOnClickListener { onAction() }
         find<Button>(R.id.play).setOnClickListener { playInput() }
         find<Button>(R.id.go_search).setOnClickListener { host.select(MainActivity.TAB_SEARCH, focus = true) }
         find<Button>(R.id.paste).apply {
@@ -64,13 +58,14 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
 
     override fun focusTarget(): View = startStop
 
-    private fun onStartStop() {
+    /** Configure with nothing selected; otherwise start or stop the engine, or connect or disconnect. */
+    private fun onAction() {
         val s = EngineController.state
         when {
-            EngineFiles.activeVersion(host) == null -> host.open(VersionsActivity::class.java)
-            s == EngineState.Running || s == EngineState.Starting -> EngineController.stop(host)
+            EngineSelection.current(host) == null -> host.select(MainActivity.TAB_ENGINES, focus = true)
             s == EngineState.Stopping -> Unit
-            else -> host.startEngine()
+            s == EngineState.Stopped || s is EngineState.Crashed -> host.startEngine()
+            else -> EngineController.stop(host)
         }
     }
 
@@ -97,56 +92,69 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
 
     private fun renderEngine() {
         val s = EngineController.state
-        val active = EngineFiles.activeVersion(host)
-        val shown = EngineController.runningVersion ?: active
-        state.text = when (s) {
-            EngineState.Stopped -> host.getString(if (active == null) R.string.engine_none else R.string.state_stopped)
-            EngineState.Starting -> host.getString(R.string.state_starting)
-            EngineState.Running -> host.getString(R.string.state_running)
-            EngineState.Stopping -> host.getString(R.string.state_stopping)
-            is EngineState.Crashed -> host.getString(R.string.state_error)
-        }
-        val color = when (s) {
-            EngineState.Running -> R.color.ok
-            EngineState.Starting, EngineState.Stopping -> R.color.warn
-            is EngineState.Crashed -> R.color.err
-            EngineState.Stopped -> R.color.text_muted
+        val choice = EngineSelection.current(host)
+        val remote = if (choice is EngineChoice.Remote) EngineSelection.remote(host) else null
+        val active = s != EngineState.Stopped && s !is EngineState.Crashed
+        state.text = host.getString(
+            when {
+                choice == null -> R.string.home_none
+                remote != null -> when (s) {
+                    EngineState.Starting -> R.string.home_connecting
+                    EngineState.Running -> R.string.home_connected
+                    is EngineState.Unreachable -> R.string.home_unreachable
+                    else -> R.string.home_not_connected
+                }
+                else -> when (s) {
+                    EngineState.Starting -> R.string.state_starting
+                    EngineState.Running -> R.string.state_running
+                    EngineState.Stopping -> R.string.state_stopping
+                    is EngineState.Crashed, is EngineState.Unreachable -> R.string.state_error
+                    EngineState.Stopped -> R.string.state_stopped
+                }
+            },
+        )
+        val color = when {
+            choice == null -> R.color.text_muted
+            else -> when (s) {
+                EngineState.Running -> R.color.ok
+                EngineState.Starting, EngineState.Stopping -> R.color.warn
+                is EngineState.Crashed, is EngineState.Unreachable -> R.color.err
+                EngineState.Stopped -> R.color.text_muted
+            }
         }
         @Suppress("DEPRECATION") // Context.getColor needs API 23; colors here do not depend on the theme.
         dot.setColorFilter(host.resources.getColor(color))
         detail.text = when {
+            choice == null -> host.getString(R.string.home_none_detail)
             s is EngineState.Crashed -> s.reason
-            shown == null -> host.getString(R.string.engine_detail_none)
-            s == EngineState.Running -> host.getString(R.string.engine_detail_running, shown)
-            s == EngineState.Starting -> host.getString(R.string.engine_detail_starting, shown)
-            else -> host.getString(R.string.engine_detail_stopped, shown)
+            s is EngineState.Unreachable -> s.reason
+            remote != null -> host.getString(
+                R.string.engine_detail_named, remote.name,
+                if (s == EngineState.Running) EngineController.remoteVersion?.let { "v$it" } ?: remote.endpoint.display else remote.endpoint.display,
+            )
+            else -> host.getString(
+                R.string.engine_detail_named, host.getString(R.string.engine_local_name),
+                "v${EngineController.runningVersion ?: (choice as EngineChoice.Local).version}",
+            )
         }
-        val settings = EngineController.effectiveSettings(prefs.settings)
-        val urlHost = if (settings.lan) Device.lanAddress() ?: StreamUrls.LOOPBACK else StreamUrls.LOOPBACK
-        url.text = StreamUrls.base(urlHost, settings.port)
-        url.visibility = if (s == EngineState.Running) View.VISIBLE else View.GONE
-
-        val latest = prefs.latestVersion
-        if (latest != null && (shown == null || Releases.compareVersions(latest, shown) > 0)) {
-            update.visibility = View.VISIBLE
-            update.text = host.getString(R.string.engine_update_available, latest)
-        } else {
-            update.visibility = View.GONE
+        url.text = when {
+            remote != null -> remote.endpoint.base
+            else -> {
+                val settings = EngineController.effectiveSettings(prefs.settings)
+                val urlHost = if (settings.lan) Device.lanAddress() ?: Endpoint.LOOPBACK_HOST else Endpoint.LOOPBACK_HOST
+                Endpoint(urlHost, settings.port).base
+            }
         }
+        url.visibility = if (choice != null && s == EngineState.Running) View.VISIBLE else View.GONE
         startStop.text = host.getString(
             when {
-                active == null -> R.string.action_download_engine
-                s == EngineState.Running || s == EngineState.Starting || s == EngineState.Stopping -> R.string.action_stop
+                choice == null -> R.string.action_configure
+                remote != null -> if (active) R.string.action_disconnect else R.string.action_connect
+                active -> R.string.action_stop
                 else -> R.string.action_start
             },
         )
         startStop.isEnabled = s != EngineState.Stopping
-        restartBanner.visibility = if (needsRestart()) View.VISIBLE else View.GONE
-    }
-
-    private fun needsRestart(): Boolean {
-        val running = EngineController.runningSettings ?: return false
-        return EngineController.state == EngineState.Running && running != prefs.settings
     }
 
     private fun renderStreams() {

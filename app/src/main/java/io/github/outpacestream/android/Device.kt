@@ -47,11 +47,4 @@ object EngineFiles {
     fun cacheDir(context: Context) = File(context.cacheDir, "engine")
 
     fun downloadDir(context: Context) = File(context.cacheDir, "downloads")
-
-    /** The version to run: the chosen one if still installed, else the newest installed. */
-    fun activeVersion(context: Context): String? {
-        val store = store(context)
-        val chosen = Prefs(context).activeVersion
-        return chosen?.takeIf(store::isInstalled) ?: store.installed().firstOrNull()
-    }
 }

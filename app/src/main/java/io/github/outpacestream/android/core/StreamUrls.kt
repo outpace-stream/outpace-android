@@ -2,26 +2,25 @@ package io.github.outpacestream.android.core
 
 import java.net.URLEncoder
 
-/** URLs a player uses to reach a stream on the local engine. */
+/** URLs that reach an engine's HTTP API, on this device or on another one. */
 object StreamUrls {
-    const val LOOPBACK = "127.0.0.1"
+    fun live(e: Endpoint, ref: StreamRef): String = "${e.base}/streams/ace/${ref.selector}"
 
-    fun base(host: String, port: Int): String = "http://$host:$port"
+    fun hls(e: Endpoint, ref: StreamRef): String = live(e, ref) + ".m3u8"
 
-    fun live(host: String, port: Int, ref: StreamRef): String = "${base(host, port)}/streams/ace/${ref.selector}"
+    fun health(e: Endpoint): String = "${e.base}/healthz"
 
-    fun hls(host: String, port: Int, ref: StreamRef): String = live(host, port, ref) + ".m3u8"
-
-    fun health(port: Int): String = "${base(LOOPBACK, port)}/healthz"
-
-    fun streams(port: Int): String = "${base(LOOPBACK, port)}/streams"
+    fun streams(e: Endpoint): String = "${e.base}/streams"
 
     /** One stream's `/status`; `id` is the engine's prefixed id as `/streams` lists it. */
-    fun status(port: Int, network: String, id: String): String = "${streams(port)}/${segment(network)}/${segment(id)}/status"
+    fun status(e: Endpoint, network: String, id: String): String = "${streams(e)}/${segment(network)}/${segment(id)}/status"
 
     /** The engine's opt-in stream-name search, `GET /search`. */
-    fun search(port: Int, query: String, page: Int, pageSize: Int): String =
-        "${base(LOOPBACK, port)}/search?query=${segment(query)}&page=$page&page_size=$pageSize"
+    fun search(e: Endpoint, query: String, page: Int, pageSize: Int): String =
+        "${e.base}/search?query=${segment(query)}&page=$page&page_size=$pageSize"
+
+    /** The compat `get_version` call; only engines with the AceStream compat API answer it. */
+    fun version(e: Endpoint): String = "${e.base}/server/api?method=get_version"
 
     private fun segment(s: String): String = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
 }

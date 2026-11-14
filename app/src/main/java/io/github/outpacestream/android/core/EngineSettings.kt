@@ -19,7 +19,7 @@ data class EngineSettings(
     val peerPort: Int = DEFAULT_PEER_PORT,
 ) {
     fun env(dataDir: String, cacheDir: String): Map<String, String> = linkedMapOf<String, String>(
-        "OUTPACE_BIND" to "${if (lan) "0.0.0.0" else StreamUrls.LOOPBACK}:$port",
+        "OUTPACE_BIND" to "${if (lan) "0.0.0.0" else Endpoint.LOOPBACK_HOST}:$port",
         "OUTPACE_DATA_DIR" to dataDir,
         "OUTPACE_CACHE_DIR" to cacheDir,
         "OUTPACE_ENABLE_SEEDING" to seeding.toString(),

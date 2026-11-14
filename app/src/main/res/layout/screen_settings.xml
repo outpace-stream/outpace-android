@@ -8,55 +8,7 @@
         <TextView style="@style/Text.Title" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="@string/settings_title" />
         <TextView style="@style/Text.Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="4dp" android:text="@string/settings_autosave" />
-
-        <LinearLayout android:id="@+id/restart_banner" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_marginTop="16dp" android:background="@drawable/bg_notice"
-            android:orientation="horizontal" android:gravity="center_vertical" android:padding="14dp"
-            android:baselineAligned="false" android:visibility="gone">
-            <TextView style="@style/Text.Body" android:layout_width="0dp" android:layout_height="wrap_content"
-                android:layout_weight="1" android:text="@string/restart_banner" />
-            <Button android:id="@+id/restart" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginStart="12dp" android:text="@string/action_restart_short" />
-        </LinearLayout>
-
-        <TextView style="@style/Section" android:text="@string/settings_section_search" />
-        <LinearLayout android:id="@+id/group_search" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
-            android:showDividers="middle" android:divider="@drawable/divider_inset" />
-
-        <TextView style="@style/Section" android:text="@string/settings_section_playback" />
-        <LinearLayout android:id="@+id/group_playback" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
-            android:showDividers="middle" android:divider="@drawable/divider_inset" />
-
-        <TextView style="@style/Section" android:text="@string/settings_section_network" />
-        <LinearLayout android:id="@+id/group_network" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
-            android:showDividers="middle" android:divider="@drawable/divider_inset">
-            <!-- The port row: the field takes focus, so the row itself does not. -->
-            <LinearLayout android:id="@+id/port_row" android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:minHeight="64dp" android:orientation="horizontal" android:gravity="center_vertical"
-                android:baselineAligned="false" android:paddingStart="16dp" android:paddingEnd="16dp"
-                android:paddingTop="12dp" android:paddingBottom="12dp">
-                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                    android:orientation="vertical">
-                    <TextView style="@style/Text.Body" android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:labelFor="@id/port" android:text="@string/settings_port" />
-                    <TextView style="@style/Text.Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp" android:text="@string/settings_port_summary" />
-                </LinearLayout>
-                <EditText android:id="@+id/port" android:layout_width="96dp" android:layout_height="wrap_content"
-                    android:layout_marginStart="16dp" android:minHeight="44dp" android:paddingStart="8dp"
-                    android:paddingEnd="8dp" android:gravity="center" android:inputType="number" android:maxLength="5"
-                    android:imeOptions="actionDone" android:importantForAutofill="no" android:fontFamily="monospace" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <TextView style="@style/Section" android:text="@string/settings_section_peers" />
-        <LinearLayout android:id="@+id/group_peers" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
-            android:showDividers="middle" android:divider="@drawable/divider_inset" />
+            android:layout_marginTop="4dp" android:text="@string/settings_autosave_app" />
 
         <TextView style="@style/Section" android:text="@string/settings_section_background" />
         <LinearLayout android:id="@+id/group_background" android:layout_width="match_parent" android:layout_height="wrap_content"
