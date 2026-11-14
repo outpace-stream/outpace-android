@@ -86,11 +86,12 @@ class PlayActivity : Activity() {
 
     /** Once handed off, the progress or failure of this stream's start, as the service follows it. */
     private fun showStart() {
+        if (actions.visibility != View.VISIBLE) return
         val p = EngineController.startProgress
-        if (actions.visibility != View.VISIBLE || p == null || p.ref != ref) return
-        val view = p.view
+        // No watch, or one for another stream (a newer hand-off, or the engine stopped): back to ready.
+        val view = p?.takeIf { it.ref == ref }?.view
         status.text = if (view == null) getString(R.string.play_ready) else startText(view)
-        progress.visibility = if (view != null && !p.done && !view.message.failure) View.VISIBLE else View.GONE
+        progress.visibility = if (view != null && p?.done == false && !view.message.failure) View.VISIBLE else View.GONE
     }
 
     override fun onSaveInstanceState(outState: Bundle) {

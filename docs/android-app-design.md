@@ -259,7 +259,10 @@ its notification: the engine's `phase` (`resolving`, `connecting` with the peer 
 `buffering`) while starting, and a localized message per `error.code` on `failed` (the engine's
 own message is shown only as detail for `unresolvable` and `protected`). Polling stops at
 `playing`, `failed`, a `404` after the stream was seen, 30 s without the stream appearing, or 90 s
-overall; a newer hand-off replaces it. A failure stays in the notification for 60 s.
+overall; a newer hand-off replaces it. A failure stays in the notification for 60 s. The engine
+keeps a failure on `/status` for 60 s, so a `failed` answer before anything else may belong to an
+earlier attempt: it ends the watch only once it changes, or is still there after 30 s, by which
+time the player's new request would have replaced it. Deadlines use `SystemClock.elapsedRealtime()`.
 
 Engines without `phase` get a fallback: when `peers` stays `0` for 20 s, "No peers yet. This
 stream may be offline." The decision logic is `core/StartStatus.kt` (`StartWatch`), covered by

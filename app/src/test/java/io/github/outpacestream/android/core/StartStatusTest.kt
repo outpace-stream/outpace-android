@@ -65,14 +65,17 @@ class StartStatusTest {
         assertEquals(StartStep(null, true), w.status(modern("playing", 5), 4_000))
     }
 
+    /** A watch that has already seen this hand-off's attempt begin. */
+    private fun started() = StartWatch(0).also { it.status(modern("resolving"), 500) }
+
     @Test fun failureStopsWithTheCodeMessage() {
-        val step = StartWatch(0).status(modern("failed", error = """{"code":"network","message":"x"}"""), 1_000)
+        val step = started().status(modern("failed", error = """{"code":"network","message":"x"}"""), 1_000)
         assertTrue(step.done)
         assertEquals(StartView(StartMessage.Network), step.view)
     }
 
     @Test fun unresolvableKeepsTheEngineDetail() {
-        val step = StartWatch(0).status(modern("failed", error = """{"code":"unresolvable","message":"local_descriptor_is_not_live"}"""), 1_000)
+        val step = started().status(modern("failed", error = """{"code":"unresolvable","message":"local_descriptor_is_not_live"}"""), 1_000)
         assertEquals(StartView(StartMessage.Unresolvable, detail = "local_descriptor_is_not_live"), step.view)
     }
 
@@ -129,5 +132,52 @@ class StartStatusTest {
         val w = StartWatch(0)
         w.status(modern("resolving"), 1_000)
         assertEquals(StartView(StartMessage.Resolving), w.status(modern("warming"), 2_000).view)
+    }
+
+    private val noPeers = """{"code":"no_peers","message":"no peer is sharing this stream"}"""
+
+    @Test fun retainedFailureOnTheFirstPollIsNotThisAttempts() {
+        val w = StartWatch(0)
+        // The previous attempt's failure, still retained when the retry is handed off.
+        assertEquals(StartStep(StartView(StartMessage.Waiting), false), w.status(modern("failed", error = noPeers), 0))
+        assertEquals(StartStep(StartView(StartMessage.Waiting), false), w.status(modern("failed", error = noPeers), 1_000))
+        // The player's request replaces it with a new attempt, which is then followed as usual.
+        assertEquals(StartStep(StartView(StartMessage.Resolving), false), w.status(modern("resolving"), 2_000))
+        assertEquals(StartStep(StartView(StartMessage.Buffering, 3), false), w.status(modern("buffering", 3), 3_000))
+        assertEquals(StartStep(null, true), w.status(modern("playing", 3), 4_000))
+    }
+
+    @Test fun failureAfterTheRetainedOneEndsTheWatch() {
+        val w = StartWatch(0)
+        assertFalse(w.status(modern("failed", error = noPeers), 0).done)
+        w.status(modern("resolving"), 1_000)
+        assertEquals(StartStep(StartView(StartMessage.NoPeers), true), w.status(modern("failed", error = noPeers), 2_000))
+    }
+
+    @Test fun failureAfterA404IsThisAttempts() {
+        val w = StartWatch(0)
+        w.notFound(0)
+        assertEquals(StartStep(StartView(StartMessage.NoPeers), true), w.status(modern("failed", error = noPeers), 1_000))
+    }
+
+    @Test fun aDifferentFailureIsThisAttempts() {
+        val w = StartWatch(0)
+        assertFalse(w.status(modern("failed", error = noPeers), 0).done)
+        val step = w.status(modern("failed", error = """{"code":"network","message":"x"}"""), 1_000)
+        assertEquals(StartStep(StartView(StartMessage.Network), true), step)
+    }
+
+    @Test fun anUnchangedFailureIsShownOnceANewAttemptWouldHaveReplacedIt() {
+        val w = StartWatch(0)
+        assertFalse(w.status(modern("failed", error = noPeers), 0).done)
+        assertFalse(w.status(modern("failed", error = noPeers), StartWatch.NO_SESSION_MS - 1).done)
+        assertEquals(StartStep(StartView(StartMessage.NoPeers), true), w.status(modern("failed", error = noPeers), StartWatch.NO_SESSION_MS))
+    }
+
+    @Test fun retainedFailureExpiringDoesNotEndTheWatch() {
+        val w = StartWatch(0)
+        w.status(modern("failed", error = noPeers), 0)
+        // The stale record ages out before the player opens the stream: still waiting, not "gone".
+        assertEquals(StartStep(StartView(StartMessage.Waiting), false), w.notFound(5_000))
     }
 }

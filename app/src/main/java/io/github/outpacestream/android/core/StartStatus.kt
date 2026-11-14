@@ -89,22 +89,51 @@ data class StartStep(val view: StartView?, val done: Boolean)
 
 /**
  * Follows one stream start from the hand-off to the player until it plays, fails or runs out of
- * time. Pure: the caller polls status about once a second and feeds each answer in with the time.
+ * time. Pure: the caller polls status about once a second and feeds each answer in with the time,
+ * from a monotonic clock (`SystemClock.elapsedRealtime()`), never the wall clock.
  */
 class StartWatch(private val startedAt: Long) {
     private var lastView: StartView? = StartView(StartMessage.Waiting)
     private var seen = false
     private var zeroPeersSince: Long? = null
 
+    /**
+     * True once the engine answered anything other than `failed` (a phase, or 404) during this
+     * watch. Before that, a `failed` answer may be the 60 s retained failure of an earlier attempt
+     * that the player's new request has not replaced yet.
+     */
+    private var sawNonFailure = false
+
+    /** The first `failed` answer seen before [sawNonFailure], while it may still be stale. */
+    private var firstFailure: Pair<String?, String?>? = null
+
     /** The answer was a status body. */
     fun status(s: StartStatus, now: Long): StartStep {
+        if (s.hasPhase && s.phase == StartPhase.Failed && !failureIsCurrent(s, now)) {
+            // Possibly an earlier attempt's retained failure: keep waiting for the new attempt.
+            if (firstFailure == null) firstFailure = s.errorCode to s.errorMessage
+            return keep(lastView, now)
+        }
         seen = true
+        if (!s.hasPhase || s.phase != StartPhase.Failed) sawNonFailure = true
         if (s.hasPhase) return modern(s, now)
         return legacy(s, now)
     }
 
+    /**
+     * A `failed` answer belongs to this hand-off when the engine reported something else first,
+     * when it differs from the failure seen at first, or when it outlasts [NO_SESSION_MS]: by then
+     * a new attempt would have replaced a stale record, so the same failure is this attempt's.
+     */
+    private fun failureIsCurrent(s: StartStatus, now: Long): Boolean {
+        if (sawNonFailure) return true
+        val first = firstFailure ?: return now - startedAt >= NO_SESSION_MS
+        return first != (s.errorCode to s.errorMessage) || now - startedAt >= NO_SESSION_MS
+    }
+
     /** The engine answered 404: no session and, on newer engines, no recent attempt. */
     fun notFound(now: Long): StartStep {
+        sawNonFailure = true
         // A start that was running and is gone again ended without a recorded failure (the player
         // stopped, or an older engine dropped it); nothing more to report.
         if (seen) return finish(null)

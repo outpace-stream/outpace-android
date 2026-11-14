@@ -11,6 +11,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
@@ -107,8 +108,9 @@ class EngineService : Service() {
     override fun onDestroy() {
         EngineController.pollNow = null
         EngineController.watchStartHook = null
-        EngineController.publishStartProgress(null)
         worker.shutdownNow()
+        // After the worker stops taking work, so no queued watch tick republishes progress.
+        EngineController.publishStartProgress(null)
         process?.let { terminate(it) }
         process = null
         releaseWakeLock()
@@ -384,7 +386,7 @@ class EngineService : Service() {
     private fun watchStart(ref: StreamRef) {
         endWatch()
         if (remote == null && EngineController.sessionState != EngineState.Running) return
-        val w = StartWatch(System.currentTimeMillis())
+        val w = StartWatch(SystemClock.elapsedRealtime())
         watch = w
         EngineController.publishStartProgress(StartProgress(ref, StartView(StartMessage.Waiting), done = false))
         updateNotification()
@@ -400,11 +402,11 @@ class EngineService : Service() {
         val endpoint = remote?.endpoint ?: Endpoint.loopback(port)
         val step = try {
             val json = Http.getWithin(StreamUrls.status(endpoint, "ace", ref.selector), STATUS_REQUEST_MS)
-            w.status(StartStatusJson.parse(json), System.currentTimeMillis())
+            w.status(StartStatusJson.parse(json), SystemClock.elapsedRealtime())
         } catch (e: HttpStatusException) {
-            if (e.code == 404) w.notFound(System.currentTimeMillis()) else w.unreachable(System.currentTimeMillis())
+            if (e.code == 404) w.notFound(SystemClock.elapsedRealtime()) else w.unreachable(SystemClock.elapsedRealtime())
         } catch (_: Exception) {
-            w.unreachable(System.currentTimeMillis())
+            w.unreachable(SystemClock.elapsedRealtime())
         }
         show(ref, step)
         if (!step.done) return scheduleWatch(w, ref, StartWatch.POLL_MS)
