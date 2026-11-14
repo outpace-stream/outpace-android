@@ -1,7 +1,9 @@
 # Android App
 
-> **Unreleased:** this is development documentation. APKs will be published in this repository
-> after signing and device validation; app versions are independent of engine versions.
+> **Early release:** signed APKs are published on the
+> [releases page](https://github.com/outpace-stream/outpace-android/releases), starting with v0.1.0.
+> Testing on real phones and TV boxes is still in progress. App versions are independent of
+> engine versions.
 
 The Outpace Android app runs the engine on a phone or an Android TV box without root and
 without Termux. It downloads the engine release you choose, keeps it running in the background,
