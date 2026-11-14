@@ -186,6 +186,25 @@ Links, shared text and the paste box take content ids only. Infohashes and magne
 shared there are rejected; to play by infohash, use Search. A bare 40-character hex string is
 treated as a content id, as the engine does.
 
+After the hand-off, the app follows the start for up to 90 seconds and shows how far it got, on
+the play screen and in the engine notification: "Looking up the stream", "Finding peers (3)",
+then "Buffering". It stops once the stream plays. If the start fails, it shows why, with a
+suggested action where there is one:
+
+| Engine error | Message |
+| --- | --- |
+| `no_peers` | No one is sharing this stream right now. Try again later. |
+| `network` | Can't reach the peer network. Check your connection or try another network. |
+| `not_found`, `unresolvable` | This id isn't a stream Outpace can open. |
+| `protected` | This stream is protected, so Outpace can't play it. |
+| `capacity` | The engine is already playing the maximum number of streams. |
+| `no_space` | Not enough free storage for this download. |
+
+A failure stays in the notification for a minute. Start phases and error codes need an engine
+that reports them on `/status` (a release after v1.1.0); with an older engine, the app shows the peer
+count and, when it stays at zero for 20 seconds, "No peers yet. This stream may be offline." The
+same works with a remote engine.
+
 The app plays live streams. VOD content ids are not handled yet.
 
 ## Search
@@ -283,7 +302,9 @@ boot is on, the app asks once.
 The app holds a wake lock only while this device's engine has an active stream; a remote
 connection needs none. It checks the engine, local or remote, every
 30 seconds when no app screen is open, and every 2 seconds while one is. Peer counts and buffer on the main
-screen are fetched only while it is open, for at most 4 streams.
+screen are fetched only while it is open, for at most 4 streams. After you hand a stream to a
+player, the app also checks that one stream's start once a second, and stops when it plays,
+fails, or after 90 seconds at most.
 
 ## Logs and problems
 
