@@ -8,16 +8,19 @@ import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import io.github.outpacestream.android.core.Mailbox
 import java.io.File
 
 /** Installs a verified app update through a PackageInstaller session (API 21+, no FileProvider). */
 object AppInstaller {
     /**
-     * Set by the visible screen: shows a failure (ok = false, message) or starts the system install
-     * confirmation itself. Null while no screen listens; results are then handled by the receiver.
+     * The system install confirmation, started by the visible screen. While no screen is attached
+     * (the user left the app) it waits here, since Android 10+ blocks starting it from the background.
      */
-    @Volatile var onResult: ((ok: Boolean, message: String?) -> Unit)? = null
-    @Volatile var onUserAction: ((Intent) -> Unit)? = null
+    val userActions = Mailbox<Intent>()
+
+    /** Install failures in plain words, shown by the visible screen or kept until one attaches. */
+    val failures = Mailbox<String>()
 
     /** Whether Android lets this app install packages; below API 26 the global setting applies at install time. */
     fun canInstall(context: Context): Boolean =

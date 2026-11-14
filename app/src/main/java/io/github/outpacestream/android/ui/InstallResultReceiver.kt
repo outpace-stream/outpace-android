@@ -14,12 +14,7 @@ class InstallResultReceiver : BroadcastReceiver() {
         when (val status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE)) {
             PackageInstaller.STATUS_PENDING_USER_ACTION -> {
                 val confirm = confirmIntent(intent) ?: return
-                val ui = AppInstaller.onUserAction
-                if (ui != null) {
-                    ui(confirm)
-                } else {
-                    runCatching { context.startActivity(confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                }
+                AppInstaller.userActions.post(confirm)
             }
             // On success the process is replaced; the next start cleans the downloaded APK up.
             PackageInstaller.STATUS_SUCCESS -> Unit
@@ -32,8 +27,7 @@ class InstallResultReceiver : BroadcastReceiver() {
                     else -> intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
                         ?: context.getString(R.string.update_failed_generic)
                 }
-                val ui = AppInstaller.onResult
-                if (ui != null) ui(false, message) else context.toast(message)
+                AppInstaller.failures.post(message)
             }
         }
     }

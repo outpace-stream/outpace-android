@@ -48,7 +48,9 @@ your device has no such screen, turn it on in the device settings. On Android 5 
 **Unknown sources** setting applies instead.
 
 Updating restarts the app, so the engine and any stream playing stop. The app warns you first when
-a stream is playing.
+a stream is playing. If you leave the app while the update downloads, the install screen opens
+when you come back. If Android can't install the update, the app says why and offers the release
+page so you can install it by hand.
 
 **Settings > App updates** works whatever you chose in the dialog. It shows the installed and
 latest versions and when the app last checked, and has **Check for updates**, **Changelog**,
@@ -56,7 +58,8 @@ latest versions and when the app last checked, and has **Check for updates**, **
 
 Only signed release builds update this way. A build you compiled yourself is signed with a
 different key, so Android refuses the update; the app then says so and you can install the new
-APK from the releases page by hand. Development builds (version `0.0.0`) don't check at all.
+APK from the releases page by hand. Development builds (version `0.0.0`) never show the dialog
+and can't update from Settings.
 
 ## First start
 

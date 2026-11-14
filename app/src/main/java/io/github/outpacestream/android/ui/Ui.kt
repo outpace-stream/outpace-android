@@ -28,7 +28,8 @@ internal val searchExecutor = Executors.newSingleThreadExecutor { r -> Thread(r,
 
 internal val mainHandler = Handler(Looper.getMainLooper())
 
-internal fun Activity.onMain(block: () -> Unit) = runOnUiThread { if (!isFinishing) block() }
+/** Runs on the main thread unless this activity is gone, which a recreated activity's old instance is. */
+internal fun Activity.onMain(block: () -> Unit) = runOnUiThread { if (!isFinishing && !isDestroyed) block() }
 
 internal fun Context.toast(text: CharSequence) = Toast.makeText(this, text, Toast.LENGTH_LONG).show()
 

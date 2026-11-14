@@ -15,6 +15,7 @@ import io.github.outpacestream.android.BuildConfig
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.AppRelease
+import io.github.outpacestream.android.core.Mailbox
 import io.github.outpacestream.android.core.UpdatePolicy
 import io.github.outpacestream.android.engine.EngineController
 import io.github.outpacestream.android.net.AppUpdates
@@ -30,23 +31,35 @@ class UpdateFlow(private val activity: Activity) {
     private var prompt: AlertDialog? = null
     private var progress: AlertDialog? = null
     private var pendingVersion: String? = null
-    @Volatile private var cancelled = false
+    private var progressBar: ProgressBar? = null
+    private var progressLabel: TextView? = null
 
     /** Called when something the Settings screen shows may have changed. */
     var onChanged: (() -> Unit)? = null
 
-    /** True while the download or the install hand-off is running. */
-    var busy = false
-        private set
+    /** True while a download or the install hand-off runs, in this or an earlier activity instance. */
+    val busy: Boolean get() = running
 
+    // Receivers are fields so detach() can remove exactly what attach() added.
+    private val onUserAction: (Intent) -> Unit = { intent -> runCatching { activity.startActivity(intent) } }
+    private val onInstallFailure: (String) -> Unit = { message -> showInstallFailure(message); onChanged?.invoke() }
+    private val onDownload: (DownloadEvent) -> Unit = { event -> activity.onMain { handle(event) } }
+
+    /** Binds to the process-wide download and install results; replays what arrived while detached. */
     fun attach() {
-        AppInstaller.onUserAction = { intent -> runCatching { activity.startActivity(intent) } }
-        AppInstaller.onResult = { _, message -> activity.onMain { message?.let { showMessage(it) }; onChanged?.invoke() } }
+        AppInstaller.userActions.attach(onUserAction)
+        AppInstaller.failures.attach(onInstallFailure)
+        if (running) showProgress(null)
+        events.attach(onDownload)
     }
 
     fun detach() {
-        AppInstaller.onUserAction = null
-        AppInstaller.onResult = null
+        AppInstaller.userActions.detach(onUserAction)
+        AppInstaller.failures.detach(onInstallFailure)
+        events.detach(onDownload)
+        // The download carries on; the next attach shows its progress again.
+        progress?.dismiss()
+        progress = null
     }
 
     /**
@@ -204,8 +217,42 @@ class UpdateFlow(private val activity: Activity) {
     }
 
     private fun download(version: String) {
-        busy = true
+        if (running) return
+        running = true
         cancelled = false
+        events.clear()
+        showProgress(version)
+        val app = activity.applicationContext
+        // The task outlives this activity on rotation, so it holds only the application context.
+        val updates = AppUpdates(app)
+        background.execute {
+            val apk = try {
+                updates.download(version, { cancelled }) { done, total -> events.post(DownloadEvent.Progress(version, done, total)) }
+            } catch (e: Exception) {
+                runCatching { updates.discard() }
+                val message = if (cancelled) null else app.getString(R.string.update_download_failed, EngineReleases.describe(e))
+                finish(DownloadEvent.Finished(message, installFailed = false))
+                return@execute
+            }
+            events.post(DownloadEvent.Installing(version))
+            try {
+                AppInstaller.install(app, apk)
+                finish(DownloadEvent.Finished(null, installFailed = false))
+            } catch (e: Exception) {
+                runCatching { updates.discard() }
+                finish(DownloadEvent.Finished(app.getString(R.string.update_install_failed, EngineReleases.describe(e)), installFailed = true))
+            }
+        }
+    }
+
+    private fun finish(event: DownloadEvent.Finished) {
+        running = false
+        events.post(event)
+    }
+
+    /** Shows the progress dialog, or keeps the one already shown. [version] null while reattaching. */
+    private fun showProgress(version: String?) {
+        if (progress?.isShowing == true) return
         val pad = activity.dp(24)
         val bar = ProgressBar(activity, null, android.R.attr.progressBarStyleHorizontal).apply { isIndeterminate = true }
         val label = TextView(activity)
@@ -215,47 +262,57 @@ class UpdateFlow(private val activity: Activity) {
             addView(bar)
             addView(label)
         }
+        progressBar = bar
+        progressLabel = label
         progress = AlertDialog.Builder(activity)
-            .setTitle(activity.getString(R.string.update_downloading, version))
+            .setTitle(activity.getString(R.string.update_downloading, version ?: prefs.appLatestVersion.orEmpty()))
             .setView(body)
             .setCancelable(false)
             .setNegativeButton(R.string.cancel) { _, _ -> cancelled = true }
             .show()
-        background.execute {
-            try {
-                val apk = updates.download(version, { cancelled }) { done, total ->
-                    activity.onMain {
-                        if (total > 0) {
-                            bar.isIndeterminate = false
-                            bar.max = 1000
-                            bar.progress = (done * 1000 / total).toInt()
-                            label.text = activity.getString(
-                                R.string.update_progress,
-                                Formatter.formatShortFileSize(activity, done),
-                                Formatter.formatShortFileSize(activity, total),
-                            )
-                        } else {
-                            label.text = Formatter.formatShortFileSize(activity, done)
-                        }
-                    }
+    }
+
+    private fun handle(event: DownloadEvent) {
+        when (event) {
+            is DownloadEvent.Progress -> {
+                showProgress(event.version)
+                val bar = progressBar ?: return
+                val label = progressLabel ?: return
+                if (event.total > 0) {
+                    bar.isIndeterminate = false
+                    bar.max = 1000
+                    bar.progress = (event.done * 1000 / event.total).toInt()
+                    label.text = activity.getString(
+                        R.string.update_progress,
+                        Formatter.formatShortFileSize(activity, event.done),
+                        Formatter.formatShortFileSize(activity, event.total),
+                    )
+                } else {
+                    label.text = Formatter.formatShortFileSize(activity, event.done)
                 }
-                activity.onMain { label.setText(R.string.update_installing) }
-                AppInstaller.install(activity, apk)
-                activity.onMain { finishDownload(null) }
-            } catch (e: Exception) {
-                runCatching { updates.discard() }
-                val message = if (cancelled) null else activity.getString(R.string.update_download_failed, EngineReleases.describe(e))
-                activity.onMain { finishDownload(message) }
+            }
+            is DownloadEvent.Installing -> {
+                showProgress(event.version)
+                progressLabel?.setText(R.string.update_installing)
+            }
+            is DownloadEvent.Finished -> {
+                progress?.dismiss()
+                progress = null
+                event.error?.let { if (event.installFailed) showInstallFailure(it) else showMessage(it) }
+                onChanged?.invoke()
             }
         }
     }
 
-    private fun finishDownload(error: String?) {
-        busy = false
-        progress?.dismiss()
-        progress = null
-        error?.let { showMessage(it) }
-        onChanged?.invoke()
+    /** An install that could not finish: say why and offer the release page to install by hand. */
+    private fun showInstallFailure(text: String) {
+        val version = prefs.appLatestVersion
+        val b = AlertDialog.Builder(activity)
+            .setTitle(R.string.update_title)
+            .setMessage(text)
+            .setPositiveButton(android.R.string.ok, null)
+        if (version != null) b.setNeutralButton(R.string.update_open_release) { _, _ -> openReleasePage(version) }
+        b.show()
     }
 
     private fun showMessage(text: String) {
@@ -266,7 +323,18 @@ class UpdateFlow(private val activity: Activity) {
             .show()
     }
 
+    /** Download progress and outcome, shared across activity instances (rotation, Home and back). */
+    sealed interface DownloadEvent {
+        data class Progress(val version: String, val done: Long, val total: Long) : DownloadEvent
+        data class Installing(val version: String) : DownloadEvent
+        data class Finished(val error: String?, val installFailed: Boolean) : DownloadEvent
+    }
+
     private companion object {
         const val STATE_PENDING = "app_update_pending"
+
+        @Volatile var running = false
+        @Volatile var cancelled = false
+        val events = Mailbox<DownloadEvent>()
     }
 }

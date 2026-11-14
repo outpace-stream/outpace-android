@@ -86,6 +86,7 @@ class EngineReleases(private val context: Context) {
 
     companion object {
         fun describe(e: Exception): String = when (e) {
+            is NoReleaseException -> "no release published yet"
             is HttpStatusException -> if (e.code == 403 || e.code == 429) "GitHub rate limit reached, try again later" else "HTTP ${e.code}"
             else -> e.message ?: e.javaClass.simpleName
         }

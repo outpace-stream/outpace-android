@@ -250,5 +250,6 @@
     <string name="update_downloading">Downloading Outpace %1$s</string>
     <string name="update_progress">%1$s of %2$s</string>
     <string name="update_installing">Opening the installer…</string>
+    <string name="update_install_failed">The update could not be installed: %1$s</string>
     <string name="update_download_failed">The update could not be downloaded: %1$s</string>
 </resources>
