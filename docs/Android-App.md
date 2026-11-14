@@ -130,22 +130,29 @@ that API and keep working.
 
 Settings save as soon as you change them and apply the next time the engine starts. While the
 engine runs with older settings, a banner offers **Restart** to apply them right away.
+Playback presets set an engine variable only when they differ from the engine default.
 
 | Setting | Default | What it sets |
 | --- | --- | --- |
+| Startup buffer | Smooth (30 s) | [`OUTPACE_PREBUFFER_MS`](https://github.com/outpace-stream/outpace-engine/wiki/Configuration#playback-and-startup-buffering): Balanced sets `15000`, Fast `5000`, Off `0`. Smooth leaves the engine default. A shorter buffer starts sooner and stutters more on weak swarms. |
+| HLS start | Default | [`OUTPACE_HLS_STARTUP_SEGMENTS`](https://github.com/outpace-stream/outpace-engine/wiki/HLS-Output) and `OUTPACE_HLS_SEGMENT_DURATION_MS`: Fast sets `2` segments of `4000` ms, the engine's fast-start profile. Affects **Open HLS** only. Segments still cut on keyframes, so streams with long keyframe intervals gain less. |
+| Catalog fallback | Off | [`OUTPACE_BEP9_CONTENT_ID_FALLBACK`](https://github.com/outpace-stream/outpace-engine/wiki/Configuration#discovery-trackers-and-resolution): when the catalog can't resolve a content id, ask peers for its details. Needed to play an Outpace broadcast started on another device. |
+| Low-memory mode | Off | Keeps seeding pieces in the app's cache directory instead of RAM ([`OUTPACE_CACHE_TYPE`](https://github.com/outpace-stream/outpace-engine/wiki/Configuration#storage-and-cache)`=disk`) and lowers `OUTPACE_SEED_STORE_BYTES` and `OUTPACE_PREBUFFER_BYTES` to 32 MiB and `OUTPACE_SESSION_BUFFER` to `64`. On high-bitrate streams the 32 MiB cap releases playback before the startup buffer target. |
 | Allow LAN access | Off | [`OUTPACE_BIND`](https://github.com/outpace-stream/outpace-engine/wiki/Environment-Variables) to `0.0.0.0:<port>` instead of `127.0.0.1:<port>`. Use it only on a trusted network. |
 | HTTP port | 6878 | The port in `OUTPACE_BIND`. |
 | Seeding | On | [`OUTPACE_ENABLE_SEEDING`](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers) |
+| Inbound upload limit | Normal | [`OUTPACE_MAX_UNCHOKED`](https://github.com/outpace-stream/outpace-engine/wiki/Configuration#seeding-and-inbound-peers), `OUTPACE_MAX_INBOUND` and `OUTPACE_MAX_INBOUND_PER_STREAM`: Low sets `2`, `16` and `4`; Minimal sets `0`, `4` and `2`. The engine always keeps one rotating optimistic upload slot per stream on top. Uploads to peers this device connected to (reciprocal seeding) are not counted; turn off **Seeding** to stop all uploads. Normal leaves the engine defaults. |
 | Accept inbound peers | On | [`OUTPACE_ENABLE_INBOUND`](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers) |
 | Router port mapping | Off | [`OUTPACE_ENABLE_PORT_MAPPING`](https://github.com/outpace-stream/outpace-engine/wiki/NAT-and-Port-Mapping) |
+| Peer port | 8621 | [`OUTPACE_PEER_LISTEN`](https://github.com/outpace-stream/outpace-engine/wiki/NAT-and-Port-Mapping) to `0.0.0.0:<port>`, set only when changed. It is also the announced and router-mapped port. It must differ from the HTTP port and from `1935`, the engine's RTMP port. |
 | AceStream-compatible API | Off | [`OUTPACE_ACE_COMPAT`](https://github.com/outpace-stream/outpace-engine/wiki/Playing-Streams#acestream-compatible-api) |
 | Stream search | Off | [`OUTPACE_COMPAT_ACESTREAM_SERVICES`](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search). Sends queries and your IP address to AceStream's public index over plain HTTP. |
 | Start on boot | On for TV, off for phones | Starts the engine when the device boots. |
 | Stop when idle | On for phones, off for TV | Stops the engine after 10 minutes with no streams, to save battery. |
 
 The engine's data and cache live in the app's private storage (`OUTPACE_DATA_DIR` and
-`OUTPACE_CACHE_DIR`). Uninstalling the app removes them. The peer listener keeps its usual
-default of `0.0.0.0:8621`, as on every platform; see [Seeding and Peers](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers).
+`OUTPACE_CACHE_DIR`). Uninstalling the app removes them. The peer listener uses `0.0.0.0:8621`
+unless you change **Peer port**; see [Seeding and Peers](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers).
 
 ## Background running and battery
 
