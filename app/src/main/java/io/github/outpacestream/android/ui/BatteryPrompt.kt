@@ -19,12 +19,14 @@ object BatteryPrompt {
     }
 
     /** Asks once, on TV or when start-on-boot is on, where background kills hurt most. */
-    fun maybeShow(activity: Activity) {
+    /** Returns whether it asked, so other prompts can wait for a later launch. */
+    fun maybeShow(activity: Activity): Boolean {
         val prefs = Prefs(activity)
-        if (prefs.batteryPromptShown || isExempt(activity)) return
-        if (!Device.isTv(activity) && !prefs.startOnBoot) return
+        if (prefs.batteryPromptShown || isExempt(activity)) return false
+        if (!Device.isTv(activity) && !prefs.startOnBoot) return false
         prefs.batteryPromptShown = true
         request(activity)
+        return true
     }
 
     @SuppressLint("BatteryLife")
