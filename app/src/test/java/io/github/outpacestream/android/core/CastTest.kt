@@ -122,15 +122,35 @@ class CastTest {
     }
 
     @Test fun playOutcomes() {
-        assertEquals(CastPlayAction.Publish, CastPlay.after(CastPlayResult.Accepted, superseded = false))
-        // Stop pressed, or the engine session ended, while the play was in flight.
-        assertEquals(CastPlayAction.Stop, CastPlay.after(CastPlayResult.Accepted, superseded = true))
-        // No answer: the engine may have started the TV anyway, tracked or not.
-        assertEquals(CastPlayAction.Stop, CastPlay.after(CastPlayResult.Unknown, superseded = false))
-        assertEquals(CastPlayAction.Stop, CastPlay.after(CastPlayResult.Unknown, superseded = true))
-        // An error answer started nothing.
-        assertEquals(CastPlayAction.Nothing, CastPlay.after(CastPlayResult.Refused, superseded = false))
-        assertEquals(CastPlayAction.Nothing, CastPlay.after(CastPlayResult.Refused, superseded = true))
+        fun after(r: CastPlayResult, tornDown: Boolean = false, stopped: Boolean = false) = CastPlay.after(r, tornDown, stopped)
+        assertEquals(CastPlayAction.Publish, after(CastPlayResult.Accepted))
+        // Stop pressed after the play was queued: tracked, so a stop without answer stays retryable.
+        assertEquals(CastPlayAction.StopTracked, after(CastPlayResult.Accepted, stopped = true))
+        // Unknown outcome: the TV may play; tracked and stopped.
+        assertEquals(CastPlayAction.StopTracked, after(CastPlayResult.Unknown))
+        assertEquals(CastPlayAction.StopTracked, after(CastPlayResult.Unknown, stopped = true))
+        // The engine session ended: nothing can track it, one bounded stop.
+        assertEquals(CastPlayAction.StopUntracked, after(CastPlayResult.Accepted, tornDown = true))
+        assertEquals(CastPlayAction.StopUntracked, after(CastPlayResult.Unknown, tornDown = true, stopped = true))
+        // Refused before reaching the TV, or never sent: nothing to undo.
+        assertEquals(CastPlayAction.Nothing, after(CastPlayResult.Refused))
+        assertEquals(CastPlayAction.Nothing, after(CastPlayResult.Refused, tornDown = true, stopped = true))
+    }
+
+    @Test fun playErrorsAfterReachingTheTvAreUnknown() {
+        fun result(status: Int, code: String) = CastPlay.resultOf(CastJson.parseError(status, """{"error":"$code","message":"m"}""").failure)
+        for ((status, code) in listOf(504 to "renderer_timeout", 502 to "renderer_unreachable", 502 to "renderer_http_error", 502 to "renderer_invalid", 502 to "renderer_fault")) {
+            assertEquals(code, CastPlayResult.Unknown, result(status, code))
+        }
+        for ((status, code) in listOf(
+            404 to "unknown_target", 409 to "loopback_bind", 409 to "unsupported_bind", 503 to "capacity_exhausted",
+            400 to "invalid_request", 400 to "invalid_id", 404 to "stream_not_found", 404 to "no_peers",
+            422 to "stream_unavailable", 422 to "origin_hls_unsupported", 502 to "network",
+        )) {
+            assertEquals(code, CastPlayResult.Refused, result(status, code))
+        }
+        // Casting off: a bare 404 before anything else.
+        assertEquals(CastPlayResult.Refused, CastPlay.resultOf(CastJson.parseError(404, "").failure))
     }
 
     @Test fun gateForThisDevice() {

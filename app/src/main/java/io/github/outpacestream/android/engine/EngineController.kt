@@ -164,8 +164,15 @@ object EngineController {
     @Volatile var castStopping: CastSession? = null
         private set
 
-    /** The TV a `play` is being sent to right now, so a reopened cast screen can show it. */
+    /** The TV the last queued `play` goes to, while any is queued or running; a reopened cast screen shows it. */
     @Volatile var castPending: String? = null
+        private set
+
+    /** `play` requests queued or running in the service. */
+    private var pendingPlays = 0
+
+    /** Bumped by every Stop; a `play` queued before a bump must not leave its cast playing. */
+    @Volatile internal var castStopSeq = 0
         private set
 
     @Volatile internal var castHook: ((CastSession) -> Unit)? = null
@@ -186,27 +193,43 @@ object EngineController {
         if (hook != null) hook(endpoint, target, ref, done) else done(IllegalStateException("engine service not running"))
     }
 
-    /** Set when Stop is pressed while a `play` is in flight and no cast is tracked yet. */
-    private var pendingStop = false
+    /**
+     * Marks a `play` as queued, at the moment it is queued, so a Stop pressed before the service
+     * runs it still sees it. Returns the Stop sequence the play must compare against.
+     */
+    @Synchronized
+    internal fun playQueued(name: String): Int {
+        pendingPlays++
+        castPending = name
+        notifyListeners()
+        return castStopSeq
+    }
 
-    internal fun setCastPending(name: String?) {
-        synchronized(this) {
-            castPending = name
-            if (name != null) pendingStop = false
-        }
+    /** A queued `play` reached its outcome (or was dropped). */
+    @Synchronized
+    internal fun playSettled() {
+        pendingPlays = maxOf(0, pendingPlays - 1)
+        if (pendingPlays == 0) castPending = null
         notifyListeners()
     }
 
-    /** Whether Stop was pressed for the `play` in flight; reading it clears it. Callers hold this lock. */
     @Synchronized
-    internal fun takePendingStop(): Boolean = pendingStop.also { pendingStop = false }
+    internal fun clearPlays() {
+        pendingPlays = 0
+        castPending = null
+        notifyListeners()
+    }
 
-    /** Records a cast the engine just accepted and lets the service follow it. */
-    internal fun castStarted(session: CastSession) {
+    /**
+     * Records a cast the engine just accepted and lets the service follow it. With [stopping], a
+     * Stop for it is already on its way (see [CastPlayAction.StopTracked]).
+     */
+    internal fun castStarted(session: CastSession, stopping: Boolean = false) {
         synchronized(this) {
             cast = session
             castMessage = CastMessage.Starting
             castEnded = null
+            castStopping = if (stopping) session else null
         }
         notifyListeners()
         castHook?.invoke(session)
@@ -217,13 +240,11 @@ object EngineController {
         val current: CastSession?
         synchronized(this) {
             current = cast
-            when {
-                current != null -> castStopping = current
-                // Switching TVs: the old cast is gone and the new one not tracked yet. The play in
-                // flight reads this under the same lock and stops what it started.
-                castPending != null -> pendingStop = true
-                else -> return
-            }
+            if (current == null && pendingPlays == 0) return
+            // Every play queued before this Stop sees the bump, whether it is queued, running or
+            // about to publish, and does not leave its cast playing.
+            castStopSeq++
+            if (current != null) castStopping = current
         }
         notifyListeners()
         if (current == null) return

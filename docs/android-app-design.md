@@ -416,9 +416,13 @@ DLNA/UPnP media renderers and tell one to play a live stream (`/cast/` routes, o
   with an 80 s deadline (engine 1.2.0's worst case is 50 s of renderer requests after the stream
   starts). The service sends `play` and `stop` in order on one thread, so a Stop pressed after a
   pick also stops what that pick started, and an accepted cast is tracked even if the screen
-  closed. A Stop the engine never answered keeps the cast, so it can be retried. A `play` that got
-  no answer, or that a Stop or the end of the engine session overtook, gets one bounded `stop`
-  (`CastPlay`), so the app never leaves a TV playing that it does not track.
+  closed. A Stop the engine never answered keeps the cast, so it can be retried. A `play` is marked
+  pending when it is queued, so a Stop pressed before it runs still supersedes it. A `play` whose
+  outcome is unknown (no answer, or a `renderer_*` error, after which the TV may already play;
+  engine 1.2.0 does not stop it, outpace-stream/outpace-engine#497), or that a Stop overtook, is
+  tracked and stopped at once, so a stop without answer stays retryable; after the engine session
+  ended it gets one bounded `stop` instead (`CastPlay`). The app never leaves a TV playing that it
+  does not track.
   For this device's engine it first checks local facts (`CastGate`): version, setting, LAN access,
   and whether the running engine started with them.
 - **While casting:** one cast at a time. The engine service keeps running (it already is) and its

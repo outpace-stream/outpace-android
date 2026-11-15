@@ -191,23 +191,47 @@ class CastWatch(private val startedAt: Long) {
     }
 }
 
-/** How a `play` request ended: answered with success, answered with an error, or no answer at all. */
+/**
+ * How a `play` request ended: accepted; refused before anything reached the TV (or never sent);
+ * or unknown, when the TV may be playing although the request failed.
+ */
 enum class CastPlayResult { Accepted, Refused, Unknown }
 
-/** What to do after a `play`: track the new cast, stop the TV again, or nothing. */
-enum class CastPlayAction { Publish, Stop, Nothing }
+/** What to do after a `play`. */
+enum class CastPlayAction {
+    /** Track the new cast. */
+    Publish,
+
+    /** Track it and stop it at once, so a Stop that gets no answer stays retryable (StopFailed). */
+    StopTracked,
+
+    /** The engine session is gone, so nothing can track it: one bounded stop, then forget it. */
+    StopUntracked,
+    Nothing,
+}
 
 object CastPlay {
     /**
-     * Decides what follows a `play`. [superseded] is true when the engine session ended or the user
-     * pressed Stop while the request was in flight. A refused request started nothing. Without an
-     * answer the engine may still have started the TV, so it gets one stop, as does an accepted
-     * cast nobody wants any more; the app never leaves a TV playing that it does not track.
+     * Engine 1.2.0 fails these only before it contacts the TV: casting off, unknown TV, loopback or
+     * IPv6 bind, too many casts, or a stream that would not start. Renderer errors (`renderer_*`)
+     * come after `SetAVTransportURI` or `Play` were sent, so the TV may already play, and the
+     * engine does not stop it (outpace-stream/outpace-engine#497).
      */
-    fun after(result: CastPlayResult, superseded: Boolean): CastPlayAction = when (result) {
-        CastPlayResult.Refused -> CastPlayAction.Nothing
-        CastPlayResult.Unknown -> CastPlayAction.Stop
-        CastPlayResult.Accepted -> if (superseded) CastPlayAction.Stop else CastPlayAction.Publish
+    fun resultOf(failure: CastFailure): CastPlayResult = when (failure) {
+        CastFailure.RendererFault, CastFailure.RendererUnreachable, CastFailure.RendererTimeout -> CastPlayResult.Unknown
+        else -> CastPlayResult.Refused
+    }
+
+    /**
+     * Decides what follows a `play`. [tornDown]: the engine session ended since it was queued;
+     * [stopped]: the user pressed Stop since it was queued. The app never leaves a TV playing that
+     * it does not track, and never gives up on a stop that got no answer while it can retry it.
+     */
+    fun after(result: CastPlayResult, tornDown: Boolean, stopped: Boolean): CastPlayAction = when {
+        result == CastPlayResult.Refused -> CastPlayAction.Nothing
+        tornDown -> CastPlayAction.StopUntracked
+        result == CastPlayResult.Unknown || stopped -> CastPlayAction.StopTracked
+        else -> CastPlayAction.Publish
     }
 }
 
