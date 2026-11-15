@@ -33,7 +33,7 @@ object RemoteDialog {
                 if (name.error != null || endpoint == null) return@setOnClickListener
                 val saved = RemoteEngine(existing?.id ?: RemoteEngines.newId(), n, endpoint)
                 if (!EngineSelection.saveRemote(host, saved)) {
-                    host.toast(host.getString(R.string.remote_full, RemoteEngines.MAX_REMOTES))
+                    host.toast(host.resources.getQuantityString(R.plurals.remote_full, RemoteEngines.MAX_REMOTES, RemoteEngines.MAX_REMOTES))
                     return@setOnClickListener
                 }
                 dialog.dismiss()

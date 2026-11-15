@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Outpace</string>
+    <string name="app_name" translatable="false">Outpace</string>
     <string name="channel_engine">Engine</string>
 
     <string name="state_stopped">Engine stopped</string>
@@ -20,12 +20,15 @@
 
     <string name="engine_update_available">v%1$s available</string>
     <string name="engine_failed_to_start">Could not start the engine: %1$s</string>
-    <string name="engine_no_answer">The engine did not answer within %1$d seconds.</string>
+    <plurals name="engine_no_answer">
+        <item quantity="one">The engine did not answer within %1$d second.</item>
+        <item quantity="other">The engine did not answer within %1$d seconds.</item>
+    </plurals>
     <string name="engine_exited">The engine exited (code %1$d).</string>
 
 
     <string name="play_title">Play stream</string>
-    <string name="play_ref">%1$s %2$s</string>
+    <string name="play_ref" translatable="false">%1$s %2$s</string>
     <string name="play_open_player">Open in player</string>
     <string name="play_open_hls">Open as HLS</string>
     <string name="play_copy">Copy URL</string>
@@ -52,7 +55,7 @@
     <string name="start_capacity">The engine is already playing the maximum number of streams.</string>
     <string name="start_no_space">Not enough free storage for this download.</string>
     <string name="start_failed">The engine couldn\'t start this stream.</string>
-    <string name="start_with_detail">%1$s (%2$s)</string>
+    <string name="start_with_detail" translatable="false">%1$s (%2$s)</string>
 
     <string name="versions_title">Engine versions</string>
     <string name="versions_running">Running: %1$s</string>
@@ -75,7 +78,10 @@
     <string name="version_downloading">Downloading v%1$s: %2$s</string>
     <string name="version_installed">v%1$s installed</string>
     <string name="version_failed">Install failed: %1$s</string>
-    <string name="version_full">Up to %1$d versions can be installed. Remove one first.</string>
+    <plurals name="version_full">
+        <item quantity="one">Only %1$d version can be installed. Remove it first.</item>
+        <item quantity="other">Up to %1$d versions can be installed. Remove one first.</item>
+    </plurals>
     <string name="version_remove_running">Stop the engine before removing the version it runs.</string>
     <string name="cancel">Cancel</string>
 
@@ -134,11 +140,14 @@
     <string name="remote_name">Name</string>
     <string name="remote_name_hint">Living room TV</string>
     <string name="remote_address">Address</string>
-    <string name="remote_address_hint">192.168.1.20:6878</string>
+    <string name="remote_address_hint" translatable="false">192.168.1.20:6878</string>
     <string name="remote_address_help">The IP address or host name and port of a device running Outpace with LAN access on. The port defaults to 6878. For an engine behind an HTTPS proxy, start with https://.</string>
     <string name="remote_name_invalid">Give it a name of up to 40 characters.</string>
     <string name="remote_address_invalid">Use host:port, for example 192.168.1.20:6878.</string>
-    <string name="remote_full">Up to %1$d remote engines can be added. Remove one first.</string>
+    <plurals name="remote_full">
+        <item quantity="one">Only %1$d remote engine can be added. Remove it first.</item>
+        <item quantity="other">Up to %1$d remote engines can be added. Remove one first.</item>
+    </plurals>
     <string name="remote_settings_note">This engine uses its own configuration. Change it on the device that runs it.</string>
     <string name="remote_state_disconnected">Not connected to %1$s</string>
     <string name="remote_state_connecting">Connecting to %1$s</string>
@@ -155,7 +164,7 @@
     <string name="home_connecting">Connecting</string>
     <string name="home_connected">Connected</string>
     <string name="home_unreachable">Not answering</string>
-    <string name="engine_detail_named">%1$s · %2$s</string>
+    <string name="engine_detail_named" translatable="false">%1$s · %2$s</string>
 
     <!-- Home -->
     <string name="no_engine_selected">No engine selected. Choose one in Engines.</string>
@@ -192,7 +201,7 @@
         <item quantity="other">%d peers</item>
     </plurals>
     <string name="stream_buffer">%.1f s buffered</string>
-    <string name="meta_separator">" · "</string>
+    <string name="meta_separator" translatable="false">" · "</string>
     <string name="recent_menu_play">Play</string>
     <string name="recent_menu_copy_link">Copy link</string>
     <string name="recent_menu_copy">Copy id</string>
