@@ -47,6 +47,7 @@ import java.io.IOException
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Owns the engine process, or the connection to a remote engine. All engine work runs on one
@@ -83,6 +84,13 @@ class EngineService : Service() {
     private val castWorker = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "cast-poll") }
     @Volatile private var castTask: ScheduledFuture<*>? = null
 
+    /**
+     * Bumped whenever the engine session ends (stop, disconnect, crash, destroy). A `play` requested
+     * before a bump must not leave a TV playing: it is dropped if not sent yet, and stopped again if
+     * the engine accepted it anyway.
+     */
+    private val castEpoch = AtomicInteger()
+
     /** The decision state of the followed cast; castWorker only. */
     private var castWatch: CastWatch? = null
 
@@ -95,7 +103,10 @@ class EngineService : Service() {
         EngineController.watchStartHook = { ref -> worker.execute { watchStart(ref) } }
         EngineController.castHook = { session -> castWorker.execute { followCast(session) } }
         EngineController.castStopHook = { castWorker.execute { stopCast() } }
-        EngineController.castPlayHook = { endpoint, target, ref, done -> castWorker.execute { playCast(endpoint, target, ref, done) } }
+        EngineController.castPlayHook = { endpoint, target, ref, done ->
+            val epoch = castEpoch.get()
+            castWorker.execute { playCast(epoch, endpoint, target, ref, done) }
+        }
         EngineController.castPollNow = { castWorker.execute { EngineController.cast?.let { scheduleCast(it, 0) } } }
         EngineController.castNotify = ::updateNotification
     }
@@ -145,6 +156,7 @@ class EngineService : Service() {
         EngineController.castPlayHook = null
         EngineController.castPollNow = null
         EngineController.castNotify = null
+        synchronized(castEpoch) { castEpoch.incrementAndGet() }
         worker.shutdownNow()
         castWorker.shutdownNow()
         EngineController.cast?.let { EngineController.endCast(it, CastMessage.Ended) }
@@ -485,7 +497,11 @@ class EngineService : Service() {
      * stop (one bounded request), since the stream it plays is about to go away.
      */
     private fun endCastSession(stopTv: Boolean) {
-        val session = EngineController.cast ?: return
+        // Under the same lock as playCast's check-and-publish, so a play cannot slip in between.
+        val session = synchronized(castEpoch) {
+            castEpoch.incrementAndGet()
+            EngineController.cast
+        } ?: return
         castTask?.cancel(false)
         if (stopTv) {
             try { CastClient.stop(session.endpoint, session.targetId) } catch (_: Exception) {}
@@ -538,7 +554,8 @@ class EngineService : Service() {
      * Sends a stream to a TV. One TV at a time: a cast on another TV is stopped first. Runs on
      * castWorker, after any Stop queued before it and before any queued after it.
      */
-    private fun playCast(endpoint: Endpoint, target: CastTarget, ref: StreamRef, done: (Throwable?) -> Unit) {
+    private fun playCast(epoch: Int, endpoint: Endpoint, target: CastTarget, ref: StreamRef, done: (Throwable?) -> Unit) {
+        if (castEpoch.get() != epoch) return done(IOException(getString(R.string.state_stopped)))
         EngineController.setCastPending(target.name)
         val error = try {
             EngineController.cast?.takeIf { it.targetId != target.id }?.let { previous ->
@@ -548,7 +565,19 @@ class EngineService : Service() {
                 EngineController.endCast(previous, null, ::updateNotification)
             }
             CastClient.play(endpoint, target.id, ref)
-            EngineController.castStarted(CastSession(target.id, target.name, ref, endpoint, SystemClock.elapsedRealtime()))
+            val published = synchronized(castEpoch) {
+                if (castEpoch.get() != epoch) {
+                    false
+                } else {
+                    EngineController.castStarted(CastSession(target.id, target.name, ref, endpoint, SystemClock.elapsedRealtime()))
+                    true
+                }
+            }
+            if (!published) {
+                // The session ended while the TV was being started: stop what the engine accepted.
+                try { CastClient.stop(endpoint, target.id) } catch (_: Exception) {}
+                throw IOException(getString(R.string.state_stopped))
+            }
             null
         } catch (e: Exception) {
             e
