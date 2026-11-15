@@ -199,12 +199,13 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
     }
 
     private fun showRecentMenu(entry: RecentEntry, name: String?) {
-        val options = listOf(
+        val copyLink = entry.ref.link?.let { link ->
+            host.getString(R.string.recent_menu_copy_link) to { copy("link", link) }
+        }
+        val options = listOfNotNull(
             host.getString(R.string.recent_menu_play) to { host.play(entry.ref, name) },
-            host.getString(R.string.recent_menu_copy) to {
-                host.copyText("id", entry.ref.hex)
-                host.toast(host.getString(R.string.id_copied))
-            },
+            copyLink,
+            host.getString(R.string.recent_menu_copy) to { copy("id", entry.ref.hex) },
             host.getString(R.string.recent_menu_remove) to { prefs.removeRecent(entry); render() },
         )
         AlertDialog.Builder(host)
@@ -212,6 +213,11 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
             .setItems(options.map { it.first }.toTypedArray()) { _, which -> options[which].second() }
             .setNegativeButton(R.string.cancel, null)
             .show()
+    }
+
+    private fun copy(label: String, text: String) {
+        host.copyText(label, text)
+        host.toast(host.getString(R.string.copied_value, text))
     }
 
     private fun newRow(): View = LayoutInflater.from(host).inflate(R.layout.item_stream, recent, false)

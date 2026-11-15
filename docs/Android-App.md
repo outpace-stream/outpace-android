@@ -185,8 +185,11 @@ You can start playback from:
   fills the box from the clipboard.
 - **Search.** Find a stream by name and press its **Play** button; see [Search](#search).
 - **Recently played.** Home lists the last 12 streams you played, with their names when known.
-  This is the easy way to replay on a TV remote. **Clear** forgets them; long press a row's
-  **Play** button to copy its id or remove just that one.
+  This is the easy way to replay on a TV remote. **Clear** forgets them. Long press a row's
+  **Play** button for more: **Copy link** copies an `acestream://` link that opens the stream in
+  another app or in Outpace on another device, **Copy id** copies the bare 40-hex id, and
+  **Remove from recent** forgets just that one. Streams played from search have no link, only
+  their infohash to copy.
 - **Now playing.** While the engine runs, Home lists what it is playing, with the title, the
   number of clients, peers and seconds buffered. **Play** opens it again. Few or no
   peers usually means the stream is hard to find; see
