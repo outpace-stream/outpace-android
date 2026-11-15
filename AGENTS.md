@@ -112,6 +112,9 @@ request is closed" and its findings are never posted; PR #46 merged that way. Be
   for that one too.
 - Merge, or enable auto-merge, only once the review is done and no finding is left open. Auto-merge
   waits only for the required checks, so enabling it earlier skips the review.
+- Before pushing to a PR that has auto-merge enabled, disable it (`gh pr merge <n> --disable-auto`):
+  it stays on through new commits, which could then merge before their review finishes. Enable it
+  again only after the review of the new commit is done.
 - Agents follow the same order. Do not poll in a loop: re-check when a PR watch or notification
   reports a new check result or comment.
 
