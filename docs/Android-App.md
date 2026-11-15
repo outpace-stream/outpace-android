@@ -1,9 +1,8 @@
 # Android App
 
-> **Early release:** signed APKs are published on the
-> [releases page](https://github.com/outpace-stream/outpace-android/releases), starting with v0.1.0.
-> Testing on real phones and TV boxes is still in progress. App versions are independent of
-> engine versions.
+> Signed APKs are published on the
+> [releases page](https://github.com/outpace-stream/outpace-android/releases). 1.0.0 is the first
+> stable release; the 0.x builds were previews. App versions are independent of engine versions.
 
 The Outpace Android app runs the engine on a phone or an Android TV box without root and
 without Termux, or connects to an Outpace engine running on another device, such as a home
@@ -22,7 +21,7 @@ Player or Kodi. It has no player of its own.
 
 The app needs Android 5 or newer, on 64-bit ARM (`arm64-v8a`) or 32-bit ARM (`armeabi-v7a`).
 Many Android TV devices run 32-bit Android even on 64-bit chips; the app picks the right engine
-build for you. 32-bit engine builds are published from the engine release after v1.0.1.
+build for you. 32-bit engine builds are published from engine v1.0.2.
 
 The APK is sideloaded only. It isn't on the Play Store, because Play policy doesn't allow apps
 that download programs to run. Once installed, the app can update itself from the same releases
@@ -254,7 +253,7 @@ suggested action where there is one:
 | `no_space` | Not enough free storage for this download. |
 
 A failure stays in the notification for a minute. Start phases and error codes need an engine
-that reports them on `/status` (a release after v1.1.0); with an older engine, the app shows the peer
+that reports them on `/status` (v1.2.0 or newer); with an older engine, the app shows the peer
 count and, when it stays at zero for 20 seconds, "No peers yet. This stream may be offline." The
 same works with a remote engine.
 
@@ -336,7 +335,7 @@ badges:
 | installed | Downloaded and ready on this device. |
 | latest | The newest release. |
 | pre-release | Hidden unless **Show pre-releases** is ticked. |
-| not available for this device | That release has no Android build for this device. Releases before v1.0.0 have none, and 32-bit builds (`armv7-linux-androideabi`) start with the release after v1.0.1. |
+| not available for this device | That release has no Android build for this device. Releases before v1.0.0 have none, and 32-bit builds (`armv7-linux-androideabi`) start with v1.0.2. |
 
 Each row has its own buttons: **Install** downloads that release, **Use** switches to an
 installed one, and **Remove** deletes it. Nothing downloads on its own; you choose the release.
