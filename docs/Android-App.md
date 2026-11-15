@@ -72,35 +72,37 @@ and can't update from Settings.
 
 ## First start
 
-The APK contains no engine. On first start Home shows **No engine selected** and a
-**Configure** button that opens the **Engines** tab. There, **Add engine** offers two choices:
+The APK contains no engine. On first start Home shows **Local engine not set up** and a
+**Configure** button that opens **Settings**. There you have two choices:
 
-- **Download to this device** opens **Engine versions** and offers the latest release built for
-  your device. The app downloads the archive, checks it against the release's `.sha256`, installs
-  it and selects it. After that, **Start engine** runs it.
-- **Add a remote engine** uses an Outpace engine on another device instead; see
-  [Engines](#engines).
+- Under **Local engine**, **Manage versions** opens [Engine versions](#engine-versions). Choose
+  **Install** on the release you want; nothing downloads until you do. The app downloads the
+  archive, checks it against the release's `.sha256`, installs it and selects it. After that,
+  **Start engine** runs it.
+- Under **Engine connection**, **Add a remote engine** uses an Outpace engine on another device
+  instead; see [Remote engines](#remote-engines).
 
 The engine listens on `127.0.0.1:6878`, the same address as on any other platform, so players on
 the same device reach it with the usual [URLs](https://github.com/outpace-stream/outpace-engine/wiki/Playing-Streams).
 
 ## Finding your way around
 
-The main screen has four tabs: **Home**, **Search**, **Engines** and **Settings**. On a phone held
+The main screen has three tabs: **Home**, **Search** and **Settings**. On a phone held
 upright they sit along the bottom; on TV, tablets and landscape phones they form a rail on the
-left. Back from any other tab returns to Home.
+left. Back from any other tab returns to Home, and Back from Home offers to exit; see
+[Background running and battery](#background-running-and-battery).
 
 Home shows which engine the app uses and whether it is running or connected, with a coloured dot,
 the engine's name and version, and the address players use. One button sits beside the status:
 
 | Selected engine | Button |
 | --- | --- |
-| None | **Configure** opens the Engines tab. |
+| This device, no version chosen yet | **Configure** opens Settings. |
 | This device | **Start engine** or **Stop engine**. |
-| A remote engine | **Connect** or **Disconnect**. |
+| A remote engine | None: the app connects on its own. |
 
-Below it, Home lists what is playing now and what you played recently. Versions, logs, restarts
-and engine settings live in the [Engines](#engines) tab.
+Below it, Home lists what is playing now and what you played recently. Choosing the engine,
+versions, logs and engine settings live in [Settings](#engine-connection).
 
 **Settings > About** shows the app version and where app and engine releases come from.
 **Open-source licenses** lists the app, the engine it downloads, and the components the app
@@ -108,46 +110,62 @@ includes, with each one's version where known, copyright, license and source; se
 The app is under the GNU AGPL v3.0, the Kotlin standard library and Material Design icons under
 the Apache License 2.0.
 
-## Engines
+## Engine connection
 
-The **Engines** tab lists every engine the app can use in one list: each engine version downloaded
-to this device ("This device, v1.0.1") and each remote engine you added (its name and address).
-One of them is **Selected**; Home, Search and playback all use it. Choose a row to use that
-engine, to edit a remote engine, or to remove it. Editing the connected remote engine reconnects
-to it at once; playback continues. Removing the selected engine leaves nothing selected, and Home
-shows **Configure** again.
+**Settings > Engine connection** lists the engines the app can use. **This device** always comes
+first and is the default: it is the engine downloaded to this device, set up under
+[Local engine](#local-engine) below. Each remote engine you added follows, with its name and
+address. One of them is **Selected**; Home, Search and playback all use it. Choose **This
+device** to use it, or choose a remote engine to use, edit or remove it. Editing the connected
+remote engine reconnects to it at once; playback continues. Removing the selected remote engine
+switches back to this device.
 
 Switching is free in both directions. Selecting a remote engine stops this device's engine if it
-runs, and selecting another engine disconnects from a remote one first.
+runs, and selecting this device disconnects from a remote one first. Switching back to this
+device runs the version it used before, when that version is still installed.
 
-### This device
+## Local engine
 
-When a downloaded version is selected, the tab shows its state with **Start engine** or **Stop
-engine**, **Restart**, **Versions** ([Engine versions](#engine-versions)) and **Logs**, a
-**vX.Y.Z available** button when a newer release exists. Below that, a collapsed **Engine
-settings** section opens the engine [settings](#engine-settings).
-When you change settings while the engine runs, a banner offers **Restart** to apply them.
+**Settings > Local engine** manages this device's engine. Its controls work only while **This
+device** is selected under Engine connection; with a remote engine selected the whole section is
+dimmed and disabled. It shows the engine's state and version, then one action per row:
+
+- **Manage versions** opens [Engine versions](#engine-versions) to install, switch or remove a
+  version.
+- **Start engine** or **Stop engine**.
+- **Reinstall** downloads the selected version again over the installed copy, with progress and
+  **Cancel** on the Engine versions screen. A failed or cancelled reinstall leaves the installed
+  copy untouched. Reinstalling the running version restarts the engine on the new copy.
+- **View logs** opens [Logs](#logs-and-problems).
+
+A **vX.Y.Z available** button appears when a newer release exists. The engine
+[settings](#engine-settings) follow. When you change settings while the engine runs, a banner
+offers **Restart** to apply them.
 
 ### Remote engines
 
 A remote engine is an Outpace engine running on another device of your network. On that device,
 make its HTTP API reachable from the network, for example `OUTPACE_BIND=0.0.0.0:6878` (in the
-Android app: **Allow LAN access**). Then choose **Add engine > Add a remote engine** and enter a
+Android app: **Allow LAN access**). Then choose **Settings > Engine connection > Add a remote
+engine** and enter a
 name and its address, such as `192.168.1.20:6878`. The port defaults to `6878`; a pasted
 `http://` prefix is accepted. For an engine served through an HTTPS reverse proxy, enter its
 address with `https://`, such as `https://engine.example.com`; requests and players then use HTTPS,
 and the port defaults to `443`. Up to 16 remote engines can be added.
 
-While the Engines tab is open, each remote engine shows whether it answers: a green dot for
-online, a red one for not answering. The app checks each one every 15 seconds, and only while the
-tab is open.
+While Settings is open, each remote engine shows whether it answers: a green dot for online, a
+red one for not answering. The app checks each one every 15 seconds, and only while Settings is
+open.
 
-**Connect** makes the app check the selected remote engine and list its streams, the same way it
-does for its own engine. While connected, the app keeps a notification with the stream count and
-a **Disconnect** button, and keeps checking in the background, so a player streaming from that
-engine keeps working with the app closed. If the engine stops answering, Home shows **Not
-answering** and the app keeps retrying until it answers again or you press **Disconnect**. A
-remote engine left connected reconnects when the app opens again or the device restarts.
+There is no connect step. While the app is open it stays connected to the selected remote engine:
+it checks the engine and lists its streams, the same way it does for its own engine, and selecting
+another engine switches over at once. If the engine stops answering, Home shows **Not answering**
+and the app keeps retrying until it answers again.
+
+Leaving the app with the Home button keeps the connection, with a notification showing the
+stream count. Exiting the app ends it; see
+[Background running and battery](#background-running-and-battery). Opening the app connects
+again. The app does not connect to a remote engine when the device starts.
 
 With a remote engine:
 
@@ -244,7 +262,7 @@ stream without any app installed. With engine v1.2.0 or newer, the engine can fi
 one to play a live stream. The engine casts; the app is only the remote control. See the engine's
 [Casting](https://github.com/outpace-stream/outpace-engine/wiki/Casting) page for how it works.
 
-**Turn it on.** For this device's engine, turn on **Cast to TVs (DLNA)** in Engines > Engine
+**Turn it on.** For this device's engine, turn on **Cast to TVs (DLNA)** in Settings > Local engine
 settings > Network. The setting appears only when the selected version is v1.2.0 or newer and
 sets `OUTPACE_ENABLE_CAST=true`. The TV fetches the stream from this device, so casting also
 needs **Allow LAN access**: when it is off, the app explains why and offers to turn it on, with
@@ -286,7 +304,7 @@ are IPv4 only, like the engine.
 [stream search](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search), which needs
 engine v1.0.0 or newer. It is off by default: your query and this device's IP address go to
 AceStream's public index over plain HTTP, where the index and anyone on the network path can see
-them. Turn it on with **Turn on search** on the Search tab or **Stream search** in the Engines tab; a
+them. Turn it on with **Turn on search** on the Search tab or **Stream search** under Settings > Local engine; a
 running engine restarts to pick it up. With a remote engine selected, search uses that engine's
 own setting.
 
@@ -315,12 +333,14 @@ badges:
 | pre-release | Hidden unless **Show pre-releases** is ticked. |
 | not available for this device | That release has no Android build for this device. Releases before v1.0.0 have none, and 32-bit builds (`armv7-linux-androideabi`) start with the release after v1.0.1. |
 
-Choose a row to download it, switch to it or remove it. A download becomes the selected engine
-only when no engine is selected; otherwise it joins the Engines list. Switching while the engine
-runs restarts it on the new version. Up to 3 versions can be installed at once. The running
+Each row has its own buttons: **Install** downloads that release, **Use** switches to an
+installed one, and **Remove** deletes it. Nothing downloads on its own; you choose the release.
+While a download runs, it shows its progress with **Cancel** beside it, and the other buttons wait.
+A download becomes the selected version only when this device has none selected yet. Switching
+while the engine runs restarts it on the new version. Up to 3 versions can be installed at once. The running
 version, or one that is starting, can't be removed.
 
-When a newer release exists, the Engines tab shows a **vX.Y.Z available** button. The app checks GitHub when the main screen opens, at most once a day, and never upgrades
+When a newer release exists, Settings > Local engine shows a **vX.Y.Z available** button. The app checks GitHub when the main screen opens, at most once a day, and never upgrades
 the engine by itself.
 
 GitHub limits how often its API can be called without an account, per IP address. Behind a VPN
@@ -330,12 +350,11 @@ that API and keep working.
 
 ## Engine settings
 
-Engine settings sit in the Engines tab, in the **Engine settings** section below this device's
-engine, and appear only while a downloaded version is selected. The section starts collapsed:
-choose it to show or hide the settings. They save as soon as you change them and apply the next time the
-engine starts. While the engine runs with older settings, a banner offers **Restart** to apply
+Engine settings sit in **Settings > Local engine**, below the engine's controls, and can be
+changed only while **This device** is selected. They save as soon as you change them and apply
+the next time the engine starts. While the engine runs with older settings, a banner offers **Restart** to apply
 them right away. Playback presets set an engine variable only when they differ from the engine
-default. **Start on boot** and **Stop when idle** are in the **Settings** tab.
+default. **Start on boot** and **Stop when idle** are further down Settings, under **Background**.
 
 | Setting | Default | What it sets |
 | --- | --- | --- |
@@ -356,7 +375,7 @@ default. **Start on boot** and **Stop when idle** are in the **Settings** tab.
 | Cast to TVs (DLNA) | Off | [`OUTPACE_ENABLE_CAST`](https://github.com/outpace-stream/outpace-engine/wiki/Casting)`=true`, set only when on. Shown for engine v1.2.0 or newer. Needs **Allow LAN access**; see [Play on TV](#play-on-tv-dlna). |
 | Stream search | Off | [`OUTPACE_COMPAT_ACESTREAM_SERVICES`](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search). Sends queries and your IP address to AceStream's public index over plain HTTP. |
 | AceStream identity | Off | [`OUTPACE_ACESTREAM_IDENTITY`](https://github.com/outpace-stream/outpace-engine/wiki/Engine-Camouflage)`=true`, set only when on. Shown only for engine v1.1.0 or newer. Peers, trackers, the catalog and (with **Stream search** on) search see the official AceStream Linux engine profile instead of Outpace. The first start with it on stores a device id (`acestream-device-id`) in the app's private data, which uninstalling removes. The engine makes one HTTPS lookup to RIPEstat (`stat.ripe.net`) for this device's network and country after two peers report the same public address. If the engine cannot derive its hardware key, it stops at startup and the error shows in Logs. |
-| Start on boot (Settings tab) | On for TV, off for phones | Starts this device's engine when the device boots. A remote engine left connected reconnects either way. |
+| Start on boot (Settings tab) | On for TV, off for phones | Starts this device's engine when the device boots. A remote engine connects when the app opens instead. |
 | Stop when idle (Settings tab) | On for phones, off for TV | Stops this device's engine after 10 minutes with no streams, to save battery. A remote connection is never stopped for being idle. |
 
 **App updates** has its own group in Settings; see [App updates](#app-updates). The update
@@ -406,9 +425,19 @@ speakers are welcome as issues or pull requests against `app/src/main/res/values
 
 ## Background running and battery
 
-While the engine runs, the app shows a notification with the stream count and a **Stop**
-button. That notification is what keeps Android from closing the engine. On Android 13 and
-newer, allow notifications when asked.
+While the engine runs or a remote engine is connected, the app shows a notification with the
+stream count and an **Exit** button. That notification is what keeps Android from closing the
+engine. On Android 13 and newer, allow notifications when asked.
+
+Leaving the app with the Home button or the app switcher keeps everything running in the
+background. Exiting stops it all:
+
+- **Exit** in the notification closes the app at once: it stops this device's engine or ends the
+  remote connection, and the notification goes away.
+- **Back** from Home asks first while something runs. **Exit** closes the app, **Keep in
+  background** leaves it running, and **Cancel** stays. When this device's engine is in use, the
+  question warns that players and other devices using it will stop working. With nothing
+  running, Back closes the app without asking.
 
 Some devices still stop background apps. If streams stop when the screen turns off, allow the app
 to ignore battery optimisation (**Settings > Battery optimisation**). On TV, and when start on
@@ -425,7 +454,7 @@ searches for TVs unless you open that screen or press **Search again**.
 
 ## Logs and problems
 
-**Logs** (in the Engines tab) shows the engine's last 500 lines of output, plus the app's own lines starting with
+**View logs** (in Settings > Local engine) shows the engine's last 500 lines of output, plus the app's own lines starting with
 `[app]`. **Copy** and **Share** help when you report a problem; remove content ids before posting
 logs anywhere public.
 

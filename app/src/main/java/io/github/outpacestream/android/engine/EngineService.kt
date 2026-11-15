@@ -145,6 +145,15 @@ class EngineService : Service() {
                 stopEngine()
                 finish()
             }
+            ACTION_EXIT -> {
+                // The notification's Exit: close every app screen, then end the session as Stop does.
+                EngineController.requestExit()
+                worker.execute {
+                    commandId = startId
+                    stopEngine()
+                    finish()
+                }
+            }
             ACTION_CAST_STOP -> {
                 // The same path as the in-app Stop, so it also supersedes any play queued before it.
                 EngineController.stopCast()
@@ -205,7 +214,6 @@ class EngineService : Service() {
     private fun startRemote(engine: RemoteEngine) {
         generation++
         remote = engine
-        Prefs(this).remoteConnected = true
         EngineController.log.add("[app] connecting to ${engine.name} at ${engine.endpoint.display}")
         EngineController.update(
             EngineState.Starting, emptyList(), clearVersion = true,
@@ -322,7 +330,6 @@ class EngineService : Service() {
         cancelPoll()
         endWatch()
         endCastSession(stopTv = true)
-        Prefs(this).remoteConnected = false
         EngineController.log.add("[app] disconnected from ${engine.name}")
         EngineController.update(EngineState.Stopped, emptyList(), clearVersion = true)
     }
@@ -351,7 +358,8 @@ class EngineService : Service() {
 
     /**
      * One remote poll: the health check decides connected or unreachable, then streams as for a
-     * local engine. No idle stop and no wake lock: the phone holds no process to keep alive.
+     * local engine. No idle stop and no wake lock: the phone holds no process to keep alive. The
+     * connection lasts until the user exits the app or selects another engine.
      */
     private fun pollRemote(engine: RemoteEngine) {
         // Runs on the single worker, like every start and stop, so the session cannot change
@@ -703,7 +711,7 @@ class EngineService : Service() {
         }
         val immutable = if (Build.VERSION.SDK_INT >= 23) PendingIntent.FLAG_IMMUTABLE else 0
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), immutable)
-        val stop = PendingIntent.getService(this, 1, Intent(this, EngineService::class.java).setAction(ACTION_STOP), immutable)
+        val exit = PendingIntent.getService(this, 1, Intent(this, EngineService::class.java).setAction(ACTION_EXIT), immutable)
         val version = EngineController.runningVersion?.let { "v$it" } ?: ""
         val n = EngineController.streams.size
         val connected = (EngineController.sessionTarget as? EngineTarget.Remote)?.engine
@@ -726,7 +734,6 @@ class EngineService : Service() {
                 else -> getString(R.string.state_starting)
             }
         }
-        val stopLabel = getString(if (connected != null) R.string.action_disconnect else R.string.action_stop)
         val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(this)
         builder
             .setSmallIcon(R.drawable.ic_notification)
@@ -739,12 +746,13 @@ class EngineService : Service() {
             val stopCast = PendingIntent.getService(this, 2, Intent(this, EngineService::class.java).setAction(ACTION_CAST_STOP), immutable)
             builder.addAction(Notification.Action.Builder(0, getString(R.string.cast_stop), stopCast).build())
         }
-        return builder.addAction(Notification.Action.Builder(0, stopLabel, stop).build()).build()
+        return builder.addAction(Notification.Action.Builder(0, getString(R.string.action_exit), exit).build()).build()
     }
 
     companion object {
         const val ACTION_START = "io.github.outpacestream.android.START"
         const val ACTION_STOP = "io.github.outpacestream.android.STOP"
+        const val ACTION_EXIT = "io.github.outpacestream.android.EXIT"
         const val ACTION_RESTART = "io.github.outpacestream.android.RESTART"
         const val ACTION_CAST_STOP = "io.github.outpacestream.android.CAST_STOP"
         private const val CHANNEL = "engine"

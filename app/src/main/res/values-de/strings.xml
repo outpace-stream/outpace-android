@@ -13,8 +13,6 @@
 
     <string name="action_start">Engine starten</string>
     <string name="action_stop">Engine stoppen</string>
-    <string name="action_versions_short">Versionen</string>
-    <string name="action_logs">Protokolle</string>
     <string name="action_play">Abspielen</string>
 
     <string name="engine_update_available">v%1$s verfügbar</string>
@@ -113,8 +111,8 @@
     <string name="badge_latest">neueste</string>
     <string name="badge_prerelease">Vorabversion</string>
     <string name="badge_unavailable">für dieses Gerät nicht verfügbar</string>
-    <string name="version_install">Herunterladen und verwenden</string>
-    <string name="version_use">Diese Version verwenden</string>
+    <string name="version_install">Installieren</string>
+    <string name="version_use">Verwenden</string>
     <string name="version_remove">Entfernen</string>
     <string name="version_downloading">v%1$s wird heruntergeladen: %2$s</string>
     <string name="version_installed">v%1$s installiert</string>
@@ -152,17 +150,8 @@
     <string name="tab_home">Start</string>
     <string name="tab_search">Suche</string>
     <string name="tab_settings">Einstellungen</string>
-    <string name="tab_engines">Engines</string>
 
     <!-- Engines -->
-    <string name="engines_title">Engines</string>
-    <string name="engines_intro">Führe eine Engine auf diesem Gerät aus oder nutze eine, die auf einem anderen Gerät läuft. Die ausgewählte Engine spielt alles ab.</string>
-    <string name="engines_section_local">Engine dieses Geräts</string>
-    <string name="engines_section_remote">Remote-Engine</string>
-    <string name="engine_settings_title">Engine-Einstellungen</string>
-    <string name="engine_settings_summary">Suche, Wiedergabe, Netzwerk und Peers</string>
-    <string name="engine_settings_show">Engine-Einstellungen anzeigen</string>
-    <string name="engine_settings_hide">Engine-Einstellungen ausblenden</string>
     <string name="engine_local_name">Dieses Gerät</string>
     <string name="engine_badge_selected">Ausgewählt</string>
     <string name="engine_meta_running">läuft</string>
@@ -170,8 +159,6 @@
     <string name="engine_meta_offline">antwortet nicht</string>
     <string name="engine_meta_checking">wird geprüft</string>
     <string name="engine_meta_connected">verbunden</string>
-    <string name="action_add_engine">Engine hinzufügen</string>
-    <string name="add_engine_download">Auf dieses Gerät herunterladen</string>
     <string name="add_engine_remote">Remote-Engine hinzufügen</string>
     <string name="engine_menu_use">Diese Engine verwenden</string>
     <string name="engine_menu_edit">Bearbeiten</string>
@@ -188,18 +175,12 @@
         <item quantity="one">Es kann nur %1$d Remote-Engine hinzugefügt werden. Entferne sie zuerst.</item>
         <item quantity="other">Es können bis zu %1$d Remote-Engines hinzugefügt werden. Entferne zuerst eine.</item>
     </plurals>
-    <string name="remote_settings_note">Diese Engine nutzt ihre eigene Konfiguration. Ändere sie auf dem Gerät, auf dem sie läuft.</string>
-    <string name="remote_state_disconnected">Nicht mit %1$s verbunden</string>
-    <string name="remote_state_connecting">Verbinde mit %1$s</string>
-    <string name="remote_state_connected">Mit %1$s verbunden</string>
-    <string name="remote_state_unreachable">%1$s antwortet nicht: %2$s</string>
-    <string name="action_connect">Verbinden</string>
     <string name="action_configure">Einrichten</string>
     <string name="action_save">Speichern</string>
 
     <!-- Home engine card -->
-    <string name="home_none">Keine Engine ausgewählt</string>
-    <string name="home_none_detail">Lade eine herunter oder füge eine Remote-Engine hinzu.</string>
+    <string name="home_none">Lokale Engine nicht eingerichtet</string>
+    <string name="home_none_detail">Installiere eine Version in den Einstellungen oder füge eine Remote-Engine hinzu.</string>
     <string name="home_not_connected">Nicht verbunden</string>
     <string name="home_connecting">Verbinde</string>
     <string name="home_connected">Verbunden</string>
@@ -209,7 +190,6 @@
     <string name="no_engine_selected">Keine Engine ausgewählt. Wähle eine unter Engines.</string>
     <string name="remote_not_outpace">Sie hat geantwortet, aber nicht wie eine Outpace-Engine</string>
     <string name="state_connecting">Verbinde</string>
-    <string name="action_disconnect">Trennen</string>
     <plurals name="notification_remote">
         <item quantity="one">Mit %1$s verbunden, %2$d Stream</item>
         <item quantity="other">Mit %1$s verbunden, %2$d Streams</item>
@@ -282,13 +262,13 @@
     <string name="search_err_engine">Die Engine läuft nicht: %1$s</string>
 
     <!-- Settings -->
-    <string name="settings_autosave_app">Änderungen werden sofort gespeichert. Engine-Einstellungen findest du im Tab Engines.</string>
+    <string name="settings_autosave_app">Änderungen werden sofort gespeichert.</string>
     <string name="search_engine_changed">Die Engine hat sich geändert. Suche erneut, um ihre Ergebnisse zu sehen.</string>
     <string name="search_err_remote_off">Die Suche ist auf dieser Engine aus. Schalte sie in der Konfiguration dieser Engine ein.</string>
     <string name="search_connecting">Verbinde mit der Engine</string>
     <string name="play_connecting">Verbinde mit der Engine</string>
-    <string name="notice_none_title_any">Keine Engine ausgewählt</string>
-    <string name="notice_none_text_any">Lade unter Engines eine Engine herunter oder füge eine Remote-Engine hinzu.</string>
+    <string name="notice_none_title_any">Lokale Engine nicht eingerichtet</string>
+    <string name="notice_none_text_any">Installiere eine Version unter Lokale Engine in den Einstellungen oder füge eine Remote-Engine hinzu.</string>
     <string name="settings_autosave">Änderungen werden sofort gespeichert und gelten beim nächsten Start der Engine.</string>
     <string name="settings_section_search">Suche</string>
     <string name="settings_search">Stream-Suche</string>
@@ -402,4 +382,22 @@
     <string name="proxy_credentials_incomplete">Gib Benutzername und Passwort ein, oder keins von beiden.</string>
     <string name="proxy_credentials_too_long">Benutzername und Passwort dürfen je bis zu 255 Byte lang sein.</string>
     <string name="stream_via_proxy">über den Proxy</string>
+    <string name="settings_section_connection">Engine-Verbindung</string>
+    <string name="connection_intro">Die ausgewählte Engine spielt alles ab. Die Engine dieses Geräts steht immer an erster Stelle; richte sie unten unter Lokale Engine ein. Eine Remote-Engine läuft auf einem anderen Gerät.</string>
+    <string name="settings_section_local">Lokale Engine</string>
+    <string name="local_disabled">Eine Remote-Engine ist ausgewählt. Wähle unter Engine-Verbindung „Dieses Gerät“, um die lokale Engine zu nutzen und zu ändern.</string>
+    <string name="action_manage_versions">Versionen verwalten</string>
+    <string name="action_reinstall">Neu installieren</string>
+    <string name="action_view_logs">Protokolle anzeigen</string>
+    <string name="local_meta_none">Keine Version installiert</string>
+    <string name="local_meta_hint">Einrichtung unten unter Lokale Engine</string>
+    <string name="local_none">Keine Version ausgewählt</string>
+    <string name="local_none_detail">Installiere oder wähle eine unter Versionen verwalten.</string>
+    <string name="version_label">v%1$s</string>
+    <string name="version_reinstalled">v%1$s neu installiert</string>
+    <string name="exit_title">Outpace beenden?</string>
+    <string name="exit_local">Damit wird die Engine auf diesem Gerät beendet. Player und andere Geräte, die sie nutzen, funktionieren dann nicht mehr.</string>
+    <string name="exit_message">Outpace läuft dann nicht mehr im Hintergrund. Damit es weiterläuft, verlasse die App stattdessen mit der Home-Taste.</string>
+    <string name="action_exit">Beenden</string>
+    <string name="action_keep_background">Im Hintergrund lassen</string>
 </resources>

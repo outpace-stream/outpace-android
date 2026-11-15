@@ -10,9 +10,11 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.outpacestream.android.EngineFiles
+import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.CastGate
 import io.github.outpacestream.android.core.EngineChoice
+import io.github.outpacestream.android.core.EngineChoices
 import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.EngineTarget
 import io.github.outpacestream.android.core.HlsStart
@@ -33,47 +35,52 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Every engine the app can use, local versions and remote engines in one list, plus the controls
- * and settings of the selected one. Remote engines are health-checked only while this tab shows.
+ * The two engine sections of Settings. Engine connection picks the engine that plays everything:
+ * this device's engine, always first and the default, or a remote one. Local engine manages this
+ * device's engine (versions, start and stop, reinstall, logs, settings) and is disabled while a
+ * remote engine is selected. Remote engines are health-checked only while Settings shows.
  */
-class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R.layout.screen_engines) {
+class EngineSections(private val host: MainActivity, private val root: View) {
     private sealed interface Entry {
         val key: String
-        val choice: EngineChoice
 
-        data class Local(val version: String) : Entry {
-            override val key get() = "local:$version"
-            override val choice get() = EngineChoice.Local(version)
+        data object Local : Entry {
+            override val key get() = "local"
         }
 
         data class Remote(val engine: RemoteEngine) : Entry {
             override val key get() = "remote:${engine.id}"
-            override val choice get() = EngineChoice.Remote(engine.id)
         }
     }
 
+    private val prefs: Prefs get() = host.prefs
+
+    private fun <T : View> find(id: Int): T = root.findViewById(id)
+
     private val list = find<LinearLayout>(R.id.engine_list)
-    private val addButton = find<Button>(R.id.add_engine)
-    private val localSection = find<View>(R.id.local_section)
+    private val addRemote = find<Button>(R.id.add_remote)
+    private val localTitle = find<View>(R.id.local_title)
+    private val localDisabled = find<View>(R.id.local_disabled)
+    private val localSection = find<ViewGroup>(R.id.local_section)
     private val localState = find<TextView>(R.id.local_state)
+    private val localDetail = find<TextView>(R.id.local_detail)
+    private val versions = find<Button>(R.id.versions)
     private val startStop = find<Button>(R.id.start_stop)
-    private val restart = find<Button>(R.id.restart)
+    private val reinstall = find<Button>(R.id.reinstall)
+    private val logs = find<Button>(R.id.logs)
     private val update = find<Button>(R.id.update)
     private val restartBanner = find<View>(R.id.restart_banner)
-    private val remoteSection = find<View>(R.id.remote_section)
-    private val remoteState = find<TextView>(R.id.remote_state)
-    private val connect = find<Button>(R.id.connect)
-    private val settingsToggle = find<View>(R.id.settings_toggle)
-    private val settingsBody = find<View>(R.id.settings_body)
-    private val settingsChevron = find<ImageView>(R.id.settings_chevron)
-    private val rows = SettingRows(host) { render() }
+    private val rows = SettingRows(host) { host.renderCurrent() }
     private val proxySection = find<View>(R.id.proxy_section)
     private lateinit var proxy: ProxySettings
 
-    /** Whether the selected local engine takes the proxy variables; set on every render. */
+    /** Whether the local version shown takes the proxy variables; set on every render. */
     private var proxySupported = false
 
-    /** Shown only when the selected engine reads `OUTPACE_ACESTREAM_IDENTITY`. */
+    /** Whether the Local engine section currently accepts input; null until the first render. */
+    private var localEnabled: Boolean? = null
+
+    /** Shown only when the local version reads `OUTPACE_ACESTREAM_IDENTITY`. */
     private lateinit var identityRow: View
     private lateinit var castRow: View
 
@@ -85,26 +92,14 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
     private val probeRound = AtomicInteger()
 
     init {
-        addButton.setOnClickListener { showAddMenu() }
-        startStop.setOnClickListener { onStartStop() }
-        restart.setOnClickListener { EngineController.restart(host) }
-        find<Button>(R.id.restart_apply).setOnClickListener { EngineController.restart(host) }
-        find<Button>(R.id.versions).setOnClickListener { host.open(VersionsActivity::class.java) }
+        addRemote.setOnClickListener { RemoteDialog.show(host, null) { host.renderCurrent(); onVisible() } }
+        versions.setOnClickListener { host.open(VersionsActivity::class.java) }
         update.setOnClickListener { host.open(VersionsActivity::class.java) }
-        find<Button>(R.id.logs).setOnClickListener { host.open(LogsActivity::class.java) }
-        connect.setOnClickListener {
-            if (sessionActive()) EngineController.stop(host) else host.startEngine()
-        }
-        settingsToggle.setOnClickListener { setSettingsExpanded(settingsBody.visibility != View.VISIBLE) }
-        setSettingsExpanded(false)
+        startStop.setOnClickListener { onStartStop() }
+        reinstall.setOnClickListener { localVersion()?.let { VersionsActivity.reinstall(host, it) } }
+        logs.setOnClickListener { host.open(LogsActivity::class.java) }
+        find<Button>(R.id.restart_apply).setOnClickListener { EngineController.restart(host) }
         buildSettings()
-    }
-
-    /** Collapsed by default; the state lasts while the app runs, which is all a quick tweak needs. */
-    private fun setSettingsExpanded(expanded: Boolean) {
-        settingsBody.visibility = if (expanded) View.VISIBLE else View.GONE
-        settingsChevron.rotation = if (expanded) 180f else 0f
-        settingsToggle.contentDescription = host.getString(if (expanded) R.string.engine_settings_hide else R.string.engine_settings_show)
     }
 
     private fun buildSettings() {
@@ -140,7 +135,7 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
         // Casting needs LAN access: turning it on with LAN access off explains why and offers it.
         castRow = rows.toggle(network, R.string.settings_cast, R.string.settings_cast_summary, { prefs.settings.cast }) { v ->
             prefs.settings = prefs.settings.copy(cast = v)
-            if (v && !prefs.settings.lan) CastSetup.confirmLan(host) { rows.refresh(); render() }
+            if (v && !prefs.settings.lan) CastSetup.confirmLan(host) { rows.refresh(); host.renderCurrent() }
         }
         rows.engineToggle(peers, R.string.settings_seeding, R.string.settings_seeding_summary, { it.seeding }) { s, v -> s.copy(seeding = v) }
         rows.engineChoice(
@@ -154,7 +149,7 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
         ) { s, v -> s.copy(uploadLimit = v) }
         proxy = ProxySettings(host, find(R.id.group_proxy)) {
             rows.applyLocks()
-            render()
+            host.renderCurrent()
         }
         // With the proxy always on, the engine refuses inbound peers and port mapping.
         val proxyLock = { if (prefs.settings.alwaysProxied(proxySupported)) R.string.settings_locked_by_proxy else null }
@@ -171,20 +166,22 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
         }
     }
 
-    override fun focusTarget(): View = list.getChildAt(0) ?: addButton
+    fun focusTarget(): View = list.getChildAt(0) ?: addRemote
 
-    override fun onShown() {
+    fun onShown() {
         rows.refresh()
         proxy.refresh()
+        // refresh() re-enables locked rows' switches; a disabled section must stay disabled.
+        localEnabled = null
     }
 
-    override fun onVisible() {
+    fun onVisible() {
         probes?.cancel(false)
         val round = probeRound.incrementAndGet()
         probes = prober.scheduleWithFixedDelay({ probeRemotes(round) }, 0, PROBE_INTERVAL_MS, TimeUnit.MILLISECONDS)
     }
 
-    override fun onInvisible() {
+    fun onInvisible() {
         probeRound.incrementAndGet()
         probes?.cancel(false)
         probes = null
@@ -201,12 +198,7 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
             val ok = try { RemoteHealth.isOk(Http.getWithin(StreamUrls.health(r.endpoint), PROBE_TIMEOUT_MS)) } catch (_: Exception) { false }
             health[r.id] = ok
         }
-        host.onMain { if (round == probeRound.get()) renderList() }
-    }
-
-    private fun sessionActive(): Boolean {
-        val s = EngineController.state
-        return s != EngineState.Stopped && s !is EngineState.Crashed
+        host.onMain { if (round == probeRound.get()) renderList(EngineSelection.current(host)) }
     }
 
     private fun onStartStop() {
@@ -217,40 +209,33 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
         }
     }
 
-    override fun render() {
-        renderList()
-        when (val c = EngineSelection.current(host)) {
-            is EngineChoice.Local -> {
-                localSection.visibility = View.VISIBLE
-                remoteSection.visibility = View.GONE
-                renderLocal(c.version)
-            }
-            is EngineChoice.Remote -> {
-                localSection.visibility = View.GONE
-                remoteSection.visibility = View.VISIBLE
-                EngineSelection.remote(host)?.let(::renderRemote)
-            }
-            null -> {
-                localSection.visibility = View.GONE
-                remoteSection.visibility = View.GONE
-            }
-        }
+    /**
+     * The local version the section describes: the selected one, or while a remote is selected the
+     * one choosing this device again would run. Null when no version is chosen or installed.
+     */
+    private fun localVersion(): String? = when (val c = EngineSelection.current(host)) {
+        is EngineChoice.Local -> c.version
+        is EngineChoice.Remote -> (EngineChoices.local(prefs.lastLocalVersion, EngineFiles.store(host).installed()) as? EngineChoice.Local)?.version
+        null -> null
     }
 
-    private fun entries(): List<Entry> =
-        EngineFiles.store(host).installed().map { Entry.Local(it) } + prefs.remotes.map { Entry.Remote(it) }
+    fun render() {
+        val choice = EngineSelection.current(host)
+        renderList(choice)
+        renderLocal(localVersion(), enabled = choice !is EngineChoice.Remote)
+    }
 
-    private fun renderList() {
-        val selected = EngineSelection.current(host)
-        list.syncRows(entries(), { it.key }, { LayoutInflater.from(host).inflate(R.layout.item_engine, list, false) }) { row, e ->
-            bindEntry(row, e, e.choice == selected)
+    private fun renderList(selected: EngineChoice?) {
+        val entries = listOf<Entry>(Entry.Local) + prefs.remotes.map { Entry.Remote(it) }
+        list.syncRows(entries, { it.key }, { LayoutInflater.from(host).inflate(R.layout.item_engine, list, false) }) { row, e ->
+            bindEntry(row, e, if (e is Entry.Remote) selected == EngineChoice.Remote(e.engine.id) else selected !is EngineChoice.Remote)
         }
     }
 
     private fun bindEntry(row: View, e: Entry, selected: Boolean) {
         val target = EngineController.target
         val live = when (e) {
-            is Entry.Local -> (target as? EngineTarget.Local)?.version == e.version
+            Entry.Local -> target is EngineTarget.Local
             is Entry.Remote -> (target as? EngineTarget.Remote)?.engine?.id == e.engine.id
         }
         val stateColor = when (EngineController.state) {
@@ -277,115 +262,128 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
         }
         @Suppress("DEPRECATION") // Context.getColor needs API 23; colors here do not depend on the theme.
         row.findViewById<ImageView>(R.id.dot).setColorFilter(host.resources.getColor(color))
-        val (title, detail) = when (e) {
-            is Entry.Local -> host.getString(R.string.engine_local_name) to "v${e.version}"
-            is Entry.Remote -> e.engine.name to e.engine.endpoint.display
-        }
-        row.findViewById<TextView>(R.id.title).text = title
-        row.findViewById<TextView>(R.id.meta).text = host.joinMeta(listOf(detail, status))
-        row.findViewById<View>(R.id.badge).visibility = if (selected) View.VISIBLE else View.GONE
-        row.setOnClickListener { showEntryMenu(e, selected) }
-    }
-
-    private fun showEntryMenu(e: Entry, selected: Boolean) {
-        val options = ArrayList<Pair<String, () -> Unit>>()
-        if (!selected) options += host.getString(R.string.engine_menu_use) to { EngineSelection.select(host, e.choice); render() }
-        if (e is Entry.Remote) options += host.getString(R.string.engine_menu_edit) to { RemoteDialog.show(host, e.engine) {
-                health.remove(e.engine.id)
-                render()
-                onVisible()
-            } }
-        options += host.getString(R.string.engine_menu_remove) to {
-            when (e) {
-                is Entry.Local -> if (!EngineSelection.removeLocal(host, e.version)) host.toast(host.getString(R.string.version_remove_running))
-                is Entry.Remote -> {
-                    EngineSelection.removeRemote(host, e.engine.id)
-                    health.remove(e.engine.id)
-                }
+        val meta = when (e) {
+            Entry.Local -> {
+                val version = localVersion()?.let { "v$it" } ?: host.getString(R.string.local_meta_none)
+                host.joinMeta(listOf(version, status)) + "\n" + host.getString(R.string.local_meta_hint)
             }
-            render()
+            is Entry.Remote -> host.joinMeta(listOf(e.engine.endpoint.display, status))
         }
-        val title = when (e) {
-            is Entry.Local -> "${host.getString(R.string.engine_local_name)}, v${e.version}"
+        row.findViewById<TextView>(R.id.title).text = when (e) {
+            Entry.Local -> host.getString(R.string.engine_local_name)
             is Entry.Remote -> e.engine.name
         }
+        row.findViewById<TextView>(R.id.meta).text = meta
+        row.findViewById<View>(R.id.badge).visibility = if (selected) View.VISIBLE else View.GONE
+        row.setOnClickListener {
+            when (e) {
+                Entry.Local -> if (!selected) { EngineSelection.selectLocal(host); host.renderCurrent() }
+                is Entry.Remote -> showRemoteMenu(e.engine, selected)
+            }
+        }
+    }
+
+    private fun showRemoteMenu(engine: RemoteEngine, selected: Boolean) {
+        val options = ArrayList<Pair<String, () -> Unit>>()
+        if (!selected) options += host.getString(R.string.engine_menu_use) to {
+            EngineSelection.select(host, EngineChoice.Remote(engine.id))
+            host.renderCurrent()
+        }
+        options += host.getString(R.string.engine_menu_edit) to {
+            RemoteDialog.show(host, engine) {
+                health.remove(engine.id)
+                host.renderCurrent()
+                onVisible()
+            }
+        }
+        options += host.getString(R.string.engine_menu_remove) to {
+            EngineSelection.removeRemote(host, engine.id)
+            health.remove(engine.id)
+            host.renderCurrent()
+        }
         AlertDialog.Builder(host)
-            .setTitle(title)
+            .setTitle(engine.name)
             .setItems(options.map { it.first }.toTypedArray()) { _, which -> options[which].second() }
             .setNegativeButton(R.string.cancel, null)
             .show()
     }
 
-    private fun showAddMenu() {
-        val options = listOf(
-            host.getString(R.string.add_engine_download) to { host.open(VersionsActivity::class.java) },
-            host.getString(R.string.add_engine_remote) to { RemoteDialog.show(host, null) { render(); onVisible() } },
-        )
-        AlertDialog.Builder(host)
-            .setTitle(R.string.action_add_engine)
-            .setItems(options.map { it.first }.toTypedArray()) { _, which -> options[which].second() }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
-    private fun renderLocal(version: String) {
-        val supported = EngineSettings.proxySupported(version)
+    /**
+     * Draws the Local engine section for [version] (null: none chosen yet). With [enabled] false,
+     * a remote engine is selected and every control in the section is disabled.
+     */
+    private fun renderLocal(version: String?, enabled: Boolean) {
+        localDisabled.visibility = if (enabled) View.GONE else View.VISIBLE
+        if (enabled != localEnabled) {
+            localEnabled = enabled
+            setTreeEnabled(localSection, enabled)
+            localSection.alpha = if (enabled) 1f else DISABLED_ALPHA
+            localTitle.alpha = localSection.alpha
+            // Re-enabling the tree also re-enabled rows another setting locks.
+            if (enabled) {
+                rows.applyLocks()
+                proxy.refresh()
+            }
+        }
+        val supported = version != null && EngineSettings.proxySupported(version)
         if (supported != proxySupported) {
             proxySupported = supported
-            rows.applyLocks()
+            if (enabled) rows.applyLocks()
         }
         proxySection.visibility = if (supported) View.VISIBLE else View.GONE
-        val s = EngineController.state
-        val shown = EngineController.runningVersion ?: version
-        localState.text = host.getString(
-            R.string.engine_detail_named,
-            host.getString(
-                when (s) {
-                    EngineState.Starting -> R.string.state_starting
-                    EngineState.Running -> R.string.state_running
-                    EngineState.Stopping -> R.string.state_stopping
-                    is EngineState.Crashed, is EngineState.Unreachable -> R.string.state_error
-                    EngineState.Stopped -> R.string.state_stopped
-                },
-            ),
-            "v$shown",
-        )
-        startStop.text = host.getString(
-            if (s == EngineState.Running || s == EngineState.Starting || s == EngineState.Stopping) R.string.action_stop else R.string.action_start,
-        )
-        startStop.isEnabled = s != EngineState.Stopping
+        // Only this device's session describes the local engine; a remote session is another engine.
+        val s = if (enabled) EngineController.state else EngineState.Stopped
+        val shown = (if (enabled) EngineController.runningVersion else null) ?: version
+        if (shown == null) {
+            localState.setText(R.string.local_none)
+            localDetail.setText(R.string.local_none_detail)
+            localDetail.visibility = View.VISIBLE
+        } else {
+            localState.text = host.getString(
+                R.string.engine_detail_named,
+                host.getString(
+                    when (s) {
+                        EngineState.Starting -> R.string.state_starting
+                        EngineState.Running -> R.string.state_running
+                        EngineState.Stopping -> R.string.state_stopping
+                        is EngineState.Crashed, is EngineState.Unreachable -> R.string.state_error
+                        EngineState.Stopped -> R.string.state_stopped
+                    },
+                ),
+                "v$shown",
+            )
+            localDetail.visibility = View.GONE
+        }
+        val active = s == EngineState.Running || s == EngineState.Starting || s == EngineState.Stopping
+        startStop.text = host.getString(if (active) R.string.action_stop else R.string.action_start)
+        startStop.isEnabled = enabled && shown != null && s != EngineState.Stopping
+        reinstall.isEnabled = enabled && version != null && s != EngineState.Starting && s != EngineState.Stopping
         // The setting applies on the next start, which runs the selected version.
-        identityRow.visibility = if (EngineSettings.supportsAcestreamIdentity(version)) View.VISIBLE else View.GONE
-        restart.isEnabled = s == EngineState.Running
+        identityRow.visibility = if (version != null && EngineSettings.supportsAcestreamIdentity(version)) View.VISIBLE else View.GONE
         val latest = prefs.latestVersion
-        if (latest != null && Releases.compareVersions(latest, shown) > 0) {
+        if (enabled && shown != null && latest != null && Releases.compareVersions(latest, shown) > 0) {
             update.visibility = View.VISIBLE
             update.text = host.getString(R.string.engine_update_available, latest)
         } else {
             update.visibility = View.GONE
         }
-        castRow.visibility = if (CastGate.supports(shown)) View.VISIBLE else View.GONE
+        castRow.visibility = if (shown != null && CastGate.supports(shown)) View.VISIBLE else View.GONE
         val running = EngineController.runningSettings
-        restartBanner.visibility = if (s == EngineState.Running && running != null && running != prefs.settings) View.VISIBLE else View.GONE
+        restartBanner.visibility = if (enabled && s == EngineState.Running && running != null && running != prefs.settings) View.VISIBLE else View.GONE
     }
 
-    private fun renderRemote(engine: RemoteEngine) {
-        val s = EngineController.state
-        remoteState.text = when (s) {
-            EngineState.Starting -> host.getString(R.string.remote_state_connecting, engine.name)
-            EngineState.Running -> host.getString(R.string.remote_state_connected, engine.name)
-            is EngineState.Unreachable -> host.getString(R.string.remote_state_unreachable, engine.name, s.reason)
-            else -> host.getString(R.string.remote_state_disconnected, engine.name)
-        }
-        connect.text = host.getString(if (sessionActive()) R.string.action_disconnect else R.string.action_connect)
-        connect.isEnabled = s != EngineState.Stopping
+    /** Enables or disables [view] and everything inside it, so nothing in it takes clicks or focus. */
+    private fun setTreeEnabled(view: View, enabled: Boolean) {
+        view.isEnabled = enabled
+        if (view is ViewGroup) for (i in 0 until view.childCount) setTreeEnabled(view.getChildAt(i), enabled)
     }
 
     companion object {
         private const val PROBE_INTERVAL_MS = 15_000L
         private const val PROBE_TIMEOUT_MS = 2_000
+        private const val DISABLED_ALPHA = 0.5f
 
-        /** One daemon thread for list health checks, idle while the Engines tab is hidden. */
+        /** One daemon thread for list health checks, idle while Settings is hidden. */
         private val prober = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "engine-probe").apply { isDaemon = true } }
     }
 }

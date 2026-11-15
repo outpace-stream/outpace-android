@@ -120,7 +120,7 @@ class SearchScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent,
         when (b) {
             null -> Unit
             Block.NoEngine -> showNotice(R.string.notice_none_title_any, host.getString(R.string.notice_none_text_any), R.string.action_configure) {
-                host.select(MainActivity.TAB_ENGINES, focus = true)
+                host.select(MainActivity.TAB_SETTINGS, focus = true)
             }
             Block.Off -> showNotice(R.string.notice_off_title, host.getString(R.string.notice_off_text), R.string.notice_off_action) {
                 prefs.settings = prefs.settings.copy(search = true)

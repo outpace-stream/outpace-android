@@ -14,8 +14,6 @@
 
     <string name="action_start">Iniciar motor</string>
     <string name="action_stop">Parar motor</string>
-    <string name="action_versions_short">Versões</string>
-    <string name="action_logs">Registros</string>
     <string name="action_play">Reproduzir</string>
 
     <string name="engine_update_available">v%1$s disponível</string>
@@ -115,8 +113,8 @@
     <string name="badge_latest">mais recente</string>
     <string name="badge_prerelease">prévia</string>
     <string name="badge_unavailable">indisponível para este dispositivo</string>
-    <string name="version_install">Baixar e usar</string>
-    <string name="version_use">Usar esta versão</string>
+    <string name="version_install">Instalar</string>
+    <string name="version_use">Usar</string>
     <string name="version_remove">Remover</string>
     <string name="version_downloading">Baixando v%1$s: %2$s</string>
     <string name="version_installed">v%1$s instalada</string>
@@ -155,17 +153,8 @@
     <string name="tab_home">Início</string>
     <string name="tab_search">Buscar</string>
     <string name="tab_settings">Configurações</string>
-    <string name="tab_engines">Motores</string>
 
     <!-- Engines -->
-    <string name="engines_title">Motores</string>
-    <string name="engines_intro">Execute um motor neste dispositivo ou use um que esteja rodando em outro. O motor selecionado reproduz tudo.</string>
-    <string name="engines_section_local">Motor deste dispositivo</string>
-    <string name="engines_section_remote">Motor remoto</string>
-    <string name="engine_settings_title">Configurações do motor</string>
-    <string name="engine_settings_summary">Busca, reprodução, rede e pares</string>
-    <string name="engine_settings_show">Mostrar configurações do motor</string>
-    <string name="engine_settings_hide">Ocultar configurações do motor</string>
     <string name="engine_local_name">Este dispositivo</string>
     <string name="engine_badge_selected">Selecionado</string>
     <string name="engine_meta_running">em execução</string>
@@ -173,8 +162,6 @@
     <string name="engine_meta_offline">não responde</string>
     <string name="engine_meta_checking">verificando</string>
     <string name="engine_meta_connected">conectado</string>
-    <string name="action_add_engine">Adicionar motor</string>
-    <string name="add_engine_download">Baixar para este dispositivo</string>
     <string name="add_engine_remote">Adicionar um motor remoto</string>
     <string name="engine_menu_use">Usar este motor</string>
     <string name="engine_menu_edit">Editar</string>
@@ -192,18 +179,12 @@
         <item quantity="many">É possível adicionar até %1$d motores remotos. Remova um primeiro.</item>
         <item quantity="other">É possível adicionar até %1$d motores remotos. Remova um primeiro.</item>
     </plurals>
-    <string name="remote_settings_note">Este motor usa a própria configuração. Altere-a no dispositivo que o executa.</string>
-    <string name="remote_state_disconnected">Não conectado a %1$s</string>
-    <string name="remote_state_connecting">Conectando a %1$s</string>
-    <string name="remote_state_connected">Conectado a %1$s</string>
-    <string name="remote_state_unreachable">%1$s não responde: %2$s</string>
-    <string name="action_connect">Conectar</string>
     <string name="action_configure">Configurar</string>
     <string name="action_save">Salvar</string>
 
     <!-- Home engine card -->
-    <string name="home_none">Nenhum motor selecionado</string>
-    <string name="home_none_detail">Baixe um ou adicione um motor remoto.</string>
+    <string name="home_none">Motor local não configurado</string>
+    <string name="home_none_detail">Instale uma versão em Configurações ou adicione um motor remoto.</string>
     <string name="home_not_connected">Não conectado</string>
     <string name="home_connecting">Conectando</string>
     <string name="home_connected">Conectado</string>
@@ -213,7 +194,6 @@
     <string name="no_engine_selected">Nenhum motor selecionado. Escolha um em Motores.</string>
     <string name="remote_not_outpace">Respondeu, mas não como um motor Outpace</string>
     <string name="state_connecting">Conectando</string>
-    <string name="action_disconnect">Desconectar</string>
     <plurals name="notification_remote">
         <item quantity="one">Conectado a %1$s, %2$d stream</item>
         <item quantity="many">Conectado a %1$s, %2$d streams</item>
@@ -290,13 +270,13 @@
     <string name="search_err_engine">O motor não está em execução: %1$s</string>
 
     <!-- Settings -->
-    <string name="settings_autosave_app">As alterações são salvas na hora. As configurações do motor ficam na aba Motores.</string>
+    <string name="settings_autosave_app">As alterações são salvas na hora.</string>
     <string name="search_engine_changed">O motor mudou. Busque de novo para ver os resultados dele.</string>
     <string name="search_err_remote_off">A busca está desativada neste motor. Ative-a na configuração desse motor.</string>
     <string name="search_connecting">Conectando ao motor</string>
     <string name="play_connecting">Conectando ao motor</string>
-    <string name="notice_none_title_any">Nenhum motor selecionado</string>
-    <string name="notice_none_text_any">Baixe um motor ou adicione um remoto em Motores.</string>
+    <string name="notice_none_title_any">Motor local não configurado</string>
+    <string name="notice_none_text_any">Instale uma versão em Configurações, em Motor local, ou adicione um motor remoto.</string>
     <string name="settings_autosave">As alterações são salvas na hora e valem na próxima vez que o motor iniciar.</string>
     <string name="settings_section_search">Busca</string>
     <string name="settings_search">Busca de streams</string>
@@ -410,4 +390,22 @@
     <string name="proxy_credentials_incomplete">Informe um usuário e uma senha, ou nenhum dos dois.</string>
     <string name="proxy_credentials_too_long">O usuário e a senha podem ter até 255 bytes cada.</string>
     <string name="stream_via_proxy">pelo proxy</string>
+    <string name="settings_section_connection">Conexão do motor</string>
+    <string name="connection_intro">O motor selecionado reproduz tudo. O motor deste dispositivo sempre aparece primeiro; configure-o abaixo, em Motor local. Um motor remoto é executado em outro dispositivo.</string>
+    <string name="settings_section_local">Motor local</string>
+    <string name="local_disabled">Um motor remoto está selecionado. Selecione Este dispositivo em Conexão do motor para usar e alterar o motor local.</string>
+    <string name="action_manage_versions">Gerenciar versões</string>
+    <string name="action_reinstall">Reinstalar</string>
+    <string name="action_view_logs">Ver registros</string>
+    <string name="local_meta_none">Nenhuma versão instalada</string>
+    <string name="local_meta_hint">Configurado abaixo, em Motor local</string>
+    <string name="local_none">Nenhuma versão selecionada</string>
+    <string name="local_none_detail">Instale ou escolha uma em Gerenciar versões.</string>
+    <string name="version_label">v%1$s</string>
+    <string name="version_reinstalled">v%1$s reinstalada</string>
+    <string name="exit_title">Sair do Outpace?</string>
+    <string name="exit_local">Isso desliga o motor deste dispositivo. Os players e outros dispositivos que o usam vão parar de funcionar.</string>
+    <string name="exit_message">O Outpace deixa de rodar em segundo plano. Para mantê-lo rodando, saia pelo botão Início.</string>
+    <string name="action_exit">Sair</string>
+    <string name="action_keep_background">Manter em segundo plano</string>
 </resources>

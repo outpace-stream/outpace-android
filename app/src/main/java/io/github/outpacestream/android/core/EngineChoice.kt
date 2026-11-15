@@ -14,7 +14,10 @@ sealed interface EngineTarget {
     data class Remote(val engine: RemoteEngine) : EngineTarget
 }
 
-/** Storage and the rules for how the selection changes. Null means nothing is selected. */
+/**
+ * Storage and the rules for how the selection changes. Null means this device's engine with no
+ * version chosen yet: the local engine is the default, so there is always an engine in use.
+ */
 object EngineChoices {
     private const val NONE = "none"
     private const val LOCAL = "local:"
@@ -48,6 +51,14 @@ object EngineChoices {
         is EngineChoice.Local -> c.takeIf { c.version in installed }
         is EngineChoice.Remote -> c.takeIf { remotes.any { it.id == c.id } }
     }
+
+    /**
+     * The selection for this device's engine: [last] while still installed, else the newest
+     * installed version ([installed] is newest first), else null, which is the local engine with no
+     * version chosen yet.
+     */
+    fun local(last: String?, installed: List<String>): EngineChoice? =
+        (last?.takeIf { it in installed } ?: installed.firstOrNull())?.let { EngineChoice.Local(it) }
 
     /** A download becomes the selection only when nothing is selected. */
     fun afterInstall(c: EngineChoice?, version: String): EngineChoice? = c ?: EngineChoice.Local(version)

@@ -157,7 +157,9 @@ These were agreed with the maintainer:
 ### 1. Engine service
 
 - A foreground service owns the engine process. Its persistent notification shows "running",
-  the number of active streams, and a **Stop** action.
+  the number of active streams, and an **Exit** action that stops the engine (or remote
+  connection) and closes the app. Back from Home asks before exiting while something runs, with
+  a "keep in background" choice; Home or the app switcher leave it running.
 - States: stopped, starting, running, stopping, crashed. "Running" means `GET /healthz` returned
   `ok`. Starting times out (suggested 15 s) into "crashed" with the last log lines visible.
 - If the engine exits unexpectedly, the app shows "crashed" and offers restart. Automatic restart
@@ -174,6 +176,15 @@ These were agreed with the maintainer:
 The main screen has three tabs: **Home**, **Search** and **Settings**. Portrait phones show them
 as a bottom bar, landscape screens and TV as a side rail. Back from Search or Settings returns to
 Home. Engine versions, Logs and the play hand-off are separate screens opened from there.
+
+Settings starts with the engine, then the app's own settings:
+
+- **Engine connection** lists the engines the app can use. This device's engine is always the
+  first entry and the default, selected even before any version is installed; its row points to
+  the Local engine section for setup. Remote engines follow, each with a health dot.
+- **Local engine** holds this device's engine: **Manage versions**, **Start/Stop engine**,
+  **Reinstall** and **View logs**, one full-width button per row, then the engine settings. The
+  whole section is disabled while a remote engine is selected, since none of it applies then.
 
 Home holds:
 
@@ -325,8 +336,9 @@ JVM tests.
     `GET https://api.github.com/repos/outpace-stream/outpace-engine/releases`, cached for 24 hours. If
     the API refuses (rate limit or network), the screen still shows the latest release and the
     installed ones, with a short note that the full list is temporarily unavailable.
-- **Versions screen:** lists releases newest first. Each row shows the version, its date, and a
-  badge: *running*, *installed*, *latest*, or *not available for this device* (no asset for the
+- **Versions screen:** lists releases newest first. Each row shows the version, its date, a
+  badge, and its own **Install**, **Use** or **Remove** button; nothing installs until the user
+  picks a release, and no dialog sits between the user and **Cancel** during a download. Badges: *running*, *installed*, *latest*, or *not available for this device* (no asset for the
   device's target, for example releases before v1.0.0, or 32-bit before the armv7 build ships).
   Drafts are never shown; pre-releases are hidden unless a "show pre-releases" toggle is on.
 - **Install:** download the archive and its `.sha256` over HTTPS into the cache dir, verify the
@@ -405,7 +417,7 @@ JVM tests.
 DLNA/UPnP media renderers and tell one to play a live stream (`/cast/` routes, on only with
 `OUTPACE_ENABLE_CAST`). The app is the remote control; the engine, local or remote, casts.
 
-- **Setting:** Engines > Network > **Cast to TVs (DLNA)**, default off, shown for engine 1.2.0 or
+- **Setting:** Settings > Local engine > Network > **Cast to TVs (DLNA)**, default off, shown for engine 1.2.0 or
   newer (`CAST_MIN_VERSION`), emits `OUTPACE_ENABLE_CAST=true`. The engine answers `409
   loopback_bind` on a loopback bind, so turning casting on with LAN access off explains why and
   offers LAN access with the existing warning; the restart banner applies both. LAN access is
