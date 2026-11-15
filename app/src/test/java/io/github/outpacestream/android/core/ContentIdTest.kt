@@ -50,6 +50,11 @@ class ContentIdTest {
         assertEquals(Result.Id(id), ContentId.extract("acestream:?%69d=$id&infohash=$other"))
     }
 
+    @Test fun escapedDelimitersInValuesDoNotFormParameters() = assertEquals(
+        Result.Infohash,
+        ContentId.extract("http://127.0.0.1:6878/ace/getstream?infohash=$other&note=%26id%3D$id"),
+    )
+
     @Test fun idElsewhereWinsOverGetstreamInfohash() = assertEquals(
         Result.Id(id),
         ContentId.extract("http://127.0.0.1:6878/ace/getstream?infohash=$other acestream://$id"),

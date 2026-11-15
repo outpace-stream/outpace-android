@@ -38,10 +38,14 @@ object ContentId {
         return Result.None
     }
 
-    /** Decodes `%XX` escapes so encoded parameter names classify like plain ones; other text is kept. */
+    /** Decodes `%XX` escapes of name characters so encoded parameter names classify like plain ones. */
     private fun percentDecode(text: String): String {
         if ('%' !in text) return text
-        return percentEscape.replace(text) { it.groupValues[1].toInt(16).toChar().toString() }
+        // Only name characters are decoded, so an escaped `&`, `=` or `?` inside a value never forms a parameter.
+        return percentEscape.replace(text) { m ->
+            val c = m.groupValues[1].toInt(16).toChar()
+            if (c.isLetterOrDigit() || c == '_') c.toString() else m.value
+        }
     }
 
     fun isValid(hex: String): Boolean = hex.length == 40 && hex.all { it in '0'..'9' || it in 'a'..'f' }
