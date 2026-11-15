@@ -19,6 +19,12 @@ data class GithubRepo(val slug: String) {
     val latestUrl: String get() = "https://github.com/$slug/releases/latest"
     val listUrl: String get() = "https://api.github.com/repos/$slug/releases?per_page=30"
 
+    /** The widest single page GitHub serves: one request covers the last 100 releases. */
+    val fullListUrl: String get() = "https://api.github.com/repos/$slug/releases?per_page=100"
+
+    /** One release by its `v<version>` tag, wherever it sits in the history. */
+    fun tagUrl(version: String) = "https://api.github.com/repos/$slug/releases/tags/v$version"
+
     fun downloadUrl(version: String, name: String) = "https://github.com/$slug/releases/download/v$version/$name"
 
     fun releasePage(version: String) = "https://github.com/$slug/releases/tag/v$version"
@@ -49,6 +55,9 @@ object Releases {
         }
         return out.sortedWith { a, b -> compareVersions(b.version, a.version) }
     }
+
+    /** Parses the GitHub get-release payload of a single release. */
+    fun parseOne(json: String): Release = parseObject(JSONObject(json))
 
     private fun parseObject(o: JSONObject): Release {
         val tag = o.getString("tag_name")

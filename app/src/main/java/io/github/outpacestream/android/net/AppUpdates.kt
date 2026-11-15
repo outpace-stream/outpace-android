@@ -37,14 +37,17 @@ class AppUpdates(context: Context) {
         ReleaseNotes.since(Releases.parseList(Http.get(AppRelease.REPO.listUrl, accept = GITHUB_JSON)), installed)
 
     /**
-     * Cleaned notes of what an update from [previous] to [current] brought. Uses the API, within a
-     * hard deadline: the launch dialog runs on the shared background thread ahead of the release check.
+     * Cleaned notes of what an update from [previous] to [current] brought. One API request, within
+     * a hard deadline: the launch dialog runs on the shared background thread ahead of the release
+     * check. A single version is fetched by tag, so it is found however old it is; a range reads the
+     * last 100 releases, and an update spanning more than that shows the newest 100.
      */
-    fun whatsNew(previous: String?, current: String): String = ReleaseNotes.between(
-        Releases.parseList(Http.getWithin(AppRelease.REPO.listUrl, WHATS_NEW_MS, accept = GITHUB_JSON)),
-        previous,
-        current,
-    )
+    fun whatsNew(previous: String?, current: String): String {
+        val repo = AppRelease.REPO
+        val json = Http.getWithin(if (previous == null) repo.tagUrl(current) else repo.fullListUrl, WHATS_NEW_MS, accept = GITHUB_JSON)
+        val releases = if (previous == null) listOf(Releases.parseOne(json)) else Releases.parseList(json)
+        return ReleaseNotes.between(releases, previous, current)
+    }
 
     /** Downloads and verifies the APK of [version]; returns the verified file. */
     fun download(version: String, cancelled: () -> Boolean, progress: (Long, Long) -> Unit): File {
