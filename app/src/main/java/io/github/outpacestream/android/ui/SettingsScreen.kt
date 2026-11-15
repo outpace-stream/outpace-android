@@ -31,6 +31,12 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
     private lateinit var updateAction: Button
     private lateinit var whatsNew: View
     private lateinit var updateNotify: View
+
+    /**
+     * The newer version the status row shows, or null while it shows Check. Clicks act on what is
+     * on screen: a check can store a newer version just before the redraw that would show it.
+     */
+    private var shownUpdate: String? = null
     private var checking = false
     private var checkError: String? = null
 
@@ -72,15 +78,15 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         updateSummary = updateStatus.findViewById(R.id.summary)
         updateAction = updateStatus.findViewById(R.id.action)
         updateAction.setOnClickListener {
-            val latest = prefs.appLatestVersion
-            if (UpdatePolicy.isNewer(installed, latest) && latest != null) host.updateFlow.startUpdate(latest) else checkNow()
+            val shown = shownUpdate
+            if (shown != null && UpdatePolicy.isNewer(installed, shown)) host.updateFlow.startUpdate(shown) else checkNow()
         }
         updateAction.visibility = if (dev) View.GONE else View.VISIBLE
         whatsNew = rows.row(group, R.string.settings_whats_new, R.string.settings_whats_new_summary)
         whatsNew.setOnClickListener {
-            val latest = prefs.appLatestVersion
-            if (UpdatePolicy.isNewer(installed, latest) && latest != null) {
-                host.updateFlow.showChangelog(installed, latest)
+            val shown = shownUpdate
+            if (shown != null) {
+                host.updateFlow.showChangelog(installed, shown)
             } else {
                 host.updateFlow.showWhatsNew(null, installed, quiet = false)
             }
@@ -126,6 +132,7 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         val installed = BuildConfig.VERSION_NAME
         val latest = prefs.appLatestVersion
         val newer = UpdatePolicy.isNewer(installed, latest) && latest != null
+        shownUpdate = if (newer) latest else null
         val checkedAt = prefs.appLatestCheckedAt
         // DateUtils says "0 minutes ago" for the first minute; a check that recent reads "just now".
         val checked: CharSequence? = when {
