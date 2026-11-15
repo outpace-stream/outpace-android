@@ -58,10 +58,14 @@ release notes of every version since the one you had. It appears once per versio
 fresh install, and not at all when the notes can't be loaded (for example offline). **OK**, the
 remote's center button or Back closes it.
 
-**Settings > App updates** works whatever you chose in the dialog. It shows the installed and
-latest versions and when the app last checked, and has **What's new in X.Y.Z** (the notes of the
-version you have), **Check for updates**, **Changelog**, **Update**, and the **Notify me about
-updates** switch that **Never ask again** turns off.
+**Settings > App updates** works whatever you chose in the dialog. It has three rows:
+
+- The status, with one button. Up to date, it shows your version, when the app last checked and
+  **Check**. When a newer version exists, it shows **Update available: X.Y.Z**, the version you
+  have, and **Update**.
+- **What's new in X.Y.Z**: the release notes of the version you have, or, once an update exists,
+  of every version newer than yours.
+- **Notify me about updates**, the switch that **Never ask again** turns off.
 
 Only signed release builds update this way. A build you compiled yourself is signed with a
 different key, so Android refuses the update, and installing the release APK by hand fails the same
@@ -104,7 +108,8 @@ the engine's name and version, and the address players use. One button sits besi
 Below it, Home lists what is playing now and what you played recently. Choosing the engine,
 versions, logs and engine settings live in [Settings](#engine-connection).
 
-**Settings > About** shows the app version and where app and engine releases come from.
+**Settings > About** shows where app and engine releases come from; the app version is under
+**App updates**.
 **Open-source licenses** lists the app, the engine it downloads, and the components the app
 includes, with each one's version where known, copyright, license and source; select one to read its full license.
 The app is under the GNU AGPL v3.0, the Kotlin standard library and Material Design icons under

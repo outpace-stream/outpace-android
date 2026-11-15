@@ -305,30 +305,22 @@
     <string name="settings_acestream_identity_summary">Zeigt diese Engine Peers, Trackern, der Suche und dem Katalog als offizielle AceStream-Linux-Engine statt als Outpace. Peers sehen die öffentliche Adresse dieses Geräts ohnehin; um Netz und Land zu ergänzen, fragt die Engine einmal per HTTPS bei RIPEstat (stat.ripe.net) an, sobald Peers diese Adresse melden. Benötigt Engine v1.1.0 oder neuer.</string>
     <string name="settings_section_background">Hintergrund</string>
     <string name="settings_section_about">Info</string>
-    <string name="settings_about">Outpace für Android %1$s\nApp-Versionen kommen von github.com/%3$s\nEngine-Versionen kommen von github.com/%2$s</string>
+    <string name="settings_about">App-Versionen kommen von github.com/%2$s\nEngine-Versionen kommen von github.com/%1$s</string>
     <string name="settings_licenses">Open-Source-Lizenzen</string>
     <string name="settings_licenses_summary">Die Lizenzen dieser App, der Engine und der Komponenten, die sie verwenden</string>
     <string name="licenses_title">Open-Source-Lizenzen</string>
     <string name="licenses_intro">Outpace für Android ist freie Software unter der GNU AGPL v3.0. Außerdem verwendet es die folgenden Komponenten. Wähle eine aus, um ihre Lizenz zu lesen.</string>
     <string name="licenses_detail">%1$s\n%2$s\nQuellcode: %3$s\n\n%4$s</string>
     <string name="settings_section_updates">App-Updates</string>
-    <string name="settings_update_status">Installierte Version %1$s</string>
     <string name="settings_update_up_to_date">Aktuell. Geprüft %1$s.</string>
-    <string name="settings_update_available">Version %1$s ist verfügbar.</string>
-    <string name="settings_update_available_checked">Version %1$s ist verfügbar. Geprüft %2$s.</string>
     <string name="settings_update_never_checked">Noch nicht geprüft.</string>
     <string name="settings_update_dev">Entwicklungsversion. Updates sind aus.</string>
     <string name="settings_update_check_failed">Letzte Prüfung fehlgeschlagen: %1$s</string>
     <string name="settings_whats_new">Neuigkeiten</string>
     <string name="settings_whats_new_summary">Versionshinweise deiner installierten Version.</string>
-    <string name="settings_update_check">Nach Updates suchen</string>
-    <string name="settings_update_check_summary">Fragt jetzt bei GitHub nach der neuesten Version.</string>
     <string name="settings_update_checking">Wird geprüft…</string>
-    <string name="settings_update_changelog">Änderungsprotokoll</string>
     <string name="settings_update_changelog_summary">Versionshinweise der Versionen, die neuer sind als deine.</string>
     <string name="settings_update_install">Aktualisieren</string>
-    <string name="settings_update_install_summary">Version %1$s herunterladen und installieren.</string>
-    <string name="settings_update_none">Keine neuere Version verfügbar.</string>
     <string name="settings_update_notify">Über Updates benachrichtigen</string>
     <string name="settings_update_notify_summary">Zeigt einen Hinweis, wenn eine neue Version erscheint, höchstens einmal am Tag.</string>
 
@@ -400,4 +392,10 @@
     <string name="exit_message">Outpace läuft dann nicht mehr im Hintergrund. Damit es weiterläuft, verlasse die App stattdessen mit der Home-Taste.</string>
     <string name="action_exit">Beenden</string>
     <string name="action_keep_background">Im Hintergrund lassen</string>
+    <string name="settings_update_title_current">Outpace %1$s</string>
+    <string name="settings_update_title_available">Update verfügbar: %1$s</string>
+    <string name="settings_update_you_have">Installiert ist %1$s.</string>
+    <string name="settings_update_you_have_checked">Installiert ist %1$s. Geprüft %2$s.</string>
+    <string name="settings_update_check_short">Prüfen</string>
+    <string name="settings_update_just_now">gerade eben</string>
 </resources>

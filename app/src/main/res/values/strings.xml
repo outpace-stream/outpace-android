@@ -312,7 +312,7 @@
     <string name="settings_acestream_identity_summary">Show this engine to peers, trackers, search and the catalog as the official AceStream Linux engine instead of Outpace. Peers see this device\'s public address either way; to fill in its network and country, the engine makes one HTTPS lookup to RIPEstat (stat.ripe.net) once peers report that address. Needs engine v1.1.0 or newer.</string>
     <string name="settings_section_background">Background</string>
     <string name="settings_section_about">About</string>
-    <string name="settings_about">Outpace for Android %1$s\nApp releases come from github.com/%3$s\nEngine releases come from github.com/%2$s</string>
+    <string name="settings_about">App releases come from github.com/%2$s\nEngine releases come from github.com/%1$s</string>
     <string name="settings_licenses">Open-source licenses</string>
     <string name="settings_licenses_summary">The licenses of this app, the engine and the components they use</string>
     <string name="licenses_title">Open-source licenses</string>
@@ -321,23 +321,15 @@
     <string name="licenses_row" translatable="false">%1$s\n%2$s\n%3$s</string>
     <string name="licenses_detail">%1$s\n%2$s\nSource: %3$s\n\n%4$s</string>
     <string name="settings_section_updates">App updates</string>
-    <string name="settings_update_status">Installed version %1$s</string>
     <string name="settings_update_up_to_date">Up to date. Checked %1$s.</string>
-    <string name="settings_update_available">Version %1$s is available.</string>
-    <string name="settings_update_available_checked">Version %1$s is available. Checked %2$s.</string>
     <string name="settings_update_never_checked">Not checked yet.</string>
     <string name="settings_update_dev">Development build. Updates are off.</string>
     <string name="settings_update_check_failed">Last check failed: %1$s</string>
     <string name="settings_whats_new">What\'s new</string>
     <string name="settings_whats_new_summary">Release notes of the version you have.</string>
-    <string name="settings_update_check">Check for updates</string>
-    <string name="settings_update_check_summary">Ask GitHub for the latest release now.</string>
     <string name="settings_update_checking">Checking…</string>
-    <string name="settings_update_changelog">Changelog</string>
     <string name="settings_update_changelog_summary">Release notes of the versions newer than yours.</string>
     <string name="settings_update_install">Update</string>
-    <string name="settings_update_install_summary">Download and install version %1$s.</string>
-    <string name="settings_update_none">No newer version available.</string>
     <string name="settings_update_notify">Notify me about updates</string>
     <string name="settings_update_notify_summary">Show a dialog when a new version is out, at most once a day.</string>
 
@@ -410,4 +402,10 @@
     <string name="exit_message">Outpace stops running in the background. To keep it running, leave with the Home button instead.</string>
     <string name="action_exit">Exit</string>
     <string name="action_keep_background">Keep in background</string>
+    <string name="settings_update_title_current">Outpace %1$s</string>
+    <string name="settings_update_title_available">Update available: %1$s</string>
+    <string name="settings_update_you_have">You have %1$s.</string>
+    <string name="settings_update_you_have_checked">You have %1$s. Checked %2$s.</string>
+    <string name="settings_update_check_short">Check</string>
+    <string name="settings_update_just_now">just now</string>
 </resources>
