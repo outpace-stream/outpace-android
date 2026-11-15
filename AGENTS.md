@@ -35,7 +35,8 @@ third-party artwork needs an entry in `core/Notices.kt`, with its license text i
   something the engine lacks, file an engine issue; the app never patches or bundles the engine.
 - The app depends on release asset names `outpace-<ver>-<target>.tar.gz` plus `.sha256`, with
   `outpace-<ver>-<target>/outpace` inside. Targets: `aarch64-linux-android`,
-  `armv7-linux-androideabi`, optional `x86_64-linux-android`.
+  `armv7-linux-androideabi`, and `x86_64-linux-android` in engine releases after v1.2.1 (all
+  best-effort, so a release can lack one).
 - Engine configuration is environment variables at process start only. Emit only non-default
   values; a change applies on the next engine start.
 - Resolve the latest release through the `github.com/<repo>/releases/latest` redirect and
@@ -78,7 +79,8 @@ curl -fsSL https://raw.githubusercontent.com/outpace-stream/actions/v1/identifie
 Lint aborts on any error. Local release builds are unsigned; signing exists only in
 `.github/workflows/release.yml`.
 
-Emulator testing: x86 images cannot run ARM engines. Build debug with
+Emulator testing: x86 images cannot run ARM engines. On an x86_64 image, install an engine
+release that has `x86_64-linux-android`. For older releases or 32-bit x86 images, build debug with
 `-PengineTargets=aarch64-linux-android` to force the target, download an engine through the app,
 then replace it with a locally NDK-built x86 or x86_64 engine via `adb shell run-as`.
 
