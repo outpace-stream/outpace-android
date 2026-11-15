@@ -364,6 +364,19 @@ JVM tests.
   and from **Settings > App updates**. Design:
   [2026-11-14-app-updates-design.md](superpowers/specs/2026-11-14-app-updates-design.md).
 
+### 11. Languages
+
+- English is the default; Spanish, Portuguese (`values-pt`, Brazilian wording), French, Italian
+  and German are translated in `values-xx/strings.xml`. Counts use `<plurals>` with each
+  language's CLDR categories.
+- `android:localeConfig` (`res/xml/locales_config.xml`) offers the per-app language setting on
+  Android 13+, with the platform attribute only, no AndroidX. Older devices follow the device
+  language.
+- Engine-originated text (log lines, error details) is not translated.
+- `TranslationsTest` fails when a translatable string is missing from a language, a format
+  argument differs, or `locales_config.xml` falls out of step, so a new string ships with all
+  its translations.
+
 ## Build, CI and release
 
 - CI gains an `armv7-linux-androideabi` engine build next to the existing best-effort

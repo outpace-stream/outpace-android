@@ -306,6 +306,17 @@ The engine's data and cache live in the app's private storage (`OUTPACE_DATA_DIR
 `OUTPACE_CACHE_DIR`). Uninstalling the app removes them. The peer listener uses `0.0.0.0:8621`
 unless you change **Peer port**; see [Seeding and Peers](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers).
 
+## Languages
+
+The app is available in English, Spanish, Portuguese, French, Italian and German. It follows the
+device language and falls back to English for any other. On Android 13 and newer you can pick a
+language for this app alone in **Android Settings > Apps > Outpace > Language**, without changing
+the device language; some TV devices do not show that screen. Messages that come from the engine
+itself, such as log lines and error details in parentheses, stay in English.
+
+The translations were machine-written and may read stiffly in places. Corrections from native
+speakers are welcome as issues or pull requests against `app/src/main/res/values-xx/strings.xml`.
+
 ## Background running and battery
 
 While the engine runs, the app shows a notification with the stream count and a **Stop**
