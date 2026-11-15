@@ -60,13 +60,13 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
         }
     }
 
-    override fun focusTarget(): View = startStop
+    override fun focusTarget(): View = if (startStop.visibility == View.VISIBLE) startStop else idInput
 
-    /** Configure with nothing selected; otherwise start or stop the engine, or connect or disconnect. */
+    /** Configure with no version chosen; otherwise start or stop this device's engine. */
     private fun onAction() {
         val s = EngineController.state
         when {
-            EngineSelection.current(host) == null -> host.select(MainActivity.TAB_ENGINES, focus = true)
+            EngineSelection.current(host) == null -> host.select(MainActivity.TAB_SETTINGS, focus = true)
             s == EngineState.Stopping -> Unit
             s == EngineState.Stopped || s is EngineState.Crashed -> host.startEngine()
             else -> EngineController.stop(host)
@@ -154,12 +154,13 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
         startStop.text = host.getString(
             when {
                 choice == null -> R.string.action_configure
-                remote != null -> if (active) R.string.action_disconnect else R.string.action_connect
                 active -> R.string.action_stop
                 else -> R.string.action_start
             },
         )
         startStop.isEnabled = s != EngineState.Stopping
+        // A remote engine connects on its own while the app is open, so it has no button.
+        startStop.visibility = if (remote != null) View.GONE else View.VISIBLE
     }
 
     private fun renderCast() {

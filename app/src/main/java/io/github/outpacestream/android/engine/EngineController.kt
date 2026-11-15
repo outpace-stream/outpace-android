@@ -92,6 +92,9 @@ object EngineController {
     private val main = Handler(Looper.getMainLooper())
     private val listeners = CopyOnWriteArraySet<() -> Unit>()
 
+    /** Open screens that close when the user exits the app; see [exitApp]. */
+    private val exitListeners = CopyOnWriteArraySet<() -> Unit>()
+
     /** Screens currently showing engine status; while > 0 the service polls quickly. */
     @Volatile var visibleScreens = 0
         private set
@@ -301,6 +304,29 @@ object EngineController {
 
     fun removeListener(l: () -> Unit) {
         listeners -= l
+    }
+
+    fun addExitListener(l: () -> Unit) {
+        exitListeners += l
+    }
+
+    fun removeExitListener(l: () -> Unit) {
+        exitListeners -= l
+    }
+
+    /**
+     * Exits the app: stops this device's engine or the remote connection, which ends the service
+     * and its notification, and closes every open screen. Leaving the app any other way keeps it
+     * running in the background.
+     */
+    fun exitApp(context: Context) {
+        stop(context)
+        requestExit()
+    }
+
+    /** Closes the open screens; the caller ends the session. */
+    internal fun requestExit() {
+        main.post { exitListeners.forEach { it() } }
     }
 
     fun screenShown() {

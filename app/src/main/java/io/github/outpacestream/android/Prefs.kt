@@ -80,14 +80,14 @@ class Prefs(context: Context) {
         get() = sp.getString("engine_selection", null)
         set(v) = sp.edit().putString("engine_selection", v).remove("active_version").apply()
 
+    /** The local version last selected, so choosing this device again after a remote restores it. */
+    var lastLocalVersion: String?
+        get() = sp.getString("last_local_version", null)
+        set(v) = sp.edit().putString("last_local_version", v).apply()
+
     var remotes: List<RemoteEngine>
         get() = RemoteEngines.decode(sp.getString("remote_engines", null))
         set(v) = sp.edit().putString("remote_engines", RemoteEngines.encode(v.take(RemoteEngines.MAX_REMOTES))).apply()
-
-    /** Whether the user left the selected remote engine connected, so the app reconnects to it. */
-    var remoteConnected: Boolean
-        get() = sp.getBoolean("remote_connected", false)
-        set(v) = sp.edit().putBoolean("remote_connected", v).apply()
 
     var startOnBoot: Boolean
         get() = sp.getBoolean("start_on_boot", tv)

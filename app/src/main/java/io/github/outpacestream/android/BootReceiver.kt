@@ -10,10 +10,8 @@ import io.github.outpacestream.android.engine.EngineSelection
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
-        if (EngineSelection.current(context) is EngineChoice.Remote) {
-            EngineSelection.resumeRemote(context)
-            return
-        }
+        // A remote engine connects when the app opens; at boot there is nothing to follow yet.
+        if (EngineSelection.current(context) is EngineChoice.Remote) return
         if (!Prefs(context).startOnBoot || EngineSelection.localVersion(context) == null) return
         EngineController.start(context)
     }

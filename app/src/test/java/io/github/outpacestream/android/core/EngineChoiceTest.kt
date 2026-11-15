@@ -64,4 +64,12 @@ class EngineChoiceTest {
         // No session: nothing stale to hide.
         assertTrue(EngineChoices.sessionMatches(null, EngineChoice.Remote("a1")))
     }
+
+    @Test fun localRestoresLastInstalled() =
+        assertEquals(EngineChoice.Local("1.0.0"), EngineChoices.local("1.0.0", listOf("1.0.1", "1.0.0")))
+
+    @Test fun localFallsBackToNewest() =
+        assertEquals(EngineChoice.Local("1.0.1"), EngineChoices.local("0.9.0", listOf("1.0.1", "1.0.0")))
+
+    @Test fun localWithNothingInstalledIsUnconfigured() = assertNull(EngineChoices.local("1.0.0", emptyList()))
 }

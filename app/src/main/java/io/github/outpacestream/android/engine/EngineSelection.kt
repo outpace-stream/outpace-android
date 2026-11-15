@@ -26,21 +26,36 @@ object EngineSelection {
 
     /** Every selection write goes through here, so the controller never shows a stale session as the new one. */
     private fun store(context: Context, choice: EngineChoice?) {
-        Prefs(context).engineChoiceRaw = EngineChoices.encode(choice)
+        val prefs = Prefs(context)
+        prefs.engineChoiceRaw = EngineChoices.encode(choice)
+        if (choice is EngineChoice.Local) prefs.lastLocalVersion = choice.version
         EngineController.selectionChanged(choice)
     }
 
     /** The selected local version, or null when a remote or nothing is selected. */
     fun localVersion(context: Context): String? = (current(context) as? EngineChoice.Local)?.version
 
+    /** Whether this device's engine is in use, configured or not; false only while a remote is selected. */
+    fun isLocal(context: Context): Boolean = current(context) !is EngineChoice.Remote
+
+    /** Switches to this device's engine, on the version it last used when that is still installed. */
+    fun selectLocal(context: Context) {
+        val installed = EngineFiles.store(context).installed()
+        select(context, EngineChoices.local(Prefs(context).lastLocalVersion, installed))
+    }
+
     fun remote(context: Context): RemoteEngine? {
         val c = current(context) as? EngineChoice.Remote ?: return null
         return Prefs(context).remotes.firstOrNull { it.id == c.id }
     }
 
-    /** Reconnects to the selected remote when the user left it connected and nothing runs now. */
-    fun resumeRemote(context: Context) {
-        if (current(context) !is EngineChoice.Remote || !Prefs(context).remoteConnected) return
+    /**
+     * Connects to the selected remote engine when nothing runs now. There is no connect step for
+     * the user: while the app is open it follows whichever remote is selected, and the service drops
+     * the connection once the app is closed and nothing plays or casts through it.
+     */
+    fun followRemote(context: Context) {
+        if (current(context) !is EngineChoice.Remote) return
         val s = EngineController.sessionState
         if (s == EngineState.Stopped || s is EngineState.Crashed) EngineController.start(context)
     }
@@ -50,18 +65,20 @@ object EngineSelection {
         val before = current(context)
         store(context, choice)
         if (choice == before) return
-        if (before is EngineChoice.Remote) Prefs(context).remoteConnected = false
         val s = EngineController.sessionState
         // An error belongs to the engine that failed, not to the one chosen next.
         if (s is EngineState.Crashed) EngineController.update(EngineState.Stopped, clearVersion = true)
         val active = s != EngineState.Stopped && s !is EngineState.Crashed
-        if (!active) return
-        when {
-            choice is EngineChoice.Local && before is EngineChoice.Local -> {
-                if (EngineController.runningVersion != choice.version) EngineController.restart(context)
+        if (active) {
+            when {
+                choice is EngineChoice.Local && before is EngineChoice.Local -> {
+                    if (EngineController.runningVersion != choice.version) EngineController.restart(context)
+                }
+                else -> EngineController.stop(context)
             }
-            else -> EngineController.stop(context)
         }
+        // A remote chosen in the open app connects at once; the queued stop above runs first.
+        if (choice is EngineChoice.Remote && EngineController.visibleScreens > 0) EngineController.start(context)
     }
 
     /** A finished download; it becomes the selection only when nothing is selected. */

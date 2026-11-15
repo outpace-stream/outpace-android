@@ -3,6 +3,7 @@ package io.github.outpacestream.android.ui
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -19,11 +20,13 @@ import android.window.OnBackInvokedDispatcher
 import io.github.outpacestream.android.BuildConfig
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
+import io.github.outpacestream.android.core.EngineTarget
 import io.github.outpacestream.android.core.StreamRef
 import io.github.outpacestream.android.core.UpdatePolicy
 import io.github.outpacestream.android.core.WhatsNew
 import io.github.outpacestream.android.engine.EngineController
 import io.github.outpacestream.android.engine.EngineSelection
+import io.github.outpacestream.android.engine.EngineState
 import io.github.outpacestream.android.net.AppUpdates
 import io.github.outpacestream.android.net.EngineReleases
 
@@ -51,7 +54,7 @@ abstract class Screen(protected val host: MainActivity, parent: ViewGroup, layou
 
 /**
  * The app's home: a navigation bar (bottom on portrait phones, a side rail on landscape screens
- * and TV) switching between Home, Search, Engines and Settings. Versions, Logs and the play hand-off stay
+ * and TV) switching between Home, Search and Settings. Versions, Logs and the play hand-off stay
  * separate screens.
  */
 class MainActivity : Activity() {
@@ -63,6 +66,7 @@ class MainActivity : Activity() {
     private var backCallback: Any? = null
     private var started = false
     private val listener: () -> Unit = { screens[current].render() }
+    private val exitListener: () -> Unit = { finishAndRemoveTask() }
 
     /** App update dialogs, shared by the automatic prompt and the Settings screen. */
     val updateFlow by lazy { UpdateFlow(this) }
@@ -75,10 +79,11 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        EngineController.addExitListener(exitListener)
         prefs = Prefs(this)
         updateFlow.restoreState(savedInstanceState)
         val content = findViewById<FrameLayout>(R.id.content)
-        screens = listOf(HomeScreen(this, content), SearchScreen(this, content), EnginesScreen(this, content), SettingsScreen(this, content))
+        screens = listOf(HomeScreen(this, content), SearchScreen(this, content), SettingsScreen(this, content))
         for (s in screens) {
             s.view.visibility = View.GONE
             content.addView(s.view)
@@ -90,6 +95,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        EngineController.removeExitListener(exitListener)
         updateFlow.destroy()
         super.onDestroy()
     }
@@ -110,7 +116,7 @@ class MainActivity : Activity() {
         started = true
         EngineController.addListener(listener)
         EngineController.screenShown()
-        EngineSelection.resumeRemote(this)
+        EngineSelection.followRemote(this)
         screens[current].onVisible()
         screens[current].render()
         updateFlow.attach()
@@ -138,8 +144,36 @@ class MainActivity : Activity() {
     // API 33+ goes through the OnBackInvokedCallback in updateBackHandling(); this covers older devices.
     @SuppressLint("GestureBackNavigation")
     @Deprecated("Kept for API levels without OnBackInvokedDispatcher")
-    override fun onBackPressed() {
-        if (current != TAB_HOME) select(TAB_HOME, focus = false) else super.onBackPressed()
+    override fun onBackPressed() = onBack()
+
+    /** Back leads to Home, and from Home to exiting; Home or recents leave the app running instead. */
+    private fun onBack() {
+        if (current != TAB_HOME) {
+            select(TAB_HOME, focus = false)
+            navItems[TAB_HOME].requestFocus()
+        } else {
+            confirmExit()
+        }
+    }
+
+    /**
+     * Exiting stops whatever runs, so it asks first while an engine runs or a remote is connected,
+     * and offers to keep the app in the background instead. With nothing running it just closes.
+     */
+    private fun confirmExit() {
+        val s = EngineController.sessionState
+        if (s == EngineState.Stopped || s is EngineState.Crashed) {
+            finishAndRemoveTask()
+            return
+        }
+        val local = EngineController.sessionTarget is EngineTarget.Local
+        AlertDialog.Builder(this)
+            .setTitle(R.string.exit_title)
+            .setMessage(if (local) R.string.exit_local else R.string.exit_message)
+            .setPositiveButton(R.string.action_exit) { _, _ -> EngineController.exitApp(this) }
+            .setNeutralButton(R.string.action_keep_background) { _, _ -> moveTaskToBack(true) }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun tabFrom(intent: Intent?): Int? = intent?.getIntExtra(EXTRA_TAB, -1)?.takeIf { it in 0..TAB_SETTINGS }
@@ -150,7 +184,6 @@ class MainActivity : Activity() {
         val tabs = listOf(
             R.drawable.ic_home to R.string.tab_home,
             R.drawable.ic_search to R.string.tab_search,
-            R.drawable.ic_engine to R.string.tab_engines,
             R.drawable.ic_tune to R.string.tab_settings,
         )
         tabs.forEachIndexed { i, (icon, label) ->
@@ -184,22 +217,21 @@ class MainActivity : Activity() {
         updateBackHandling()
     }
 
-    /** On API 33+ (and always for target 36), back is routed through the dispatcher. */
+    /**
+     * On API 33+ (and always for target 36), back is routed through the dispatcher. The callback
+     * stays registered on Home too, since back from Home asks before exiting.
+     */
     private fun updateBackHandling() {
-        if (Build.VERSION.SDK_INT < 33) return
-        val dispatcher = onBackInvokedDispatcher
-        val registered = backCallback as OnBackInvokedCallback?
-        if (current != TAB_HOME && registered == null) {
-            val cb = OnBackInvokedCallback { select(TAB_HOME, focus = false); navItems[TAB_HOME].requestFocus() }
-            dispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, cb)
-            backCallback = cb
-        } else if (current == TAB_HOME && registered != null) {
-            dispatcher.unregisterOnBackInvokedCallback(registered)
-            backCallback = null
-        }
+        if (Build.VERSION.SDK_INT < 33 || backCallback != null) return
+        val cb = OnBackInvokedCallback { onBack() }
+        onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, cb)
+        backCallback = cb
     }
 
     fun open(cls: Class<*>) = startActivity(Intent(this, cls))
+
+    /** Redraws the visible tab, for changes made outside its own render cycle. */
+    fun renderCurrent() = screens[current].render()
 
     fun play(ref: StreamRef, name: String?) = startActivity(playIntent(ref, name))
 
@@ -268,8 +300,7 @@ class MainActivity : Activity() {
     companion object {
         const val TAB_HOME = 0
         const val TAB_SEARCH = 1
-        const val TAB_ENGINES = 2
-        const val TAB_SETTINGS = 3
+        const val TAB_SETTINGS = 2
         const val EXTRA_TAB = "io.github.outpacestream.android.TAB"
         private const val STATE_TAB = "tab"
     }

@@ -13,9 +13,13 @@ import io.github.outpacestream.android.core.UpdatePolicy
 import io.github.outpacestream.android.net.AppUpdates
 import io.github.outpacestream.android.net.EngineReleases
 
-/** App settings. Engine settings live in the Engines tab, next to the engine they configure. */
+/**
+ * Settings: the engine connection and this device's engine first (see [EngineSections]), then the
+ * app's own settings.
+ */
 class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R.layout.screen_settings) {
     private val rows = SettingRows(host) { render() }
+    private val engines = EngineSections(host, view)
     private val bootRow: View
     private val batteryRow: View
 
@@ -40,9 +44,16 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
             .setOnClickListener { host.open(LicensesActivity::class.java) }
     }
 
-    override fun focusTarget(): View = bootRow
+    override fun focusTarget(): View = engines.focusTarget()
 
-    override fun onShown() = rows.refresh()
+    override fun onShown() {
+        rows.refresh()
+        engines.onShown()
+    }
+
+    override fun onVisible() = engines.onVisible()
+
+    override fun onInvisible() = engines.onInvisible()
 
     private fun buildUpdates(group: LinearLayout) {
         val installed = BuildConfig.VERSION_NAME
@@ -123,6 +134,7 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
     }
 
     override fun render() {
+        engines.render()
         batteryRow.visibility = if (BatteryPrompt.isExempt(host)) View.GONE else View.VISIBLE
         renderUpdates()
     }

@@ -1,9 +1,11 @@
 package io.github.outpacestream.android.ui
 
 import android.app.Activity
-import android.app.AlertDialog
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.text.format.Formatter
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
@@ -23,6 +25,10 @@ import io.github.outpacestream.android.engine.EngineSelection
 import io.github.outpacestream.android.net.EngineReleases
 import java.io.InterruptedIOException
 
+/**
+ * Engine versions for this device: each release with its own Install, Use and Remove buttons, and
+ * the download in progress with Cancel. Nothing installs on its own; the user picks the version.
+ */
 class VersionsActivity : Activity() {
     private lateinit var prefs: Prefs
     private lateinit var releases: EngineReleases
@@ -58,6 +64,7 @@ class VersionsActivity : Activity() {
             setOnCheckedChangeListener { _, checked -> prefs.showPrereleases = checked; renderList() }
         }
         load(force = false)
+        if (savedInstanceState == null) intent.getStringExtra(EXTRA_REINSTALL)?.let { reinstallNow(it) }
     }
 
     override fun onStart() {
@@ -89,7 +96,6 @@ class VersionsActivity : Activity() {
                 }
                 renderHeader()
                 renderList()
-                autoOfferFirstInstall()
             }
         }
     }
@@ -126,32 +132,37 @@ class VersionsActivity : Activity() {
             val fromList = fromApi && result?.releases?.contains(rel) == true
             val unavailable = !installed && fromList && Releases.pickTarget(rel, targets) == null
             if (unavailable) badges += getString(R.string.badge_unavailable)
-            val date = rel.publishedAt.take(10)
-            val label = buildString {
-                append("v").append(rel.version)
-                if (date.isNotEmpty()) append("  ").append(date)
-                if (badges.isNotEmpty()) append("  (").append(badges.joinToString(", ")).append(")")
+            val row = LayoutInflater.from(this).inflate(R.layout.item_version, list, false)
+            row.findViewById<TextView>(R.id.title).text = getString(R.string.version_label, rel.version)
+            val meta = (listOf(rel.publishedAt.take(10)) + badges).filter { it.isNotEmpty() }.joinToString(getString(R.string.meta_separator))
+            row.findViewById<TextView>(R.id.meta).apply {
+                text = meta
+                visibility = if (meta.isEmpty()) View.GONE else View.VISIBLE
             }
-            list.addRow(label, if (unavailable) null else ({ choose(rel) }))
+            val action = row.findViewById<Button>(R.id.action)
+            val remove = row.findViewById<Button>(R.id.remove)
+            when {
+                // The badge already says why; a dimmed button would still read as an action.
+                unavailable -> action.visibility = View.GONE
+                !installed -> {
+                    action.setText(R.string.version_install)
+                    action.isEnabled = !busy
+                    action.setOnClickListener { install(rel, replace = false) }
+                }
+                rel.version != active -> {
+                    action.setText(R.string.version_use)
+                    action.isEnabled = !busy
+                    action.setOnClickListener { activate(rel.version) }
+                }
+                else -> action.visibility = View.GONE
+            }
+            remove.visibility = if (installed) View.VISIBLE else View.GONE
+            remove.isEnabled = !busy
+            // The button backgrounds have no disabled state; dim them while a download runs.
+            for (b in listOf(action, remove)) b.alpha = if (b.isEnabled) 1f else DISABLED_ALPHA
+            remove.setOnClickListener { remove(rel.version) }
+            list.addView(row)
         }
-    }
-
-    private fun choose(rel: Release) {
-        if (busy) return
-        val store = EngineFiles.store(this)
-        val installed = store.isInstalled(rel.version)
-        val options = ArrayList<Pair<String, () -> Unit>>()
-        if (installed) {
-            options += getString(R.string.version_use) to { activate(rel.version) }
-            options += getString(R.string.version_remove) to { remove(rel.version) }
-        } else {
-            options += getString(R.string.version_install) to { install(rel) }
-        }
-        AlertDialog.Builder(this)
-            .setTitle("v${rel.version}")
-            .setItems(options.map { it.first }.toTypedArray()) { _, which -> options[which].second() }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
     }
 
     private fun activate(version: String) {
@@ -167,14 +178,17 @@ class VersionsActivity : Activity() {
         renderList()
     }
 
-    private fun install(rel: Release) {
+    /** Downloads [rel]; with [replace], over the installed copy of the same version. */
+    private fun install(rel: Release, replace: Boolean) {
+        if (busy) return
         val store = EngineFiles.store(this)
-        if (store.installed().size >= EngineStore.MAX_INSTALLED) {
+        if (!replace && store.installed().size >= EngineStore.MAX_INSTALLED) {
             toast(resources.getQuantityString(R.plurals.version_full, EngineStore.MAX_INSTALLED, EngineStore.MAX_INSTALLED))
             return
         }
         busy = true
         cancel = false
+        renderList()
         download.visibility = View.VISIBLE
         downloadProgress.isIndeterminate = true
         downloadText.text = getString(R.string.version_downloading, rel.version, "")
@@ -201,8 +215,10 @@ class VersionsActivity : Activity() {
                 download.visibility = View.GONE
                 when (outcome) {
                     null -> {
-                        toast(getString(R.string.version_installed, rel.version))
+                        toast(getString(if (replace) R.string.version_reinstalled else R.string.version_installed, rel.version))
                         EngineSelection.installed(this, rel.version)
+                        // The running engine still holds the old binary; restart it onto the new one.
+                        if (replace && EngineController.runningVersion == rel.version) EngineController.restart(this)
                     }
                     "" -> Unit
                     else -> toast(getString(R.string.version_failed, outcome))
@@ -212,12 +228,19 @@ class VersionsActivity : Activity() {
         }
     }
 
-    /** First run: with nothing installed, offer the latest release straight away. */
-    private fun autoOfferFirstInstall() {
-        if (busy || EngineFiles.store(this).installed().isNotEmpty()) return
-        val latestVersion = prefs.latestVersion ?: return
-        val rel = visibleReleases().firstOrNull { it.version == latestVersion } ?: Release("v$latestVersion", latestVersion, "", false, emptySet())
-        if (rel.assetNames.isNotEmpty() && Releases.pickTarget(rel, Device.targets()) == null) return
-        choose(rel)
+    /** Downloads [version] again over the installed copy, for an install that has gone bad. */
+    private fun reinstallNow(version: String) {
+        if (!EngineFiles.store(this).isInstalled(version)) return
+        install(Release("v$version", version, "", false, emptySet()), replace = true)
+    }
+
+    companion object {
+        private const val EXTRA_REINSTALL = "io.github.outpacestream.android.REINSTALL"
+        private const val DISABLED_ALPHA = 0.4f
+
+        /** Opens the versions screen and reinstalls [version] there, with its progress and Cancel. */
+        fun reinstall(context: Context, version: String) {
+            context.startActivity(Intent(context, VersionsActivity::class.java).putExtra(EXTRA_REINSTALL, version))
+        }
     }
 }

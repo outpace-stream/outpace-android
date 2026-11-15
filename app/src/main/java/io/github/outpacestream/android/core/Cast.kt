@@ -275,6 +275,6 @@ object CastGate {
         else -> null
     }
 
-    /** Whether the cast setting applies to [version] at all, so the Engines tab shows it. */
+    /** Whether the cast setting applies to [version] at all, so Settings shows it. */
     fun supports(version: String): Boolean = Releases.compareVersions(version, EngineSettings.CAST_MIN_VERSION) >= 0
 }

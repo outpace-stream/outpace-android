@@ -13,7 +13,7 @@ import io.github.outpacestream.android.core.ProxyMode
 import io.github.outpacestream.android.core.SocksProxy
 
 /**
- * The outbound SOCKS5 proxy rows of the Engines tab: when to use it and which proxy. A mode other
+ * The outbound SOCKS5 proxy rows of the Local engine settings: when to use it and which proxy. A mode other
  * than Off needs a proxy, so picking one without a proxy asks for it first. [onChange] runs after
  * every saved change. The password is only ever read into the dialog's masked field.
  */
