@@ -53,9 +53,15 @@ a stream is playing. If you leave the app while the update downloads, the instal
 when you come back. If Android can't install the update, the app says why and offers the release
 page so you can install it by hand.
 
+The first time you open the app after it updates, a **What's new in X.Y.Z** dialog shows the
+release notes of every version since the one you had. It appears once per version, never after a
+fresh install, and not at all when the notes can't be loaded (for example offline). **OK**, the
+remote's center button or Back closes it.
+
 **Settings > App updates** works whatever you chose in the dialog. It shows the installed and
-latest versions and when the app last checked, and has **Check for updates**, **Changelog**,
-**Update**, and the **Notify me about updates** switch that **Never ask again** turns off.
+latest versions and when the app last checked, and has **What's new in X.Y.Z** (the notes of the
+version you have), **Check for updates**, **Changelog**, **Update**, and the **Notify me about
+updates** switch that **Never ask again** turns off.
 
 Only signed release builds update this way. A build you compiled yourself is signed with a
 different key, so Android refuses the update, and installing the release APK by hand fails the same

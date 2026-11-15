@@ -25,6 +25,15 @@ class ReleasesTest {
         assertEquals("2026-11-13T10:08:27Z", list[1].publishedAt)
     }
 
+    @Test fun parsesSingleRelease() {
+        val r = Releases.parseOne(release("v1.0.0", "a"))
+        assertEquals("1.0.0", r.version)
+        assertEquals(setOf("a"), r.assetNames)
+    }
+
+    @Test fun tagUrlNamesTheVersionTag() =
+        assertEquals("https://api.github.com/repos/o/r/releases/tags/v1.2.3", GithubRepo("o/r").tagUrl("1.2.3"))
+
     @Test fun dropsDrafts() = assertTrue(Releases.parseList(payload).none { it.version == "1.1.0" })
 
     @Test fun versionStripsV() = assertEquals("1.0.0", Releases.versionOf("v1.0.0"))

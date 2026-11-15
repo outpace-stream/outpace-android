@@ -21,6 +21,7 @@ import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.StreamRef
 import io.github.outpacestream.android.core.UpdatePolicy
+import io.github.outpacestream.android.core.WhatsNew
 import io.github.outpacestream.android.engine.EngineController
 import io.github.outpacestream.android.engine.EngineSelection
 import io.github.outpacestream.android.net.AppUpdates
@@ -85,6 +86,12 @@ class MainActivity : Activity() {
         buildNav()
         select(savedInstanceState?.getInt(STATE_TAB) ?: tabFrom(intent) ?: TAB_HOME, focus = false)
         navItems[current].requestFocus()
+        if (savedInstanceState == null) maybeShowWhatsNew() else if (updateFlow.resumeWhatsNew()) otherPromptShown = true
+    }
+
+    override fun onDestroy() {
+        updateFlow.destroy()
+        super.onDestroy()
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -220,6 +227,23 @@ class MainActivity : Activity() {
                 // A dialog shown while stopped could be lost and still use up the day's prompt.
                 if (started) maybePromptUpdate() else promptPending = true
             }
+        }
+    }
+
+    /** Once per new version: record this build, and after an update show what it brought. */
+    private fun maybeShowWhatsNew() {
+        val seen = prefs.whatsNewSeen
+        val code = BuildConfig.VERSION_CODE
+        val name = BuildConfig.VERSION_NAME
+        if (seen?.code == code) return
+        val info = runCatching { packageManager.getPackageInfo(packageName, 0) }.getOrNull()
+        val updated = info != null && info.lastUpdateTime > info.firstInstallTime
+        val decision = WhatsNew.decide(seen, code, name, updated)
+        // Record first, so a failed fetch or a quick restart never shows it twice.
+        prefs.whatsNewSeen = WhatsNew.Seen(code, name)
+        if (decision is WhatsNew.Decision.Show) {
+            otherPromptShown = true
+            updateFlow.showWhatsNew(decision.previous, name, quiet = true)
         }
     }
 
