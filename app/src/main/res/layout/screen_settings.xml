@@ -21,9 +21,11 @@
             android:showDividers="middle" android:divider="@drawable/divider_inset" />
 
         <TextView style="@style/Section" android:text="@string/settings_section_about" />
-        <LinearLayout style="@style/Card" android:padding="16dp">
+        <LinearLayout android:id="@+id/group_about" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
+            android:showDividers="middle" android:divider="@drawable/divider_inset">
             <TextView android:id="@+id/about" style="@style/Text.Muted" android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content" android:padding="12dp" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

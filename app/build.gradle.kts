@@ -78,3 +78,39 @@ dependencies {
     // android.jar's org.json is a stub on the JVM; tests use the real implementation.
     testImplementation("org.json:json:20250517")
 }
+
+// Every library in the release APK needs an entry in Notices, which the licenses screen shows.
+// NoticesTest compares the real catalog against this list, so a library without an active
+// entry, including one whose entry is commented out, fails the unit tests.
+val releaseRuntimeModules = provider { configurations.getByName("releaseRuntimeClasspath") }.flatMap { classpath ->
+    classpath.incoming.resolutionResult.rootComponent.map { root ->
+        val seen = sortedSetOf<String>()
+        fun walk(component: org.gradle.api.artifacts.result.ResolvedComponentResult) {
+            component.dependencies.filterIsInstance<org.gradle.api.artifacts.result.ResolvedDependencyResult>().forEach { dep ->
+                val id = dep.selected.id
+                if (id is org.gradle.api.artifacts.component.ModuleComponentIdentifier && seen.add("${id.group}:${id.module}")) walk(dep.selected)
+            }
+        }
+        walk(root)
+        seen.joinToString(",")
+    }
+}
+tasks.withType<Test>().configureEach {
+    inputs.property("releaseRuntimeModules", releaseRuntimeModules)
+    // NoticesTest reads these straight from disk, so a changed license text must rerun the tests.
+    inputs.file(rootProject.layout.projectDirectory.file("LICENSE")).withPropertyName("repositoryLicense")
+    inputs.dir(layout.projectDirectory.dir("src/main/res/raw")).withPropertyName("licenseTexts")
+    jvmArgumentProviders.add(CommandLineArgumentProvider { listOf("-Doutpace.releaseRuntimeModules=${releaseRuntimeModules.get()}") })
+}
+// Release builds run the notice check on their own, so even a bare assembleRelease can't ship a
+// library without its notice.
+val checkLicenseNotices = tasks.register<Test>("checkLicenseNotices") {
+    description = "Runs NoticesTest, which checks every release runtime library has a license notice."
+    group = "verification"
+    // The file collections, not the task: they depend on compiling the tests, not on running them all.
+    val unitTests = tasks.named<Test>("testDebugUnitTest").get()
+    testClassesDirs = unitTests.testClassesDirs
+    classpath = unitTests.classpath
+    filter.includeTestsMatching("io.github.outpacestream.android.core.NoticesTest")
+}
+afterEvaluate { tasks.named("preReleaseBuild") { dependsOn(checkLicenseNotices) } }

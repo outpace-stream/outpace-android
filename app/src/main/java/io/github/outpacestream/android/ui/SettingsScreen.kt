@@ -36,6 +36,8 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         batteryRow.setOnClickListener { BatteryPrompt.request(host) }
         buildUpdates(find(R.id.group_updates))
         find<TextView>(R.id.about).text = host.getString(R.string.settings_about, BuildConfig.VERSION_NAME, Releases.REPO, AppRelease.REPO.slug)
+        rows.row(find(R.id.group_about), R.string.settings_licenses, R.string.settings_licenses_summary)
+            .setOnClickListener { host.open(LicensesActivity::class.java) }
     }
 
     override fun focusTarget(): View = bootRow
