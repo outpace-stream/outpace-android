@@ -44,9 +44,10 @@ object Http {
      * response that trickles in resets the read timer on every read, so a watchdog closes the
      * connection when the deadline passes, which aborts any blocked connect or read.
      */
-    fun getWithin(url: String, totalMs: Int): String {
+    fun getWithin(url: String, totalMs: Int, accept: String? = null): String {
         val deadline = System.nanoTime() + totalMs * 1_000_000L
         val c = open(url, readTimeout = totalMs, connectTimeout = totalMs)
+        if (accept != null) c.setRequestProperty("Accept", accept)
         // On Android, disconnecting cancels a blocked connect or header read. The body loop below
         // also checks the deadline between reads, which works on any runtime.
         val timer = deadlines.schedule({ c.disconnect() }, totalMs.toLong(), TimeUnit.MILLISECONDS)

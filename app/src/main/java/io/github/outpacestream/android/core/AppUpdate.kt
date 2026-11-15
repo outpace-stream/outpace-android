@@ -71,8 +71,25 @@ object ReleaseNotes {
     }
 
     /** Notes of every stable release newer than [installed], newest first, under version headings. */
-    fun since(releases: List<Release>, installed: String): String = releases
-        .filter { !it.prerelease && UpdatePolicy.isNewer(installed, it.version) }
+    fun since(releases: List<Release>, installed: String): String =
+        format(releases.filter { !it.prerelease && UpdatePolicy.isNewer(installed, it.version) })
+
+    /**
+     * Notes of the stable releases after [previous] up to and including [current], newest first:
+     * what an update from [previous] brought. A null [previous] gives the notes of [current] only.
+     * Releases without notes are left out, so the result is empty when there is nothing to show.
+     */
+    fun between(releases: List<Release>, previous: String?, current: String): String = format(
+        releases.filter {
+            !it.prerelease && Releases.compareVersions(it.version, current) <= 0 &&
+                if (previous == null) Releases.compareVersions(it.version, current) == 0
+                else Releases.compareVersions(it.version, previous) > 0
+        },
+        skipEmpty = true,
+    )
+
+    private fun format(releases: List<Release>, skipEmpty: Boolean = false): String = releases
         .sortedWith { a, b -> Releases.compareVersions(b.version, a.version) }
-        .joinToString("\n\n") { r -> clean(r.body).let { if (it.isEmpty()) r.version else "${r.version}\n$it" } }
+        .mapNotNull { r -> clean(r.body).let { if (it.isNotEmpty()) "${r.version}\n$it" else if (skipEmpty) null else r.version } }
+        .joinToString("\n\n")
 }
