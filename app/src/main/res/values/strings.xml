@@ -283,6 +283,8 @@
     <string name="settings_section_peers">Peers</string>
     <string name="settings_ace_compat">AceStream-compatible API</string>
     <string name="settings_ace_compat_summary">Also serve the /ace/getstream API that AceStream clients and playlists use.</string>
+    <string name="settings_acestream_identity">AceStream identity</string>
+    <string name="settings_acestream_identity_summary">Show this engine to peers, trackers, search and the catalog as the official AceStream Linux engine instead of Outpace. Peers see this device\'s public address either way; to fill in its network and country, the engine makes one HTTPS lookup to RIPEstat (stat.ripe.net) once peers report that address. Needs engine v1.1.0 or newer.</string>
     <string name="settings_section_background">Background</string>
     <string name="settings_section_about">About</string>
     <string name="settings_about">Outpace for Android %1$s\nApp releases come from github.com/%3$s\nEngine releases come from github.com/%2$s</string>

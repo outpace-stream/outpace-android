@@ -17,6 +17,8 @@ data class EngineSettings(
     val uploadLimit: UploadLimit = UploadLimit.NORMAL,
     /** TCP peer listener port; also the port announced to peers and mapped on the router. */
     val peerPort: Int = DEFAULT_PEER_PORT,
+    /** Present the official Linux AceStream engine profile on the public network (engine 1.1.0 and later). */
+    val acestreamIdentity: Boolean = false,
 ) {
     fun env(dataDir: String, cacheDir: String): Map<String, String> = linkedMapOf<String, String>(
         "OUTPACE_BIND" to "${if (lan) "0.0.0.0" else Endpoint.LOOPBACK_HOST}:$port",
@@ -35,6 +37,8 @@ data class EngineSettings(
         if (lowMemory) putAll(LowMemory.env)
         putAll(uploadLimit.env)
         if (peerPort != DEFAULT_PEER_PORT) put("OUTPACE_PEER_LISTEN", "0.0.0.0:$peerPort")
+        // Every OUTPACE_ACESTREAM_IDENTITY_* override stays unset: the engine's defaults are the profile.
+        if (acestreamIdentity) put("OUTPACE_ACESTREAM_IDENTITY", "true")
     }
 
     companion object {
@@ -46,6 +50,13 @@ data class EngineSettings(
 
         /** The first engine release with `GET /search`. */
         const val SEARCH_MIN_VERSION = "1.0.0"
+
+        /** The first engine release with `OUTPACE_ACESTREAM_IDENTITY`. */
+        const val ACESTREAM_IDENTITY_MIN_VERSION = "1.1.0"
+
+        /** Whether an engine at [version] reads `OUTPACE_ACESTREAM_IDENTITY`, so the toggle can show. */
+        fun supportsAcestreamIdentity(version: String) =
+            Releases.compareVersions(version, ACESTREAM_IDENTITY_MIN_VERSION) >= 0
 
         fun validPort(p: Int) = p in 1024..65535
 

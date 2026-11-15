@@ -33,6 +33,7 @@ class Prefs(context: Context) {
             lowMemory = sp.getBoolean("low_memory", false),
             uploadLimit = UploadLimit.fromKey(sp.getString("upload_limit", null)),
             peerPort = sp.getInt("peer_port", EngineSettings.DEFAULT_PEER_PORT),
+            acestreamIdentity = sp.getBoolean("acestream_identity", false),
         )
         set(s) = sp.edit()
             .putBoolean("lan", s.lan).putInt("port", s.port).putBoolean("seeding", s.seeding)
@@ -40,7 +41,8 @@ class Prefs(context: Context) {
             .putBoolean("ace_compat", s.aceCompat).putBoolean("search", s.search)
             .putString("startup_buffer", s.startupBuffer.key).putString("hls_start", s.hlsStart.key)
             .putBoolean("catalog_fallback", s.catalogFallback).putBoolean("low_memory", s.lowMemory)
-            .putString("upload_limit", s.uploadLimit.key).putInt("peer_port", s.peerPort).apply()
+            .putString("upload_limit", s.uploadLimit.key).putInt("peer_port", s.peerPort)
+            .putBoolean("acestream_identity", s.acestreamIdentity).apply()
 
     /** Before engine selection existed: the chosen local version. Read once, to migrate. */
     val legacyActiveVersion: String? get() = sp.getString("active_version", null)
