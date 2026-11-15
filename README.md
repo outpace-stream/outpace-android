@@ -59,7 +59,9 @@ flowchart LR
   video goes straight from it to your player.
 - **Plays from wherever you find a stream.** Tap an `acestream://` link, share one to Outpace,
   paste an id, replay from **Recently played**, rejoin from **Now playing**, or let apps that
-  open `http://127.0.0.1:6878/ace/getstream?id=…` hand their streams to it.
+  open `http://localhost:6878/ace/getstream?id=…` hand their streams to it. On Android 12 and
+  newer, the same link with `127.0.0.1` may open in a browser or player instead of offering
+  Outpace; see the [user guide](docs/Android-App.md#playing-a-stream).
 - **Shows how a start is going.** "Looking up the stream", "Finding peers (3)", "Buffering",
   then a clear reason if it fails, such as no peers or protected content.
 - **Search by name.** Optional [stream search](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search)
