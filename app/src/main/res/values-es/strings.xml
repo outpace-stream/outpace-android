@@ -288,6 +288,11 @@
     <string name="settings_section_background">Segundo plano</string>
     <string name="settings_section_about">Acerca de</string>
     <string name="settings_about">Outpace para Android %1$s\nLas versiones de la app vienen de github.com/%3$s\nLas versiones del motor vienen de github.com/%2$s</string>
+    <string name="settings_licenses">Licencias de código abierto</string>
+    <string name="settings_licenses_summary">Las licencias de esta app, del motor y de los componentes que usan</string>
+    <string name="licenses_title">Licencias de código abierto</string>
+    <string name="licenses_intro">Outpace para Android es software libre bajo la GNU AGPL v3.0. También usa los componentes siguientes. Elige uno para leer su licencia.</string>
+    <string name="licenses_detail">%1$s\n%2$s\nCódigo fuente: %3$s\n\n%4$s</string>
     <string name="settings_section_updates">Actualizaciones de la app</string>
     <string name="settings_update_status">Versión instalada %1$s</string>
     <string name="settings_update_up_to_date">Actualizada. Comprobado %1$s.</string>
