@@ -6,6 +6,8 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import io.github.outpacestream.android.Prefs
+import io.github.outpacestream.android.core.CastMessage
+import io.github.outpacestream.android.core.CastTarget
 import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.EngineChoices
@@ -27,6 +29,15 @@ sealed interface EngineState {
     /** A remote engine the app is connected to stopped answering; the connection keeps retrying. */
     data class Unreachable(val reason: String) : EngineState
 }
+
+/**
+ * A cast this app started on a DLNA TV through [endpoint]'s engine. Compared by identity: each
+ * `play` makes a new one, so a poll for an earlier cast cannot touch a newer one.
+ */
+class CastSession(val targetId: String, val targetName: String, val ref: StreamRef, val endpoint: Endpoint, val startedAt: Long)
+
+/** A cast that ended, and why; [message] is null when the user stopped it. */
+data class CastEnd(val session: CastSession, val message: CastMessage?)
 
 /** The start of [ref] the service is following, or followed last; [view] null shows nothing. */
 data class StartProgress(val ref: StreamRef, val view: StartView?, val done: Boolean)
@@ -131,6 +142,157 @@ object EngineController {
         startOwner = null
         startProgress = null
         notifyListeners()
+    }
+
+    /** The cast the service follows; null when nothing is casting. One TV at a time. */
+    @Volatile var cast: CastSession? = null
+        private set
+
+    /** What the last status poll of [cast] said. */
+    @Volatile var castMessage: CastMessage = CastMessage.Starting
+        private set
+
+    /** The last cast that ended, so the cast screen can say why. */
+    @Volatile var castEnded: CastEnd? = null
+        private set
+
+    /** Cast screens showing; while > 0 the service polls the cast's status quickly. */
+    @Volatile var castScreens = 0
+        private set
+
+    /** The cast a Stop was sent for and has not finished; its Stop controls stay disabled meanwhile. */
+    @Volatile var castStopping: CastSession? = null
+        private set
+
+    /** The TV the last queued `play` goes to, while any is queued or running; a reopened cast screen shows it. */
+    @Volatile var castPending: String? = null
+        private set
+
+    /** `play` requests queued or running in the service. */
+    private var pendingPlays = 0
+
+    /** Bumped by every Stop; a `play` queued before a bump must not leave its cast playing. */
+    @Volatile internal var castStopSeq = 0
+        private set
+
+    @Volatile internal var castHook: ((CastSession) -> Unit)? = null
+    @Volatile internal var castStopHook: (() -> Unit)? = null
+    @Volatile internal var castPlayHook: ((Endpoint, CastTarget, StreamRef, (Throwable?) -> Unit) -> Unit)? = null
+    @Volatile internal var castPollNow: (() -> Unit)? = null
+
+    /** Refreshes the service's notification when a cast ends without an explicit `then`. */
+    @Volatile internal var castNotify: (() -> Unit)? = null
+
+    /**
+     * Sends [ref] to [target] through the service, which owns every cast request: play and stop run
+     * in order on one thread, so a Stop sent after a pick also stops what that pick started, and an
+     * accepted cast is tracked even when the screen that asked is gone. [done] runs on that thread.
+     */
+    fun playCast(endpoint: Endpoint, target: CastTarget, ref: StreamRef, done: (Throwable?) -> Unit) {
+        val hook = castPlayHook
+        if (hook != null) hook(endpoint, target, ref, done) else done(IllegalStateException("engine service not running"))
+    }
+
+    /**
+     * Marks a `play` as queued, at the moment it is queued, so a Stop pressed before the service
+     * runs it still sees it. Returns the Stop sequence the play must compare against.
+     */
+    @Synchronized
+    internal fun playQueued(name: String): Int {
+        pendingPlays++
+        castPending = name
+        notifyListeners()
+        return castStopSeq
+    }
+
+    /** A queued `play` reached its outcome (or was dropped). */
+    @Synchronized
+    internal fun playSettled() {
+        pendingPlays = maxOf(0, pendingPlays - 1)
+        if (pendingPlays == 0) castPending = null
+        notifyListeners()
+    }
+
+    @Synchronized
+    internal fun clearPlays() {
+        pendingPlays = 0
+        castPending = null
+        notifyListeners()
+    }
+
+    /**
+     * Records a cast the engine just accepted and lets the service follow it. With [stopping], a
+     * Stop for it is already on its way (see [CastPlayAction.StopTracked]).
+     */
+    internal fun castStarted(session: CastSession, stopping: Boolean = false) {
+        synchronized(this) {
+            cast = session
+            castMessage = CastMessage.Starting
+            castEnded = null
+            castStopping = if (stopping) session else null
+        }
+        notifyListeners()
+        castHook?.invoke(session)
+    }
+
+    /** Stops the current cast on its TV, through the service; without a service it is just forgotten. */
+    fun stopCast() {
+        val current: CastSession?
+        synchronized(this) {
+            current = cast
+            if (current == null && pendingPlays == 0) return
+            // Every play queued before this Stop sees the bump, whether it is queued, running or
+            // about to publish, and does not leave its cast playing.
+            castStopSeq++
+            if (current != null) castStopping = current
+        }
+        notifyListeners()
+        if (current == null) return
+        val hook = castStopHook
+        if (hook != null) hook() else endCast(current, null)
+    }
+
+    fun castScreenShown() {
+        castScreens++
+        castPollNow?.invoke()
+    }
+
+    fun castScreenHidden() {
+        castScreens = maxOf(0, castScreens - 1)
+    }
+
+    /**
+     * Publishes [message] for [session] unless another cast replaced it. [then] (a notification
+     * update) runs under the same lock, so it cannot repost after [endCast].
+     */
+    @Synchronized
+    internal fun publishCastMessage(session: CastSession, message: CastMessage, then: (() -> Unit)? = null) {
+        if (cast !== session || castMessage == message) return
+        castMessage = message
+        notifyListeners()
+        then?.invoke()
+    }
+
+    /** A Stop for [session] did not reach the engine: the cast stays, and Stop can be pressed again. */
+    @Synchronized
+    internal fun castStopFailed(session: CastSession, then: (() -> Unit)? = null) {
+        if (cast !== session) return
+        if (castStopping === session) castStopping = null
+        castMessage = CastMessage.StopFailed
+        notifyListeners()
+        then?.invoke()
+    }
+
+    /** Ends [session] if it is still the current cast; false when it was already replaced or ended. */
+    @Synchronized
+    internal fun endCast(session: CastSession, message: CastMessage?, then: (() -> Unit)? = null): Boolean {
+        if (cast !== session) return false
+        cast = null
+        if (castStopping === session) castStopping = null
+        castEnded = CastEnd(session, message)
+        notifyListeners()
+        (then ?: castNotify)?.invoke()
+        return true
     }
 
     fun addListener(l: () -> Unit) {

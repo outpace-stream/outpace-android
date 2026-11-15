@@ -71,6 +71,11 @@ class LaunchAndSettingsTest {
         assertTrue(EngineSettings.supportsAcestreamIdentity("1.2.0"))
     }
 
+    @Test fun envCastOnlyWhenOn() {
+        assertEquals(null, EngineSettings().env("/d", "/c")["OUTPACE_ENABLE_CAST"])
+        assertEquals("true", EngineSettings(cast = true, lan = true).env("/d", "/c")["OUTPACE_ENABLE_CAST"])
+    }
+
     @Test fun ringDropsOldest() {
         val ring = LogRing(3)
         for (i in 1..5) ring.add("line $i")

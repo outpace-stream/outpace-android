@@ -237,6 +237,49 @@ same works with a remote engine.
 
 The app plays live streams. VOD content ids are not handled yet.
 
+## Play on TV (DLNA)
+
+Many smart TVs, AV receivers and set-top boxes are DLNA/UPnP media renderers: they can play a
+stream without any app installed. With engine v1.2.0 or newer, the engine can find them and tell
+one to play a live stream. The engine casts; the app is only the remote control. See the engine's
+[Casting](https://github.com/outpace-stream/outpace-engine/wiki/Casting) page for how it works.
+
+**Turn it on.** For this device's engine, turn on **Cast to TVs (DLNA)** in Engines > Engine
+settings > Network. The setting appears only when the selected version is v1.2.0 or newer and
+sets `OUTPACE_ENABLE_CAST=true`. The TV fetches the stream from this device, so casting also
+needs **Allow LAN access**: when it is off, the app explains why and offers to turn it on, with
+the usual warning to use it only on a trusted network. It never turns LAN access on by itself.
+Restart the engine to apply both. For a remote engine, its operator sets `OUTPACE_ENABLE_CAST`
+and a LAN `OUTPACE_BIND` on that device.
+
+**Cast.** Open a stream as usual and choose **Play on TV** on the play screen, or long press a
+**Now playing** row's **Play** button on Home and choose **Play on TV**. The app lists the TVs
+the engine finds (a search takes about 2 seconds, and the engine reuses its result for a
+minute); **Search again** looks again. Pick a TV: the engine starts the stream and the TV opens
+it, which can take several seconds. One TV at a time: picking another TV stops the first.
+
+**While casting.** Home and the engine notification show "Playing on *TV*" with **Stop
+casting**. Stopping the engine, or disconnecting from a remote engine, stops the TV too. The
+app reports what the TV does:
+
+| Situation | Message |
+| --- | --- |
+| The TV stopped playback | *TV* stopped playback. |
+| The TV still says it plays but no longer reads the stream | *TV* stopped fetching the stream. Pick the TV again to restart it. |
+| The TV does not answer the engine | *TV* is not answering. (After three checks in a row the cast ends.) |
+| The engine no longer has the cast (it restarted) | The engine is no longer casting to *TV*. |
+| **Stop casting** got no answer from the engine | Could not stop casting to *TV*: the engine did not answer. Try again. (The cast stays, so you can.) |
+
+Requests the engine refuses get their own message: casting off on the engine (`404`; for a
+remote engine, the message names it), the engine only reachable from its own device
+(`loopback_bind`), a TV that left the list (`unknown_target`), no peers, a protected or HLS
+stream, too many streams or TVs at once (`capacity_exhausted`), and a TV that refused the
+stream (with its UPnP error code), did not answer, or timed out.
+
+The list is empty when the TV is off, on another network or VLAN, on guest Wi-Fi, or has its
+DLNA or screen sharing setting off. Casting covers live streams only, and renderer addresses
+are IPv4 only, like the engine.
+
 ## Search
 
 **Search** looks up streams by name through the engine's
@@ -310,6 +353,7 @@ default. **Start on boot** and **Stop when idle** are in the **Settings** tab.
 | Router port mapping | Off | [`OUTPACE_ENABLE_PORT_MAPPING`](https://github.com/outpace-stream/outpace-engine/wiki/NAT-and-Port-Mapping). Sent as `false` while the proxy is Always. |
 | Peer port | 8621 | [`OUTPACE_PEER_LISTEN`](https://github.com/outpace-stream/outpace-engine/wiki/NAT-and-Port-Mapping) to `0.0.0.0:<port>`, set only when changed. It is also the announced and router-mapped port. It must differ from the HTTP port and from `1935`, the engine's RTMP port. |
 | AceStream-compatible API | Off | [`OUTPACE_ACE_COMPAT`](https://github.com/outpace-stream/outpace-engine/wiki/Playing-Streams#acestream-compatible-api) |
+| Cast to TVs (DLNA) | Off | [`OUTPACE_ENABLE_CAST`](https://github.com/outpace-stream/outpace-engine/wiki/Casting)`=true`, set only when on. Shown for engine v1.2.0 or newer. Needs **Allow LAN access**; see [Play on TV](#play-on-tv-dlna). |
 | Stream search | Off | [`OUTPACE_COMPAT_ACESTREAM_SERVICES`](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search). Sends queries and your IP address to AceStream's public index over plain HTTP. |
 | AceStream identity | Off | [`OUTPACE_ACESTREAM_IDENTITY`](https://github.com/outpace-stream/outpace-engine/wiki/Engine-Camouflage)`=true`, set only when on. Shown only for engine v1.1.0 or newer. Peers, trackers, the catalog and (with **Stream search** on) search see the official AceStream Linux engine profile instead of Outpace. The first start with it on stores a device id (`acestream-device-id`) in the app's private data, which uninstalling removes. The engine makes one HTTPS lookup to RIPEstat (`stat.ripe.net`) for this device's network and country after two peers report the same public address. If the engine cannot derive its hardware key, it stops at startup and the error shows in Logs. |
 | Start on boot (Settings tab) | On for TV, off for phones | Starts this device's engine when the device boots. A remote engine left connected reconnects either way. |
@@ -375,7 +419,9 @@ connection needs none. It checks the engine, local or remote, every
 30 seconds when no app screen is open, and every 2 seconds while one is. Peer counts and buffer on the main
 screen are fetched only while it is open, for at most 4 streams. After you hand a stream to a
 player, the app also checks that one stream's start once a second, and stops when it plays,
-fails, or after 90 seconds at most.
+fails, or after 90 seconds at most. While a TV plays a stream from Play on TV, the app checks
+that cast every 30 seconds, or every 3 seconds while the Play on TV screen is open; nothing
+searches for TVs unless you open that screen or press **Search again**.
 
 ## Logs and problems
 

@@ -61,6 +61,7 @@ class PlayActivity : Activity() {
         findViewById<Button>(R.id.open_hls).setOnClickListener { openPlayer(hls = true) }
         findViewById<Button>(R.id.copy).setOnClickListener { copyUrl() }
         findViewById<Button>(R.id.share).setOnClickListener { shareUrl() }
+        findViewById<Button>(R.id.cast).setOnClickListener { ref?.let { startActivity(CastActivity.intent(this, it, name ?: activeTitle())) } }
 
         nameView.visibility = View.GONE
         // Only trust typed extras when launched through the alias other apps cannot start.
@@ -150,6 +151,7 @@ class PlayActivity : Activity() {
         status.text = getString(R.string.play_ready)
         urlView.text = localUrl(hls = false)
         actions.visibility = View.VISIBLE
+        findViewById<Button>(R.id.cast).visibility = if (CastActivity.offered(this)) View.VISIBLE else View.GONE
         findViewById<Button>(R.id.open).requestFocus()
         if (!launched) {
             launched = true

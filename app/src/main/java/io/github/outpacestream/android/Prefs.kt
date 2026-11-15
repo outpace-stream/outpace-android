@@ -39,6 +39,7 @@ class Prefs(context: Context) {
             acestreamIdentity = sp.getBoolean("acestream_identity", false),
             proxyMode = ProxyMode.fromKey(sp.getString("proxy_mode", null)),
             proxy = storedProxy(),
+            cast = sp.getBoolean("cast", false),
         )
         set(s) = sp.edit()
             .putBoolean("lan", s.lan).putInt("port", s.port).putBoolean("seeding", s.seeding)
@@ -48,7 +49,8 @@ class Prefs(context: Context) {
             .putBoolean("catalog_fallback", s.catalogFallback).putBoolean("low_memory", s.lowMemory)
             .putString("upload_limit", s.uploadLimit.key).putInt("peer_port", s.peerPort)
             .putBoolean("acestream_identity", s.acestreamIdentity)
-            .putString("proxy_mode", s.proxyMode.key).also { putProxy(it, s.proxy) }.apply()
+            .putString("proxy_mode", s.proxyMode.key).also { putProxy(it, s.proxy) }
+            .putBoolean("cast", s.cast).apply()
 
     /**
      * The proxy, stored as one JSON value so a read never mixes fields from two writes, and

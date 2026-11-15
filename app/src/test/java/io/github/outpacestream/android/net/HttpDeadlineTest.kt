@@ -51,4 +51,48 @@ class HttpDeadlineTest {
         val elapsedMs = (System.nanoTime() - started) / 1_000_000
         assertTrue("took $elapsedMs ms", elapsedMs < 1_500)
     }
+
+    @Test fun requestWithinReturnsTheErrorBody() {
+        val body = """{"error":"loopback_bind","message":"m"}"""
+        val request = StringBuilder()
+        thread(isDaemon = true) {
+            runCatching {
+                server.accept().use { s ->
+                    request.append(readRequest(s.getInputStream()))
+                    s.getOutputStream().apply {
+                        write("HTTP/1.1 409 Conflict\r\nContent-Type: application/json\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body".toByteArray())
+                        flush()
+                    }
+                }
+            }
+        }
+        val r = Http.requestWithin("POST", url, 2_000, """{"network":"ace"}""")
+        assertEquals(409, r.code)
+        assertEquals(body, r.body)
+        assertTrue(request.toString(), request.startsWith("POST /status"))
+        assertTrue(request.toString(), request.contains("Content-Type: application/json"))
+        assertTrue(request.toString(), request.endsWith("""{"network":"ace"}"""))
+    }
+
+    /** Reads one request: through the blank line after the headers, then its declared body. */
+    private fun readRequest(input: java.io.InputStream): String {
+        val bytes = java.io.ByteArrayOutputStream()
+        while (!bytes.toString(Charsets.ISO_8859_1).contains("\r\n\r\n")) {
+            val b = input.read()
+            if (b < 0) return bytes.toString(Charsets.ISO_8859_1)
+            bytes.write(b)
+        }
+        val head = bytes.toString(Charsets.ISO_8859_1)
+        val length = head.lineSequence()
+            .firstOrNull { it.startsWith("Content-Length:", ignoreCase = true) }
+            ?.substringAfter(':')?.trim()?.toIntOrNull() ?: 0
+        val body = ByteArray(length)
+        var read = 0
+        while (read < length) {
+            val n = input.read(body, read, length - read)
+            if (n < 0) break
+            read += n
+        }
+        return head + String(body, 0, read, Charsets.UTF_8)
+    }
 }

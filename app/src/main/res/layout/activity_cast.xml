@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/surface">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="24dp">
+        <TextView android:id="@+id/name" style="@style/Text.Headline" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:maxLines="2" android:ellipsize="end" android:visibility="gone" />
+        <TextView android:id="@+id/ref" style="@style/Text.Mono" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="2dp" />
+
+        <!-- The cast this app follows, with its Stop action. -->
+        <LinearLayout android:id="@+id/active" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" android:background="@drawable/bg_notice" android:orientation="vertical"
+            android:padding="14dp" android:visibility="gone">
+            <TextView android:id="@+id/active_text" style="@style/Text.Body" android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <Button android:id="@+id/stop" style="@style/Button.Primary" android:layout_width="wrap_content"
+                android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/cast_stop" />
+        </LinearLayout>
+
+        <TextView android:id="@+id/status" style="@style/Text.Body" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="16dp" />
+        <ProgressBar android:id="@+id/progress" style="@android:style/Widget.Material.ProgressBar.Horizontal"
+            android:layout_width="match_parent" android:layout_height="wrap_content" android:indeterminate="true"
+            android:layout_marginTop="8dp" android:visibility="gone" />
+        <Button android:id="@+id/action" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:visibility="gone" />
+
+        <TextView android:id="@+id/targets_title" style="@style/Section" android:text="@string/cast_targets_title"
+            android:visibility="gone" />
+        <LinearLayout android:id="@+id/targets" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" />
+        <Button android:id="@+id/refresh" android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="@string/cast_refresh" android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>

@@ -17,6 +17,9 @@ object Http {
     private const val READ_TIMEOUT = 20_000
     private const val MAX_TEXT = 4 * 1024 * 1024
 
+    /** Bodies read by [requestWithin]: small JSON answers only. */
+    private const val MAX_ERROR = 256 * 1024
+
     /** Closes connections whose total deadline passed; one daemon thread, idle unless a deadline is armed. */
     private val deadlines = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "http-deadline").apply { isDaemon = true } }
 
@@ -56,6 +59,42 @@ object Http {
             val bytes = c.inputStream.use { it.readBytesBounded(MAX_TEXT, deadline) }
             if (timer.isDone) throw InterruptedIOException("deadline of $totalMs ms exceeded")
             return String(bytes, Charsets.UTF_8)
+        } catch (e: IOException) {
+            if (timer.isDone && e !is InterruptedIOException) throw InterruptedIOException("deadline of $totalMs ms exceeded")
+            throw e
+        } finally {
+            timer.cancel(false)
+            c.disconnect()
+        }
+    }
+
+    /** A response whose status the caller interprets; [body] is the error body for a failure status. */
+    class Response(val code: Int, val body: String)
+
+    /**
+     * A request that returns any status with its body (or error body) instead of throwing, within
+     * [totalMs] overall like [getWithin]. With [json], sends it as an `application/json` body.
+     */
+    fun requestWithin(method: String, url: String, totalMs: Int, json: String? = null): Response {
+        val deadline = System.nanoTime() + totalMs * 1_000_000L
+        val c = open(url, readTimeout = totalMs, connectTimeout = totalMs)
+        c.requestMethod = method
+        c.setRequestProperty("Accept", "application/json")
+        val timer = deadlines.schedule({ c.disconnect() }, totalMs.toLong(), TimeUnit.MILLISECONDS)
+        try {
+            if (json != null || method == "POST") {
+                // An explicit, possibly empty body, so a bodyless POST still sends Content-Length.
+                val bytes = json?.toByteArray(Charsets.UTF_8) ?: ByteArray(0)
+                c.doOutput = true
+                if (json != null) c.setRequestProperty("Content-Type", "application/json")
+                c.setFixedLengthStreamingMode(bytes.size)
+                c.outputStream.use { it.write(bytes) }
+            }
+            val code = c.responseCode
+            val stream = if (code in 200..299) c.inputStream else c.errorStream
+            val bytes = stream?.use { it.readBytesBounded(MAX_ERROR, deadline) } ?: ByteArray(0)
+            if (timer.isDone) throw InterruptedIOException("deadline of $totalMs ms exceeded")
+            return Response(code, String(bytes, Charsets.UTF_8))
         } catch (e: IOException) {
             if (timer.isDone && e !is InterruptedIOException) throw InterruptedIOException("deadline of $totalMs ms exceeded")
             throw e

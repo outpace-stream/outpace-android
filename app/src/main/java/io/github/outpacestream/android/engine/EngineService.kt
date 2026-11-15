@@ -15,6 +15,12 @@ import android.os.SystemClock
 import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
+import io.github.outpacestream.android.core.CastMessage
+import io.github.outpacestream.android.core.CastPlay
+import io.github.outpacestream.android.core.CastPlayAction
+import io.github.outpacestream.android.core.CastPlayResult
+import io.github.outpacestream.android.core.CastTarget
+import io.github.outpacestream.android.core.CastWatch
 import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.EngineSettings
@@ -33,14 +39,19 @@ import io.github.outpacestream.android.core.StreamUrls
 import io.github.outpacestream.android.core.StreamsJson
 import io.github.outpacestream.android.core.TimeBudget
 import io.github.outpacestream.android.core.VersionJson
+import io.github.outpacestream.android.net.CastClient
+import io.github.outpacestream.android.net.CastException
 import io.github.outpacestream.android.net.Http
 import io.github.outpacestream.android.net.HttpStatusException
 import io.github.outpacestream.android.ui.MainActivity
+import io.github.outpacestream.android.ui.castText
 import io.github.outpacestream.android.ui.startText
 import java.io.IOException
 import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Owns the engine process, or the connection to a remote engine. All engine work runs on one
@@ -70,6 +81,23 @@ class EngineService : Service() {
     private var watch: StartWatch? = null
     private var watchTask: ScheduledFuture<*>? = null
 
+    /**
+     * Follows an active cast's status. Its own thread, because a status request may wait seconds for
+     * the TV and must not hold up engine start and stop; it only gets a thread once something casts.
+     */
+    private val castWorker = Executors.newSingleThreadScheduledExecutor { r -> Thread(r, "cast-poll") }
+    @Volatile private var castTask: ScheduledFuture<*>? = null
+
+    /**
+     * Bumped whenever the engine session ends (stop, disconnect, crash, destroy). A `play` requested
+     * before a bump must not leave a TV playing: it is dropped if not sent yet, and stopped again if
+     * the engine accepted it anyway.
+     */
+    private val castEpoch = AtomicInteger()
+
+    /** The decision state of the followed cast; castWorker only. */
+    private var castWatch: CastWatch? = null
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -77,6 +105,20 @@ class EngineService : Service() {
         EngineController.pollNow = { worker.execute { schedulePoll(0) } }
         EngineController.claimStartProgress(this)
         EngineController.watchStartHook = { ref -> worker.execute { watchStart(ref) } }
+        EngineController.castHook = { session -> castWorker.execute { followCast(session) } }
+        EngineController.castStopHook = { castWorker.execute { stopCast() } }
+        EngineController.castPlayHook = { endpoint, target, ref, done ->
+            // Captured when queued, so a Stop or teardown before the play runs still supersedes it.
+            val (epoch, stops) = synchronized(EngineController) { castEpoch.get() to EngineController.playQueued(target.name) }
+            try {
+                castWorker.execute { playCast(epoch, stops, endpoint, target, ref, done) }
+            } catch (e: RejectedExecutionException) {
+                EngineController.playSettled()
+                done(e)
+            }
+        }
+        EngineController.castPollNow = { castWorker.execute { EngineController.cast?.let { scheduleCast(it, 0) } } }
+        EngineController.castNotify = ::updateNotification
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -103,6 +145,16 @@ class EngineService : Service() {
                 stopEngine()
                 finish()
             }
+            ACTION_CAST_STOP -> {
+                // The same path as the in-app Stop, so it also supersedes any play queued before it.
+                EngineController.stopCast()
+                // A stale notification can start a service with no engine; it has nothing to keep running.
+                worker.execute {
+                    // Every command records its id, so a later finish() passes the newest one.
+                    commandId = startId
+                    if (process == null && remote == null && EngineController.sessionState == EngineState.Stopped) finish()
+                }
+            }
         }
         return START_STICKY
     }
@@ -110,7 +162,16 @@ class EngineService : Service() {
     override fun onDestroy() {
         EngineController.pollNow = null
         EngineController.watchStartHook = null
+        EngineController.castHook = null
+        EngineController.castStopHook = null
+        EngineController.castPlayHook = null
+        EngineController.castPollNow = null
+        EngineController.castNotify = null
+        synchronized(EngineController) { castEpoch.incrementAndGet() }
         worker.shutdownNow()
+        castWorker.shutdownNow()
+        EngineController.cast?.let { EngineController.endCast(it, CastMessage.Ended) }
+        EngineController.clearPlays()
         // shutdownNow does not wait for a tick in flight; releasing ownership stops it publishing.
         EngineController.releaseStartProgress(this)
         process?.let { terminate(it) }
@@ -220,6 +281,7 @@ class EngineService : Service() {
         process = null
         cancelPoll()
         endWatch()
+        endCastSession(stopTv = false)
         releaseWakeLock()
         if (stopping) return
         EngineController.log.add("[app] engine exited with code $code")
@@ -244,6 +306,7 @@ class EngineService : Service() {
         updateNotification()
         cancelPoll()
         endWatch()
+        endCastSession(stopTv = true)
         terminate(proc)
         process = null
         stopping = false
@@ -258,6 +321,7 @@ class EngineService : Service() {
         remote = null
         cancelPoll()
         endWatch()
+        endCastSession(stopTv = true)
         Prefs(this).remoteConnected = false
         EngineController.log.add("[app] disconnected from ${engine.name}")
         EngineController.update(EngineState.Stopped, emptyList(), clearVersion = true)
@@ -265,6 +329,7 @@ class EngineService : Service() {
 
     private fun fail(reason: String) {
         endWatch()
+        endCastSession(stopTv = false)
         EngineController.log.add("[app] $reason")
         EngineController.update(EngineState.Crashed(reason), emptyList(), clearVersion = true)
         finish()
@@ -438,6 +503,140 @@ class EngineService : Service() {
         if (EngineController.startProgress != null) EngineController.publishStartProgress(this, null)
     }
 
+    /**
+     * Ends the followed cast because the engine session ends. With [stopTv], first tells the TV to
+     * stop (one bounded request), since the stream it plays is about to go away.
+     */
+    private fun endCastSession(stopTv: Boolean) {
+        // Under the same lock as playCast's check-and-publish, so a play cannot slip in between.
+        val session = synchronized(EngineController) {
+            castEpoch.incrementAndGet()
+            EngineController.cast
+        } ?: return
+        castTask?.cancel(false)
+        if (stopTv) {
+            try { CastClient.stop(session.endpoint, session.targetId) } catch (_: Exception) {}
+        }
+        EngineController.endCast(session, null, ::updateNotification)
+    }
+
+    // castWorker only below, up to terminate.
+
+    private fun followCast(session: CastSession) {
+        castTask?.cancel(false)
+        if (EngineController.cast !== session) return
+        castWatch = CastWatch(session.startedAt)
+        EngineController.log.add("[app] casting to ${session.targetName}")
+        updateNotification()
+        scheduleCast(session, castInterval())
+    }
+
+    private fun castInterval() = if (EngineController.castScreens > 0) CastWatch.VISIBLE_POLL_MS else CastWatch.BACKGROUND_POLL_MS
+
+    private fun scheduleCast(session: CastSession, delayMs: Long) {
+        castTask?.cancel(false)
+        if (EngineController.cast !== session || castWatch == null) return
+        castTask = castWorker.schedule({ castTick(session) }, delayMs, TimeUnit.MILLISECONDS)
+    }
+
+    /** One status poll of the cast; [CastWatch] decides what it means. */
+    private fun castTick(session: CastSession) {
+        val w = castWatch ?: return
+        if (EngineController.cast !== session) return
+        val step = try {
+            w.status(CastClient.status(session.endpoint, session.targetId), SystemClock.elapsedRealtime())
+        } catch (e: CastException) {
+            w.failure(e.error.failure)
+        } catch (_: Exception) {
+            w.unreachable()
+        }
+        if (step.ended) {
+            castWatch = null
+            if (EngineController.endCast(session, step.message, ::updateNotification)) {
+                EngineController.log.add("[app] cast to ${session.targetName} ended: ${step.message}")
+            }
+            return
+        }
+        EngineController.publishCastMessage(session, step.message, ::updateNotification)
+        scheduleCast(session, castInterval())
+    }
+
+    /**
+     * Sends a stream to a TV. One TV at a time: a cast on another TV is stopped first. Runs on
+     * castWorker, after any Stop queued before it and before any queued after it.
+     */
+    private fun playCast(epoch: Int, stops: Int, endpoint: Endpoint, target: CastTarget, ref: StreamRef, done: (Throwable?) -> Unit) {
+        var failure: Exception? = null
+        var result = CastPlayResult.Refused
+        // Superseded while queued: never sent, so nothing to undo.
+        if (castEpoch.get() == epoch && EngineController.castStopSeq == stops) {
+            EngineController.cast?.takeIf { it.targetId != target.id }?.let { previous ->
+                castTask?.cancel(false)
+                castWatch = null
+                try { CastClient.stop(previous.endpoint, previous.targetId) } catch (_: Exception) {}
+                EngineController.endCast(previous, null, ::updateNotification)
+            }
+            result = try {
+                CastClient.play(endpoint, target.id, ref)
+                CastPlayResult.Accepted
+            } catch (e: CastException) {
+                failure = e
+                CastPlay.resultOf(e.error.failure)
+            } catch (e: Exception) {
+                failure = e
+                CastPlayResult.Unknown
+            }
+        }
+        val session = CastSession(target.id, target.name, ref, endpoint, SystemClock.elapsedRealtime())
+        // The decision and the publish share a lock with teardown and with Stop, so neither slips in.
+        val action = synchronized(EngineController) {
+            CastPlay.after(result, tornDown = castEpoch.get() != epoch, stopped = EngineController.castStopSeq != stops).also {
+                if (it == CastPlayAction.Publish || it == CastPlayAction.StopTracked) {
+                    EngineController.castStarted(session, stopping = it == CastPlayAction.StopTracked)
+                }
+            }
+        }
+        when (action) {
+            // Tracked, so a stop that gets no answer leaves a retryable StopFailed cast, not a lost one.
+            CastPlayAction.StopTracked -> {
+                castWatch = CastWatch(session.startedAt)
+                stopSession(session)
+            }
+            // No engine session left to track it in: one bounded stop.
+            CastPlayAction.StopUntracked -> try { CastClient.stop(endpoint, target.id) } catch (_: Exception) {}
+            CastPlayAction.Publish, CastPlayAction.Nothing -> Unit
+        }
+        EngineController.playSettled()
+        done(if (action == CastPlayAction.Publish) null else failure ?: IOException(getString(R.string.state_stopped)))
+    }
+
+    /**
+     * Stops the cast on its TV. The engine retires the stream URL even when the TV does not answer,
+     * so an error answer ends the cast; no answer from the engine keeps it, so Stop can be retried.
+     */
+    private fun stopCast() {
+        EngineController.cast?.let(::stopSession)
+    }
+
+    private fun stopSession(session: CastSession) {
+        if (EngineController.cast !== session) return
+        castTask?.cancel(false)
+        try {
+            CastClient.stop(session.endpoint, session.targetId)
+        } catch (_: CastException) {
+            // The TV or the engine forgot this cast already; either way it is over.
+        } catch (e: Exception) {
+            EngineController.log.add("[app] could not stop casting to ${session.targetName}: ${e.message ?: e.javaClass.simpleName}")
+            EngineController.castStopFailed(session, ::updateNotification)
+            castWatch?.stopFailed()
+            scheduleCast(session, castInterval())
+            return
+        }
+        castWatch = null
+        EngineController.log.add("[app] stopped casting to ${session.targetName}")
+        EngineController.endCast(session, null, ::updateNotification)
+    }
+
     private fun terminate(proc: Process) {
         if (Build.VERSION.SDK_INT < 24) {
             // Older libcore may implement destroy() as SIGKILL, which skips the engine's shutdown.
@@ -509,8 +708,11 @@ class EngineService : Service() {
         val n = EngineController.streams.size
         val connected = (EngineController.sessionTarget as? EngineTarget.Remote)?.engine
         val start = EngineController.startProgress?.view
+        val cast = EngineController.cast
         val text = if (start != null && EngineController.sessionState == EngineState.Running) {
             startText(start)
+        } else if (cast != null) {
+            castText(EngineController.castMessage, cast.targetName)
         } else if (connected != null) {
             when (EngineController.sessionState) {
                 EngineState.Running -> resources.getQuantityString(R.plurals.notification_remote, n, connected.name, n)
@@ -526,21 +728,25 @@ class EngineService : Service() {
         }
         val stopLabel = getString(if (connected != null) R.string.action_disconnect else R.string.action_stop)
         val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL) else @Suppress("DEPRECATION") Notification.Builder(this)
-        return builder
+        builder
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(getString(R.string.app_name))
             .setContentText(text)
             .setContentIntent(open)
             .setOngoing(true)
             .setShowWhen(false)
-            .addAction(Notification.Action.Builder(0, stopLabel, stop).build())
-            .build()
+        if (cast != null) {
+            val stopCast = PendingIntent.getService(this, 2, Intent(this, EngineService::class.java).setAction(ACTION_CAST_STOP), immutable)
+            builder.addAction(Notification.Action.Builder(0, getString(R.string.cast_stop), stopCast).build())
+        }
+        return builder.addAction(Notification.Action.Builder(0, stopLabel, stop).build()).build()
     }
 
     companion object {
         const val ACTION_START = "io.github.outpacestream.android.START"
         const val ACTION_STOP = "io.github.outpacestream.android.STOP"
         const val ACTION_RESTART = "io.github.outpacestream.android.RESTART"
+        const val ACTION_CAST_STOP = "io.github.outpacestream.android.CAST_STOP"
         private const val CHANNEL = "engine"
         private const val NOTIFICATION_ID = 1
         private const val SIGTERM = 15
