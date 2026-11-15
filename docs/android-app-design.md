@@ -229,7 +229,9 @@ Entry points, all leading to the same flow:
 - **Paste box** on the main screen.
 - **Recent streams:** the last 12 streams the user played, stored locally with their kind
   (`cid:` or `ih:`) and the name they were shown under, one click to replay. Essential on TV,
-  where typing is painful. The user can clear the list or remove one entry (long press).
+  where typing is painful. The user can clear the list or remove one entry (long press). The
+  same long-press menu copies an entry as an `acestream://<id>` link or as the bare id; infohash
+  entries offer only the id.
 - **Search results** (feature 9), which pass an explicit `ih:` selector.
 
 Links, shared text and the paste box accept content ids only. A bare 40-hex string cannot be told
