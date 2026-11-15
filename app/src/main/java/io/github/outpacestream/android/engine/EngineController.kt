@@ -186,10 +186,20 @@ object EngineController {
         if (hook != null) hook(endpoint, target, ref, done) else done(IllegalStateException("engine service not running"))
     }
 
+    /** Set when Stop is pressed while a `play` is in flight and no cast is tracked yet. */
+    private var pendingStop = false
+
     internal fun setCastPending(name: String?) {
-        castPending = name
+        synchronized(this) {
+            castPending = name
+            if (name != null) pendingStop = false
+        }
         notifyListeners()
     }
+
+    /** Whether Stop was pressed for the `play` in flight; reading it clears it. Callers hold this lock. */
+    @Synchronized
+    internal fun takePendingStop(): Boolean = pendingStop.also { pendingStop = false }
 
     /** Records a cast the engine just accepted and lets the service follow it. */
     internal fun castStarted(session: CastSession) {
@@ -204,9 +214,19 @@ object EngineController {
 
     /** Stops the current cast on its TV, through the service; without a service it is just forgotten. */
     fun stopCast() {
-        val current = cast ?: return
-        castStopping = current
+        val current: CastSession?
+        synchronized(this) {
+            current = cast
+            when {
+                current != null -> castStopping = current
+                // Switching TVs: the old cast is gone and the new one not tracked yet. The play in
+                // flight reads this under the same lock and stops what it started.
+                castPending != null -> pendingStop = true
+                else -> return
+            }
+        }
         notifyListeners()
+        if (current == null) return
         val hook = castStopHook
         if (hook != null) hook() else endCast(current, null)
     }

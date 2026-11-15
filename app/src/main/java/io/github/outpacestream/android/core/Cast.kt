@@ -191,6 +191,26 @@ class CastWatch(private val startedAt: Long) {
     }
 }
 
+/** How a `play` request ended: answered with success, answered with an error, or no answer at all. */
+enum class CastPlayResult { Accepted, Refused, Unknown }
+
+/** What to do after a `play`: track the new cast, stop the TV again, or nothing. */
+enum class CastPlayAction { Publish, Stop, Nothing }
+
+object CastPlay {
+    /**
+     * Decides what follows a `play`. [superseded] is true when the engine session ended or the user
+     * pressed Stop while the request was in flight. A refused request started nothing. Without an
+     * answer the engine may still have started the TV, so it gets one stop, as does an accepted
+     * cast nobody wants any more; the app never leaves a TV playing that it does not track.
+     */
+    fun after(result: CastPlayResult, superseded: Boolean): CastPlayAction = when (result) {
+        CastPlayResult.Refused -> CastPlayAction.Nothing
+        CastPlayResult.Unknown -> CastPlayAction.Stop
+        CastPlayResult.Accepted -> if (superseded) CastPlayAction.Stop else CastPlayAction.Publish
+    }
+}
+
 /** What stops this device's engine from casting, decided from local facts before any request. */
 sealed interface CastBlock {
     data class Old(val version: String) : CastBlock

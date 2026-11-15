@@ -121,6 +121,18 @@ class CastTest {
         assertEquals(CastStep(CastMessage.EngineUnreachable, false), w.unreachable())
     }
 
+    @Test fun playOutcomes() {
+        assertEquals(CastPlayAction.Publish, CastPlay.after(CastPlayResult.Accepted, superseded = false))
+        // Stop pressed, or the engine session ended, while the play was in flight.
+        assertEquals(CastPlayAction.Stop, CastPlay.after(CastPlayResult.Accepted, superseded = true))
+        // No answer: the engine may have started the TV anyway, tracked or not.
+        assertEquals(CastPlayAction.Stop, CastPlay.after(CastPlayResult.Unknown, superseded = false))
+        assertEquals(CastPlayAction.Stop, CastPlay.after(CastPlayResult.Unknown, superseded = true))
+        // An error answer started nothing.
+        assertEquals(CastPlayAction.Nothing, CastPlay.after(CastPlayResult.Refused, superseded = false))
+        assertEquals(CastPlayAction.Nothing, CastPlay.after(CastPlayResult.Refused, superseded = true))
+    }
+
     @Test fun gateForThisDevice() {
         val on = EngineSettings(cast = true, lan = true)
         assertEquals(CastBlock.Old("1.1.0"), CastGate.check("1.1.0", on, null))
