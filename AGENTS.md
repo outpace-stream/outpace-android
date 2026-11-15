@@ -34,9 +34,9 @@ third-party artwork needs an entry in `core/Notices.kt`, with its license text i
 - Engine binaries, HTTP API changes and archive layout belong in outpace-engine. If the app needs
   something the engine lacks, file an engine issue; the app never patches or bundles the engine.
 - The app depends on release asset names `outpace-<ver>-<target>.tar.gz` plus `.sha256`, with
-  `outpace-<ver>-<target>/outpace` inside. Targets: `aarch64-linux-android`,
-  `armv7-linux-androideabi`, and `x86_64-linux-android` from engine v1.2.1 (all
-  best-effort, so a release can lack one).
+  `outpace-<ver>-<target>/outpace` inside. Targets: `aarch64-linux-android` (from engine
+  v1.0.0), `armv7-linux-androideabi` (from v1.0.2) and `x86_64-linux-android` (from v1.2.1).
+  All are best-effort, so a release can lack one.
 - Engine configuration is environment variables at process start only. Emit only non-default
   values; a change applies on the next engine start.
 - Resolve the latest release through the `github.com/<repo>/releases/latest` redirect and
