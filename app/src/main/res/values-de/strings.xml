@@ -64,6 +64,7 @@
     <string name="cast_status_not_found">%1$s antwortet nicht.</string>
     <string name="cast_status_ended">Die Engine sendet nicht mehr an %1$s.</string>
     <string name="cast_status_engine_unreachable">Die Engine ist nicht erreichbar, um den Fernseher zu prüfen.</string>
+    <string name="cast_status_stop_failed">Senden an %1$s konnte nicht beendet werden: Die Engine hat nicht geantwortet. Versuche es erneut.</string>
     <string name="cast_old_engine">Senden an den Fernseher benötigt Engine v%1$s oder neuer. Dieses Gerät verwendet v%2$s.</string>
     <string name="cast_off">Senden an den Fernseher ist für die Engine dieses Geräts ausgeschaltet.</string>
     <string name="cast_turn_on">Senden einschalten</string>

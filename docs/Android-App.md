@@ -268,6 +268,7 @@ app reports what the TV does:
 | The TV still says it plays but no longer reads the stream | *TV* stopped fetching the stream. Pick the TV again to restart it. |
 | The TV does not answer the engine | *TV* is not answering. (After three checks in a row the cast ends.) |
 | The engine no longer has the cast (it restarted) | The engine is no longer casting to *TV*. |
+| **Stop casting** got no answer from the engine | Could not stop casting to *TV*: the engine did not answer. Try again. (The cast stays, so you can.) |
 
 Requests the engine refuses get their own message: casting off on the engine (`404`; for a
 remote engine, the message names it), the engine only reachable from its own device

@@ -21,8 +21,14 @@ object CastClient {
     /** Discovery waits about 2 s, then reads each device description with a 2 s timeout. */
     private const val TARGETS_MS = 12_000
 
-    /** `play` starts the stream, then gives the TV 15 s per attempt, with one retry as `video/mpeg`. */
-    private const val PLAY_MS = 45_000
+    /**
+     * Engine 1.2.0's worst case for one `play`: `Stop` of an earlier cast on the same TV (5 s), then
+     * `SetAVTransportURI` (15 s) with one retry as `video/mpeg` after UPnP error 714 (15 s), then
+     * `Play` (15 s). Starting the stream comes first and is bounded by the engine's own start
+     * deadlines, so [PLAY_MS] adds a margin for that and for the transfer.
+     */
+    internal const val ENGINE_PLAY_WORST_MS = 5_000 + 15_000 + 15_000 + 15_000
+    internal const val PLAY_MS = ENGINE_PLAY_WORST_MS + 30_000
 
     /** The engine gives a renderer 5 s for `stop` and `status`. */
     private const val CONTROL_MS = 8_000

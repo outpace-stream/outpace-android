@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.core.CastMessage
+import io.github.outpacestream.android.core.CastTarget
 import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.EngineChoices
@@ -159,15 +160,39 @@ object EngineController {
     @Volatile var castScreens = 0
         private set
 
+    /** The cast a Stop was sent for and has not finished; its Stop controls stay disabled meanwhile. */
+    @Volatile var castStopping: CastSession? = null
+        private set
+
+    /** The TV a `play` is being sent to right now, so a reopened cast screen can show it. */
+    @Volatile var castPending: String? = null
+        private set
+
     @Volatile internal var castHook: ((CastSession) -> Unit)? = null
     @Volatile internal var castStopHook: (() -> Unit)? = null
+    @Volatile internal var castPlayHook: ((Endpoint, CastTarget, StreamRef, (Throwable?) -> Unit) -> Unit)? = null
     @Volatile internal var castPollNow: (() -> Unit)? = null
 
     /** Refreshes the service's notification when a cast ends without an explicit `then`. */
     @Volatile internal var castNotify: (() -> Unit)? = null
 
+    /**
+     * Sends [ref] to [target] through the service, which owns every cast request: play and stop run
+     * in order on one thread, so a Stop sent after a pick also stops what that pick started, and an
+     * accepted cast is tracked even when the screen that asked is gone. [done] runs on that thread.
+     */
+    fun playCast(endpoint: Endpoint, target: CastTarget, ref: StreamRef, done: (Throwable?) -> Unit) {
+        val hook = castPlayHook
+        if (hook != null) hook(endpoint, target, ref, done) else done(IllegalStateException("engine service not running"))
+    }
+
+    internal fun setCastPending(name: String?) {
+        castPending = name
+        notifyListeners()
+    }
+
     /** Records a cast the engine just accepted and lets the service follow it. */
-    fun castStarted(session: CastSession) {
+    internal fun castStarted(session: CastSession) {
         synchronized(this) {
             cast = session
             castMessage = CastMessage.Starting
@@ -179,8 +204,11 @@ object EngineController {
 
     /** Stops the current cast on its TV, through the service; without a service it is just forgotten. */
     fun stopCast() {
+        val current = cast ?: return
+        castStopping = current
+        notifyListeners()
         val hook = castStopHook
-        if (hook != null) hook() else cast?.let { endCast(it, null) }
+        if (hook != null) hook() else endCast(current, null)
     }
 
     fun castScreenShown() {
@@ -204,11 +232,22 @@ object EngineController {
         then?.invoke()
     }
 
+    /** A Stop for [session] did not reach the engine: the cast stays, and Stop can be pressed again. */
+    @Synchronized
+    internal fun castStopFailed(session: CastSession, then: (() -> Unit)? = null) {
+        if (cast !== session) return
+        if (castStopping === session) castStopping = null
+        castMessage = CastMessage.StopFailed
+        notifyListeners()
+        then?.invoke()
+    }
+
     /** Ends [session] if it is still the current cast; false when it was already replaced or ended. */
     @Synchronized
     internal fun endCast(session: CastSession, message: CastMessage?, then: (() -> Unit)? = null): Boolean {
         if (cast !== session) return false
         cast = null
+        if (castStopping === session) castStopping = null
         castEnded = CastEnd(session, message)
         notifyListeners()
         (then ?: castNotify)?.invoke()

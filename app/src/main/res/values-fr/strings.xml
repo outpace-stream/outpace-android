@@ -66,6 +66,7 @@
     <string name="cast_status_not_found">%1$s ne répond pas.</string>
     <string name="cast_status_ended">Le moteur ne diffuse plus sur %1$s.</string>
     <string name="cast_status_engine_unreachable">Impossible de joindre le moteur pour vérifier la TV.</string>
+    <string name="cast_status_stop_failed">Impossible d\'arrêter la diffusion sur %1$s : le moteur n\'a pas répondu. Réessayez.</string>
     <string name="cast_old_engine">La diffusion nécessite le moteur v%1$s ou plus récent. Cet appareil exécute v%2$s.</string>
     <string name="cast_off">La diffusion est désactivée pour le moteur de cet appareil.</string>
     <string name="cast_turn_on">Activer la diffusion</string>

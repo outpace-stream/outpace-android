@@ -66,6 +66,7 @@
     <string name="cast_status_not_found">%1$s non risponde.</string>
     <string name="cast_status_ended">Il motore non sta più trasmettendo a %1$s.</string>
     <string name="cast_status_engine_unreachable">Impossibile raggiungere il motore per controllare la TV.</string>
+    <string name="cast_status_stop_failed">Impossibile interrompere la trasmissione a %1$s: il motore non ha risposto. Riprova.</string>
     <string name="cast_old_engine">La trasmissione richiede il motore v%1$s o successivo. Questo dispositivo esegue v%2$s.</string>
     <string name="cast_off">La trasmissione è disattivata per il motore di questo dispositivo.</string>
     <string name="cast_turn_on">Attiva la trasmissione</string>

@@ -17,6 +17,7 @@ fun Context.castText(message: CastMessage, tv: String): String = when (message) 
     CastMessage.TvNotFound -> getString(R.string.cast_status_not_found, tv)
     CastMessage.Ended -> getString(R.string.cast_status_ended, tv)
     CastMessage.EngineUnreachable -> getString(R.string.cast_status_engine_unreachable)
+    CastMessage.StopFailed -> getString(R.string.cast_status_stop_failed, tv)
 }
 
 /** Why a cast request failed. [remote] names the remote engine, whose configuration is its own. */

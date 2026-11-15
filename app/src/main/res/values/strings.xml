@@ -67,6 +67,7 @@
     <string name="cast_status_not_found">%1$s is not answering.</string>
     <string name="cast_status_ended">The engine is no longer casting to %1$s.</string>
     <string name="cast_status_engine_unreachable">Can\'t reach the engine to check the TV.</string>
+    <string name="cast_status_stop_failed">Could not stop casting to %1$s: the engine did not answer. Try again.</string>
     <string name="cast_old_engine">Casting needs engine v%1$s or newer. This device runs v%2$s.</string>
     <string name="cast_off">Casting is off for this device\'s engine.</string>
     <string name="cast_turn_on">Turn on casting</string>

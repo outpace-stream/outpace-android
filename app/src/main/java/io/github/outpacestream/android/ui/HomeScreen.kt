@@ -53,10 +53,7 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
             }
         }
         find<Button>(R.id.clear_recent).setOnClickListener { prefs.clearRecent(); render() }
-        castStop.setOnClickListener {
-            castStop.isEnabled = false
-            EngineController.stopCast()
-        }
+        castStop.setOnClickListener { EngineController.stopCast() }
         idInput.setOnEditorActionListener { _, action, event ->
             val enter = event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_UP
             if (action == EditorInfo.IME_ACTION_GO || enter) { playInput(); true } else false
@@ -169,10 +166,9 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
         val cast = EngineController.cast
         if (cast == null && castBanner.hasFocus()) startStop.requestFocus()
         castBanner.visibility = if (cast == null) View.GONE else View.VISIBLE
-        if (cast == null) {
-            castStop.isEnabled = true
-            return
-        }
+        if (cast == null) return
+        // Disabled only while a Stop for this very cast is in flight, so a new cast never inherits it.
+        castStop.isEnabled = EngineController.castStopping !== cast
         castTextView.text = host.castText(EngineController.castMessage, cast.targetName)
     }
 

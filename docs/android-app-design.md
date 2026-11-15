@@ -413,7 +413,10 @@ DLNA/UPnP media renderers and tell one to play a live stream (`/cast/` routes, o
 - **Play on TV:** from the play screen, or a long press on a Now playing row. A non-exported
   `CastActivity` lists `GET /cast/targets` (cached 60 s by the engine; **Search again** sends
   `?refresh=1`) and sends `POST /cast/targets/<id>/play` with `{"network":"ace","id":"<selector>"}`
-  on its own thread with a 45 s deadline, since `play` starts the stream and waits on the TV.
+  with an 80 s deadline (engine 1.2.0's worst case is 50 s of renderer requests after the stream
+  starts). The service sends `play` and `stop` in order on one thread, so a Stop pressed after a
+  pick also stops what that pick started, and an accepted cast is tracked even if the screen
+  closed. A Stop the engine never answered keeps the cast, so it can be retried.
   For this device's engine it first checks local facts (`CastGate`): version, setting, LAN access,
   and whether the running engine started with them.
 - **While casting:** one cast at a time. The engine service keeps running (it already is) and its

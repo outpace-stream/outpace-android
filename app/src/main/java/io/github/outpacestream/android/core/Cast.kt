@@ -131,6 +131,9 @@ enum class CastMessage {
 
     /** The engine itself did not answer the status request. */
     EngineUnreachable,
+
+    /** A Stop did not reach the engine, so the TV may still play; Stop can be tried again. */
+    StopFailed,
 }
 
 /** The result of one status poll: what to show, and whether the cast is over. */

@@ -24,7 +24,6 @@ import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.StreamRef
 import io.github.outpacestream.android.engine.CastEnd
-import io.github.outpacestream.android.engine.CastSession
 import io.github.outpacestream.android.engine.EngineController
 import io.github.outpacestream.android.engine.EngineSelection
 import io.github.outpacestream.android.engine.EngineService
@@ -54,8 +53,10 @@ class CastActivity : Activity() {
     /** Bumped per request, so a late answer for an earlier one is dropped. */
     private var generation = 0
     private var busy = false
-    private var stopping = false
     private var loaded = false
+
+    /** Whether this screen shows a `play` it did not send (it was reopened while one ran). */
+    private var showingPending = false
 
     /** The cast end already shown, so each one is reported once. */
     private var shownEnd: CastEnd? = null
@@ -80,11 +81,7 @@ class CastActivity : Activity() {
         }
         findViewById<TextView>(R.id.ref).text = getString(R.string.play_ref, kindLabel(ref), ref.hex)
         refresh.setOnClickListener { load(refresh = true) }
-        stop.setOnClickListener {
-            stopping = true
-            EngineController.stopCast()
-            renderActive()
-        }
+        stop.setOnClickListener { EngineController.stopCast() }
         shownEnd = EngineController.castEnded
     }
 
@@ -106,10 +103,18 @@ class CastActivity : Activity() {
 
     private fun renderActive() {
         val cast = EngineController.cast
-        if (cast == null) stopping = false
         active.visibility = if (cast == null) View.GONE else View.VISIBLE
         if (cast != null) activeText.text = castText(EngineController.castMessage, cast.targetName)
-        stop.isEnabled = !stopping
+        // Disabled only while a Stop for this very cast is in flight; a failed Stop re-enables it.
+        stop.isEnabled = cast != null && EngineController.castStopping !== cast
+        val pending = EngineController.castPending
+        if (!busy && pending != null) {
+            showingPending = true
+            setStatus(getString(R.string.cast_starting_on, pending), working = true)
+        } else if (showingPending && pending == null) {
+            showingPending = false
+            setStatus(getString(R.string.cast_pick))
+        }
         val end = EngineController.castEnded
         if (end != null && end !== shownEnd) {
             shownEnd = end
@@ -258,27 +263,22 @@ class CastActivity : Activity() {
         val gen = ++generation
         askNotificationPermission()
         setStatus(getString(R.string.cast_starting_on, target.name), working = true)
-        castExecutor.execute {
-            val result = runCatching {
-                val endpoint = EngineController.endpointFor(this) ?: throw EngineDown(getString(R.string.no_engine_selected))
-                EngineController.cast?.takeIf { it.targetId != target.id }?.let { previous ->
-                    try { CastClient.stop(previous.endpoint, previous.targetId) } catch (_: Exception) {}
-                    EngineController.endCast(previous, null)
-                }
-                CastClient.play(endpoint, target.id, ref)
-                CastSession(target.id, target.name, ref, endpoint, SystemClock.elapsedRealtime())
-            }
+        val endpoint = EngineController.endpointFor(this)
+        if (endpoint == null) {
+            busy = false
+            return setStatus(getString(R.string.no_engine_selected))
+        }
+        // The service sends it and tracks the cast; this screen only shows the outcome, if still open.
+        EngineController.playCast(endpoint, target, ref) { error ->
             onMain {
                 if (gen != generation) return@onMain
                 busy = false
-                result.fold(
-                    { session ->
-                        EngineController.castStarted(session)
-                        setStatus(getString(R.string.cast_sent, target.name))
-                        stop.requestFocus()
-                    },
-                    { showFailure(it) },
-                )
+                if (error == null) {
+                    setStatus(getString(R.string.cast_sent, target.name))
+                    stop.requestFocus()
+                } else {
+                    showFailure(error)
+                }
             }
         }
     }
