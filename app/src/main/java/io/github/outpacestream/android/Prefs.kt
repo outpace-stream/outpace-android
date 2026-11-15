@@ -14,6 +14,7 @@ import io.github.outpacestream.android.core.StartupBuffer
 import io.github.outpacestream.android.core.UploadLimit
 import io.github.outpacestream.android.core.WhatsNew
 import org.json.JSONArray
+import org.json.JSONObject
 
 /** Everything the app remembers. Small values only; engine files live in [EngineFiles]. */
 class Prefs(context: Context) {
@@ -50,21 +51,22 @@ class Prefs(context: Context) {
             .putString("proxy_mode", s.proxyMode.key).also { putProxy(it, s.proxy) }.apply()
 
     /**
-     * The proxy, revalidated on read so a bad stored value never reaches the engine. The password
-     * lives only in these app-private preferences (backups are off) and is never logged.
+     * The proxy, stored as one JSON value so a read never mixes fields from two writes, and
+     * revalidated on read so a bad stored value never reaches the engine. The password lives only in
+     * these app-private preferences (backups are off) and is never logged.
      */
     private fun storedProxy(): SocksProxy? {
-        val host = sp.getString("proxy_host", null) ?: return null
-        val address = SocksProxy(host, sp.getInt("proxy_port", 0)).address
-        return SocksProxy.of(address, sp.getString("proxy_user", null).orEmpty(), sp.getString("proxy_password", null).orEmpty())
+        val o = try { JSONObject(sp.getString("proxy", null) ?: return null) } catch (_: Exception) { return null }
+        val host = o.optString("host").takeIf { it.isNotEmpty() } ?: return null
+        return SocksProxy.of(SocksProxy(host, o.optInt("port", 0)).address, o.optString("user"), o.optString("password"))
     }
 
     private fun putProxy(e: SharedPreferences.Editor, p: SocksProxy?) {
         if (p == null) {
-            e.remove("proxy_host").remove("proxy_port").remove("proxy_user").remove("proxy_password")
+            e.remove("proxy")
         } else {
-            e.putString("proxy_host", p.host).putInt("proxy_port", p.port)
-                .putString("proxy_user", p.username).putString("proxy_password", p.password)
+            val o = JSONObject().put("host", p.host).put("port", p.port).put("user", p.username).put("password", p.password)
+            e.putString("proxy", o.toString())
         }
     }
 

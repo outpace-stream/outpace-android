@@ -362,7 +362,7 @@
     <string name="proxy_address_invalid">Use host:porta, por exemplo 127.0.0.1:1080.</string>
     <string name="proxy_username">Usuário (opcional)</string>
     <string name="proxy_password">Senha (opcional)</string>
-    <string name="proxy_credentials_help">Só se o proxy pedir. Ficam neste dispositivo.</string>
+    <string name="proxy_credentials_help">Ficam salvos só neste dispositivo e são enviados ao proxy quando ele pedir.</string>
     <string name="proxy_credentials_incomplete">Informe um usuário e uma senha, ou nenhum dos dois.</string>
     <string name="proxy_credentials_too_long">O usuário e a senha podem ter até 255 bytes cada.</string>
     <string name="stream_via_proxy">pelo proxy</string>
