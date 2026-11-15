@@ -86,8 +86,8 @@ flowchart LR
 | | |
 | --- | --- |
 | Android | 5.0 (Lollipop) or newer, phones, tablets, Android TV and Google TV |
-| Processor | 64-bit ARM (`arm64-v8a`) or 32-bit ARM (`armeabi-v7a`). Many TV boxes run 32-bit Android on a 64-bit chip; the app picks the matching engine build. |
-| Engine | Outpace v1.0.0 or newer on 64-bit ARM, v1.0.2 or newer on 32-bit ARM. Search, Play on TV, the proxy and camouflage need newer engines; the app shows each setting only when the selected engine supports it. |
+| Processor | 64-bit ARM (`arm64-v8a`), 32-bit ARM (`armeabi-v7a`) or x86_64 (emulators, ChromeOS, Intel and AMD TV boxes). Many TV boxes run 32-bit Android on a 64-bit chip; the app picks the matching engine build. 32-bit x86 is not supported. |
+| Engine | Outpace v1.0.0 or newer on 64-bit ARM, v1.0.2 or newer on 32-bit ARM, a release after v1.2.1 on x86_64. Search, Play on TV, the proxy and camouflage need newer engines; the app shows each setting only when the selected engine supports it. |
 | Player | Any video player app, for example VLC. |
 
 ## Install
