@@ -54,10 +54,15 @@
             <EditText android:id="@+id/id_input" android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:hint="@string/play_hint" android:imeOptions="actionGo"
                 android:inputType="textUri|textNoSuggestions" android:importantForAutofill="no" android:maxLines="1" />
-            <Button android:id="@+id/paste" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:layout_marginStart="8dp" android:text="@string/action_paste" />
-            <Button android:id="@+id/play" style="@style/Button.Primary" android:layout_width="wrap_content"
-                android:layout_height="wrap_content" android:layout_marginStart="8dp" android:text="@string/action_play" />
+            <!-- Icon-only actions leave the input most of the row; the labels stay as descriptions. -->
+            <ImageButton android:id="@+id/paste" android:layout_width="52dp" android:layout_height="52dp"
+                android:layout_marginStart="8dp" android:background="@drawable/bg_button_secondary"
+                android:src="@drawable/ic_paste" android:tint="@color/button_secondary_text"
+                android:contentDescription="@string/action_paste" />
+            <ImageButton android:id="@+id/play" android:layout_width="52dp" android:layout_height="52dp"
+                android:layout_marginStart="8dp" android:background="@drawable/bg_button_primary"
+                android:src="@drawable/ic_play" android:tint="@color/button_primary_text"
+                android:contentDescription="@string/action_play" />
         </LinearLayout>
         <TextView style="@style/Text.Muted" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="6dp" android:text="@string/play_input_help" />

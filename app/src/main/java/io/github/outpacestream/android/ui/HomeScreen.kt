@@ -42,9 +42,9 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
 
     init {
         startStop.setOnClickListener { onAction() }
-        find<Button>(R.id.play).setOnClickListener { playInput() }
+        find<View>(R.id.play).setOnClickListener { playInput() }
         find<Button>(R.id.go_search).setOnClickListener { host.select(MainActivity.TAB_SEARCH, focus = true) }
-        find<Button>(R.id.paste).apply {
+        find<View>(R.id.paste).apply {
             // TV remotes have no clipboard worth reading.
             visibility = if (Device.isTv(host)) View.GONE else View.VISIBLE
             setOnClickListener {

@@ -187,8 +187,8 @@ You can start playback from:
   activity directly is also unaffected. Outpace does not yet have a confirmed setting that
   approves it for `127.0.0.1`.
 - **The share menu.** Share text that contains a content id or an `acestream:` link to Outpace.
-- **Home.** Paste a content id or link into the box and press **Play**. On phones, **Paste**
-  fills the box from the clipboard.
+- **Home.** Paste a content id or link into the box and press the play button beside it. On
+  phones, the clipboard button fills the box from the clipboard.
 - **Search.** Find a stream by name and press its **Play** button; see [Search](#search).
 - **Recently played.** Home lists the last 12 streams you played, with their names when known.
   This is the easy way to replay on a TV remote. **Clear** forgets them. Long press a row's
