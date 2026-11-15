@@ -66,6 +66,11 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
     private val settingsBody = find<View>(R.id.settings_body)
     private val settingsChevron = find<ImageView>(R.id.settings_chevron)
     private val rows = SettingRows(host) { render() }
+    private val proxySection = find<View>(R.id.proxy_section)
+    private lateinit var proxy: ProxySettings
+
+    /** Whether the selected local engine takes the proxy variables; set on every render. */
+    private var proxySupported = false
 
     /** Shown only when the selected engine reads `OUTPACE_ACESTREAM_IDENTITY`. */
     private lateinit var identityRow: View
@@ -140,8 +145,16 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
             ),
             { it.uploadLimit },
         ) { s, v -> s.copy(uploadLimit = v) }
-        rows.engineToggle(peers, R.string.settings_inbound, R.string.settings_inbound_summary, { it.inbound }) { s, v -> s.copy(inbound = v) }
-        rows.engineToggle(peers, R.string.settings_port_mapping, R.string.settings_port_mapping_summary, { it.portMapping }) { s, v ->
+        proxy = ProxySettings(host, find(R.id.group_proxy)) {
+            rows.applyLocks()
+            render()
+        }
+        // With the proxy always on, the engine refuses inbound peers and port mapping.
+        val proxyLock = { if (prefs.settings.alwaysProxied(proxySupported)) R.string.settings_locked_by_proxy else null }
+        rows.engineToggle(peers, R.string.settings_inbound, R.string.settings_inbound_summary, { it.inbound }, locked = proxyLock) { s, v ->
+            s.copy(inbound = v)
+        }
+        rows.engineToggle(peers, R.string.settings_port_mapping, R.string.settings_port_mapping_summary, { it.portMapping }, locked = proxyLock) { s, v ->
             s.copy(portMapping = v)
         }
         rows.portRow(peers, R.string.settings_peer_port, R.string.settings_peer_port_summary, { it.peerPort }) { s, v -> s.copy(peerPort = v) }
@@ -153,7 +166,10 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
 
     override fun focusTarget(): View = list.getChildAt(0) ?: addButton
 
-    override fun onShown() = rows.refresh()
+    override fun onShown() {
+        rows.refresh()
+        proxy.refresh()
+    }
 
     override fun onVisible() {
         probes?.cancel(false)
@@ -306,6 +322,12 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
     }
 
     private fun renderLocal(version: String) {
+        val supported = EngineSettings.proxySupported(version)
+        if (supported != proxySupported) {
+            proxySupported = supported
+            rows.applyLocks()
+        }
+        proxySection.visibility = if (supported) View.VISIBLE else View.GONE
         val s = EngineController.state
         val shown = EngineController.runningVersion ?: version
         localState.text = host.getString(

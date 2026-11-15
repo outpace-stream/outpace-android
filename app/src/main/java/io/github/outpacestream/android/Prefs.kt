@@ -4,14 +4,17 @@ import android.content.Context
 import android.content.SharedPreferences
 import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.HlsStart
+import io.github.outpacestream.android.core.ProxyMode
 import io.github.outpacestream.android.core.RecentEntry
 import io.github.outpacestream.android.core.RecentList
 import io.github.outpacestream.android.core.RemoteEngine
 import io.github.outpacestream.android.core.RemoteEngines
+import io.github.outpacestream.android.core.SocksProxy
 import io.github.outpacestream.android.core.StartupBuffer
 import io.github.outpacestream.android.core.UploadLimit
 import io.github.outpacestream.android.core.WhatsNew
 import org.json.JSONArray
+import org.json.JSONObject
 
 /** Everything the app remembers. Small values only; engine files live in [EngineFiles]. */
 class Prefs(context: Context) {
@@ -34,6 +37,8 @@ class Prefs(context: Context) {
             uploadLimit = UploadLimit.fromKey(sp.getString("upload_limit", null)),
             peerPort = sp.getInt("peer_port", EngineSettings.DEFAULT_PEER_PORT),
             acestreamIdentity = sp.getBoolean("acestream_identity", false),
+            proxyMode = ProxyMode.fromKey(sp.getString("proxy_mode", null)),
+            proxy = storedProxy(),
         )
         set(s) = sp.edit()
             .putBoolean("lan", s.lan).putInt("port", s.port).putBoolean("seeding", s.seeding)
@@ -42,7 +47,28 @@ class Prefs(context: Context) {
             .putString("startup_buffer", s.startupBuffer.key).putString("hls_start", s.hlsStart.key)
             .putBoolean("catalog_fallback", s.catalogFallback).putBoolean("low_memory", s.lowMemory)
             .putString("upload_limit", s.uploadLimit.key).putInt("peer_port", s.peerPort)
-            .putBoolean("acestream_identity", s.acestreamIdentity).apply()
+            .putBoolean("acestream_identity", s.acestreamIdentity)
+            .putString("proxy_mode", s.proxyMode.key).also { putProxy(it, s.proxy) }.apply()
+
+    /**
+     * The proxy, stored as one JSON value so a read never mixes fields from two writes, and
+     * revalidated on read so a bad stored value never reaches the engine. The password lives only in
+     * these app-private preferences (backups are off) and is never logged.
+     */
+    private fun storedProxy(): SocksProxy? {
+        val o = try { JSONObject(sp.getString("proxy", null) ?: return null) } catch (_: Exception) { return null }
+        val host = o.optString("host").takeIf { it.isNotEmpty() } ?: return null
+        return SocksProxy.of(SocksProxy(host, o.optInt("port", 0)).address, o.optString("user"), o.optString("password"))
+    }
+
+    private fun putProxy(e: SharedPreferences.Editor, p: SocksProxy?) {
+        if (p == null) {
+            e.remove("proxy")
+        } else {
+            val o = JSONObject().put("host", p.host).put("port", p.port).put("user", p.username).put("password", p.password)
+            e.putString("proxy", o.toString())
+        }
+    }
 
     /** Before engine selection existed: the chosen local version. Read once, to migrate. */
     val legacyActiveVersion: String? get() = sp.getString("active_version", null)

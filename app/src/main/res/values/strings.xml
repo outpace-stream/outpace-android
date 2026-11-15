@@ -344,4 +344,27 @@
     <string name="update_installing">Opening the installer…</string>
     <string name="update_install_failed">The update could not be installed: %1$s</string>
     <string name="update_download_failed">The update could not be downloaded: %1$s</string>
+
+    <!-- Outbound SOCKS5 proxy (engine 1.2.0 and later). -->
+    <string name="proxy_address_hint" translatable="false">127.0.0.1:1080</string>
+    <string name="settings_section_proxy">Proxy</string>
+    <string name="settings_proxy">SOCKS5 proxy</string>
+    <string name="settings_proxy_summary">%1$s. Sends peer, tracker and catalog traffic through a SOCKS5 proxy, for networks that block peer-to-peer. Off by default.</string>
+    <string name="settings_proxy_off">Off</string>
+    <string name="settings_proxy_always">Always</string>
+    <string name="settings_proxy_fallback">Only when no peers</string>
+    <string name="settings_proxy_server">Proxy server</string>
+    <string name="settings_proxy_server_none">Not set</string>
+    <string name="settings_proxy_server_auth">%1$s, with username and password</string>
+    <string name="settings_proxy_cleartext">The proxy receives the password unencrypted. Use a proxy on this device or on a network you trust.</string>
+    <string name="settings_locked_by_proxy">Off while the proxy is set to Always: no peer can reach this device through it.</string>
+    <string name="proxy_address">Address</string>
+    <string name="proxy_address_help">The host name or IP address and port of a SOCKS5 proxy. Leave it empty to remove the proxy.</string>
+    <string name="proxy_address_invalid">Use host:port, for example 127.0.0.1:1080.</string>
+    <string name="proxy_username">Username (optional)</string>
+    <string name="proxy_password">Password (optional)</string>
+    <string name="proxy_credentials_help">Stored only on this device, and sent to the proxy when it asks for them.</string>
+    <string name="proxy_credentials_incomplete">Enter both a username and a password, or neither.</string>
+    <string name="proxy_credentials_too_long">The username and password can each be up to 255 bytes.</string>
+    <string name="stream_via_proxy">through the proxy</string>
 </resources>

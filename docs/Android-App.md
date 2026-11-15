@@ -197,7 +197,8 @@ You can start playback from:
   **Remove from recent** forgets just that one. Streams played from search have no link, only
   their infohash to copy.
 - **Now playing.** While the engine runs, Home lists what it is playing, with the title, the
-  number of clients, peers and seconds buffered. **Play** opens it again. Few or no
+  number of clients, peers and seconds buffered, and "through the proxy" once new peer
+  connections go through the [proxy](#proxy). **Play** opens it again. Few or no
   peers usually means the stream is hard to find; see
   [Troubleshooting](https://github.com/outpace-stream/outpace-engine/wiki/Troubleshooting).
 
@@ -303,8 +304,10 @@ default. **Start on boot** and **Stop when idle** are in the **Settings** tab.
 | HTTP port | 6878 | The port in `OUTPACE_BIND`. |
 | Seeding | On | [`OUTPACE_ENABLE_SEEDING`](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers) |
 | Inbound upload limit | Normal | [`OUTPACE_MAX_UNCHOKED`](https://github.com/outpace-stream/outpace-engine/wiki/Configuration#seeding-and-inbound-peers), `OUTPACE_MAX_INBOUND` and `OUTPACE_MAX_INBOUND_PER_STREAM`: Low sets `2`, `16` and `4`; Minimal sets `0`, `4` and `2`. The engine always keeps one rotating optimistic upload slot per stream on top. Uploads to peers this device connected to (reciprocal seeding) are not counted; turn off **Seeding** to stop all uploads. Normal leaves the engine defaults. |
-| Accept inbound peers | On | [`OUTPACE_ENABLE_INBOUND`](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers) |
-| Router port mapping | Off | [`OUTPACE_ENABLE_PORT_MAPPING`](https://github.com/outpace-stream/outpace-engine/wiki/NAT-and-Port-Mapping) |
+| SOCKS5 proxy | Off | [`OUTPACE_PROXY_MODE`](https://github.com/outpace-stream/outpace-engine/wiki/Outbound-Proxy): Always sets `on`, Only when no peers sets `fallback`, Off sets nothing. Engine 1.2.0 and later; see [Proxy](#proxy). |
+| Proxy server | Not set | [`OUTPACE_PROXY`](https://github.com/outpace-stream/outpace-engine/wiki/Outbound-Proxy) to `socks5://[user:password@]host:port`, set only while the proxy is not Off. |
+| Accept inbound peers | On | [`OUTPACE_ENABLE_INBOUND`](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers). Sent as `false` while the proxy is Always. |
+| Router port mapping | Off | [`OUTPACE_ENABLE_PORT_MAPPING`](https://github.com/outpace-stream/outpace-engine/wiki/NAT-and-Port-Mapping). Sent as `false` while the proxy is Always. |
 | Peer port | 8621 | [`OUTPACE_PEER_LISTEN`](https://github.com/outpace-stream/outpace-engine/wiki/NAT-and-Port-Mapping) to `0.0.0.0:<port>`, set only when changed. It is also the announced and router-mapped port. It must differ from the HTTP port and from `1935`, the engine's RTMP port. |
 | AceStream-compatible API | Off | [`OUTPACE_ACE_COMPAT`](https://github.com/outpace-stream/outpace-engine/wiki/Playing-Streams#acestream-compatible-api) |
 | Stream search | Off | [`OUTPACE_COMPAT_ACESTREAM_SERVICES`](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search). Sends queries and your IP address to AceStream's public index over plain HTTP. |
@@ -318,6 +321,33 @@ notification switch is on by default.
 The engine's data and cache live in the app's private storage (`OUTPACE_DATA_DIR` and
 `OUTPACE_CACHE_DIR`). Uninstalling the app removes them. The peer listener uses `0.0.0.0:8621`
 unless you change **Peer port**; see [Seeding and Peers](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers).
+
+### Proxy
+
+Some mobile carriers and campus, hotel or workplace networks block peer-to-peer traffic, so a
+stream finds no peers there even though it plays elsewhere. The **Proxy** group sends this
+device's engine's peer, tracker and catalog connections through a SOCKS5 proxy instead of the
+whole device through a VPN. It appears only while engine 1.2.0 or newer is selected, and only
+for this device's engine: a remote engine is configured on the device that runs it. See
+[Outbound Proxy](https://github.com/outpace-stream/outpace-engine/wiki/Outbound-Proxy) for what
+goes through the proxy.
+
+- **SOCKS5 proxy**: **Off** (the default), **Always**, or **Only when no peers**, which connects
+  directly first and switches to the proxy, until the engine restarts, the first time a stream
+  start finds no peers. Choosing Always or Only when no peers before a server is set asks for one.
+- **Proxy server**: the address as `host:port` (`[ipv6]:port` for IPv6; a leading `socks5://`
+  is fine) and an optional username and password, both or neither. The app percent-encodes them
+  in `OUTPACE_PROXY`. Leave the address empty and save to remove the proxy, which also turns it
+  off. When a username and password are set and the proxy is not on this device (`localhost` or
+  `127.x.x.x`), a note warns that the proxy receives the password unencrypted: use a proxy on
+  this device or on a network you trust.
+- Nobody can connect to this device through a proxy, so with **Always** the engine refuses inbound
+  peers and router port mapping. Those two settings then show as off and dimmed, with the reason,
+  and come back as you left them when the proxy is no longer Always.
+
+The password is stored only in the app's private preferences, which are excluded from backups.
+The app never writes it to **Logs**, and the engine leaves it out of its own log lines. Changes
+apply on the next engine start, through the usual **Restart** banner.
 
 ## Languages
 

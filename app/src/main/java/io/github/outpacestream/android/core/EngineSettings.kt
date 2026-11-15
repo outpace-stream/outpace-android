@@ -19,14 +19,30 @@ data class EngineSettings(
     val peerPort: Int = DEFAULT_PEER_PORT,
     /** Present the official Linux AceStream engine profile on the public network (engine 1.1.0 and later). */
     val acestreamIdentity: Boolean = false,
+    /** Outbound SOCKS5 proxy (engine 1.2.0 and later); [proxyMode] applies only with a [proxy]. */
+    val proxyMode: ProxyMode = ProxyMode.OFF,
+    val proxy: SocksProxy? = null,
 ) {
-    fun env(dataDir: String, cacheDir: String): Map<String, String> = linkedMapOf<String, String>(
+    /** Whether the next start sends peer traffic through [proxy] at all, on an engine that supports it. */
+    fun proxyOn(proxySupported: Boolean): Boolean = proxySupported && proxy != null && proxyMode != ProxyMode.OFF
+
+    /**
+     * Whether the proxy is used from the start. The engine then refuses to start with inbound peers or
+     * port mapping explicitly on, so both are emitted off and their rows say why.
+     */
+    fun alwaysProxied(proxySupported: Boolean): Boolean = proxyOn(proxySupported) && proxyMode == ProxyMode.ALWAYS
+
+    /**
+     * The engine's environment. [proxySupported] is false for an engine older than
+     * [PROXY_MIN_VERSION], which then gets no proxy variables and keeps inbound and port mapping as set.
+     */
+    fun env(dataDir: String, cacheDir: String, proxySupported: Boolean = true): Map<String, String> = linkedMapOf<String, String>(
         "OUTPACE_BIND" to "${if (lan) "0.0.0.0" else Endpoint.LOOPBACK_HOST}:$port",
         "OUTPACE_DATA_DIR" to dataDir,
         "OUTPACE_CACHE_DIR" to cacheDir,
         "OUTPACE_ENABLE_SEEDING" to seeding.toString(),
-        "OUTPACE_ENABLE_INBOUND" to inbound.toString(),
-        "OUTPACE_ENABLE_PORT_MAPPING" to portMapping.toString(),
+        "OUTPACE_ENABLE_INBOUND" to (inbound && !alwaysProxied(proxySupported)).toString(),
+        "OUTPACE_ENABLE_PORT_MAPPING" to (portMapping && !alwaysProxied(proxySupported)).toString(),
         "OUTPACE_ACE_COMPAT" to aceCompat.toString(),
         "OUTPACE_COMPAT_ACESTREAM_SERVICES" to search.toString(),
     ).apply {
@@ -39,6 +55,11 @@ data class EngineSettings(
         if (peerPort != DEFAULT_PEER_PORT) put("OUTPACE_PEER_LISTEN", "0.0.0.0:$peerPort")
         // Every OUTPACE_ACESTREAM_IDENTITY_* override stays unset: the engine's defaults are the profile.
         if (acestreamIdentity) put("OUTPACE_ACESTREAM_IDENTITY", "true")
+        if (proxyOn(proxySupported)) {
+            // Holds the password; the app never logs the environment.
+            put("OUTPACE_PROXY", proxy!!.url())
+            put("OUTPACE_PROXY_MODE", proxyMode.wire!!)
+        }
     }
 
     companion object {
@@ -57,6 +78,11 @@ data class EngineSettings(
         /** Whether an engine at [version] reads `OUTPACE_ACESTREAM_IDENTITY`, so the toggle can show. */
         fun supportsAcestreamIdentity(version: String) =
             Releases.compareVersions(version, ACESTREAM_IDENTITY_MIN_VERSION) >= 0
+
+        /** The first engine release with `OUTPACE_PROXY` and `OUTPACE_PROXY_MODE`. */
+        const val PROXY_MIN_VERSION = "1.2.0"
+
+        fun proxySupported(version: String): Boolean = Releases.compareVersions(version, PROXY_MIN_VERSION) >= 0
 
         fun validPort(p: Int) = p in 1024..65535
 

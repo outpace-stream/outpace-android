@@ -108,6 +108,15 @@
                     </LinearLayout>
                 </LinearLayout>
 
+                <!-- Engine 1.2.0 and later only; hidden for older engines. -->
+                <LinearLayout android:id="@+id/proxy_section" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:orientation="vertical" android:visibility="gone">
+                    <TextView style="@style/Section" android:text="@string/settings_section_proxy" />
+                    <LinearLayout android:id="@+id/group_proxy" android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
+                        android:showDividers="middle" android:divider="@drawable/divider_inset" />
+                </LinearLayout>
+
                 <TextView style="@style/Section" android:text="@string/settings_section_peers" />
                 <LinearLayout android:id="@+id/group_peers" android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:orientation="vertical" android:background="@drawable/bg_card" android:padding="4dp"
