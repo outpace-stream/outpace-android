@@ -95,6 +95,9 @@ val releaseRuntimeModules = provider { configurations.getByName("releaseRuntimeC
 }
 tasks.withType<Test>().configureEach {
     inputs.property("releaseRuntimeModules", releaseRuntimeModules)
+    // NoticesTest reads these straight from disk, so a changed license text must rerun the tests.
+    inputs.file(rootProject.layout.projectDirectory.file("LICENSE")).withPropertyName("repositoryLicense")
+    inputs.dir(layout.projectDirectory.dir("src/main/res/raw")).withPropertyName("licenseTexts")
     jvmArgumentProviders.add(CommandLineArgumentProvider { listOf("-Doutpace.releaseRuntimeModules=${releaseRuntimeModules.get()}") })
 }
 // Release builds run the notice check on their own, so even a bare assembleRelease can't ship a
