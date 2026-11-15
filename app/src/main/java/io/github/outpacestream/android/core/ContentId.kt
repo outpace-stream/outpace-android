@@ -15,7 +15,7 @@ object ContentId {
     private val queryId = Regex("(?i)[?&](?:content_id|id)=($HEX{40})(?!$HEX)")
     private val schemeId = Regex("(?i)acestream://(?:cid:)?($HEX{40})(?!$HEX)")
     private val explicitInfohash =
-        Regex("(?i)(acestream:\\S*[?&]infohash=|magnet:\\?\\S*btih:|acestream://ih:|(?<![0-9a-z])ih:$HEX{40})")
+        Regex("(?i)([?&]infohash=|magnet:\\?\\S*btih:|acestream://ih:|(?<![0-9a-z])ih:$HEX{40})")
     private val bareId = Regex("(?<!$HEX)($HEX{40})(?!$HEX)")
 
     fun extract(text: String): Result {

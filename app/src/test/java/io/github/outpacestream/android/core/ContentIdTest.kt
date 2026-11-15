@@ -33,6 +33,12 @@ class ContentIdTest {
 
     @Test fun rejectsInfohashQuery() = assertEquals(Result.Infohash, ContentId.extract("acestream:?infohash=$id"))
 
+    @Test fun rejectsSharedGetstreamInfohash() =
+        assertEquals(Result.Infohash, ContentId.extract("http://127.0.0.1:6878/ace/getstream?infohash=$id"))
+
+    @Test fun sharedGetstreamIdStillWins() =
+        assertEquals(Result.Id(id), ContentId.extract("http://127.0.0.1:6878/ace/getstream?infohash=$id&id=$id"))
+
     @Test fun rejectsMagnet() = assertEquals(Result.Infohash, ContentId.extract("magnet:?xt=urn:btih:$id&dn=x"))
 
     @Test fun rejectsIhPrefix() = assertEquals(Result.Infohash, ContentId.extract("ih:$id"))
