@@ -1,8 +1,10 @@
 package io.github.outpacestream.android.ui
 
 import android.text.format.DateUtils
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.outpacestream.android.BuildConfig
@@ -24,10 +26,10 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
     private val batteryRow: View
 
     private lateinit var updateStatus: View
+    private lateinit var updateTitle: TextView
+    private lateinit var updateSummary: TextView
+    private lateinit var updateAction: Button
     private lateinit var whatsNew: View
-    private lateinit var updateCheck: View
-    private lateinit var updateChangelog: View
-    private lateinit var updateInstall: View
     private lateinit var updateNotify: View
     private var checking = false
     private var checkError: String? = null
@@ -39,7 +41,8 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         batteryRow = rows.row(group, R.string.settings_battery, R.string.settings_battery_summary)
         batteryRow.setOnClickListener { BatteryPrompt.request(host) }
         buildUpdates(find(R.id.group_updates))
-        find<TextView>(R.id.about).text = host.getString(R.string.settings_about, BuildConfig.VERSION_NAME, Releases.REPO, AppRelease.REPO.slug)
+        // The version is in App updates above, so About only says where releases come from.
+        find<TextView>(R.id.about).text = host.getString(R.string.settings_about, Releases.REPO, AppRelease.REPO.slug)
         rows.row(find(R.id.group_about), R.string.settings_licenses, R.string.settings_licenses_summary)
             .setOnClickListener { host.open(LicensesActivity::class.java) }
     }
@@ -55,29 +58,37 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
 
     override fun onInvisible() = engines.onInvisible()
 
+    /**
+     * Three rows: the status with one button that checks or updates, release notes that follow
+     * the status (the installed version's, or everything newer once an update exists), and the
+     * notify switch. Development builds can't update, so they get no button.
+     */
     private fun buildUpdates(group: LinearLayout) {
         val installed = BuildConfig.VERSION_NAME
         val dev = installed == AppRelease.DEV_VERSION
-        updateStatus = rows.row(group, R.string.settings_update_status, R.string.settings_update_never_checked).apply {
-            findViewById<TextView>(R.id.title).text = host.getString(R.string.settings_update_status, installed)
-            isFocusable = false
-            isClickable = false
+        updateStatus = LayoutInflater.from(host).inflate(R.layout.item_setting_action, group, false)
+        group.addView(updateStatus)
+        updateTitle = updateStatus.findViewById(R.id.title)
+        updateSummary = updateStatus.findViewById(R.id.summary)
+        updateAction = updateStatus.findViewById(R.id.action)
+        updateAction.setOnClickListener {
+            val latest = prefs.appLatestVersion
+            if (UpdatePolicy.isNewer(installed, latest) && latest != null) host.updateFlow.startUpdate(latest) else checkNow()
         }
-        whatsNew = rows.row(group, R.string.settings_whats_new, R.string.settings_whats_new_summary).apply {
-            findViewById<TextView>(R.id.title).text = host.getString(R.string.whats_new_title, installed)
-            setOnClickListener { host.updateFlow.showWhatsNew(null, installed, quiet = false) }
+        updateAction.visibility = if (dev) View.GONE else View.VISIBLE
+        whatsNew = rows.row(group, R.string.settings_whats_new, R.string.settings_whats_new_summary)
+        whatsNew.setOnClickListener {
+            val latest = prefs.appLatestVersion
+            if (UpdatePolicy.isNewer(installed, latest) && latest != null) {
+                host.updateFlow.showChangelog(installed, latest)
+            } else {
+                host.updateFlow.showWhatsNew(null, installed, quiet = false)
+            }
         }
-        updateCheck = rows.row(group, R.string.settings_update_check, R.string.settings_update_check_summary)
-        updateCheck.setOnClickListener { checkNow() }
-        updateChangelog = rows.row(group, R.string.settings_update_changelog, R.string.settings_update_changelog_summary)
-        updateChangelog.setOnClickListener { prefs.appLatestVersion?.let { host.updateFlow.showChangelog(installed, it) } }
-        updateInstall = rows.row(group, R.string.settings_update_install, R.string.settings_update_none)
-        updateInstall.setOnClickListener { prefs.appLatestVersion?.let { host.updateFlow.startUpdate(it) } }
         updateNotify = rows.toggle(group, R.string.settings_update_notify, R.string.settings_update_notify_summary, { prefs.appUpdateNotify }) {
             prefs.appUpdateNotify = it
         }
         setEnabled(whatsNew, !dev)
-        setEnabled(updateCheck, !dev)
         setEnabled(updateNotify, !dev)
         host.updateFlow.onChanged = {
             rows.refresh()
@@ -114,23 +125,37 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
     private fun renderUpdates() {
         val installed = BuildConfig.VERSION_NAME
         val latest = prefs.appLatestVersion
-        val newer = UpdatePolicy.isNewer(installed, latest)
+        val newer = UpdatePolicy.isNewer(installed, latest) && latest != null
         val checkedAt = prefs.appLatestCheckedAt
-        updateStatus.findViewById<TextView>(R.id.summary).text = when {
-            installed == AppRelease.DEV_VERSION -> host.getString(R.string.settings_update_dev)
-            checkError != null -> host.getString(R.string.settings_update_check_failed, checkError)
-            newer && checkedAt != 0L -> host.getString(R.string.settings_update_available_checked, latest, DateUtils.getRelativeTimeSpanString(checkedAt))
-            newer -> host.getString(R.string.settings_update_available, latest)
-            latest == null || checkedAt == 0L -> host.getString(R.string.settings_update_never_checked)
-            else -> host.getString(R.string.settings_update_up_to_date, DateUtils.getRelativeTimeSpanString(checkedAt))
+        // DateUtils says "0 minutes ago" for the first minute; a check that recent reads "just now".
+        val checked: CharSequence? = when {
+            checkedAt == 0L -> null
+            System.currentTimeMillis() - checkedAt < DateUtils.MINUTE_IN_MILLIS -> host.getString(R.string.settings_update_just_now)
+            else -> DateUtils.getRelativeTimeSpanString(checkedAt)
         }
-        updateCheck.findViewById<TextView>(R.id.summary).setText(
-            if (checking) R.string.settings_update_checking else R.string.settings_update_check_summary,
+        updateTitle.text = host.getString(
+            if (newer) R.string.settings_update_title_available else R.string.settings_update_title_current,
+            if (newer) latest else installed,
         )
-        setEnabled(updateChangelog, newer)
-        setEnabled(updateInstall, newer && !host.updateFlow.busy)
-        updateInstall.findViewById<TextView>(R.id.summary).text =
-            if (newer) host.getString(R.string.settings_update_install_summary, latest) else host.getString(R.string.settings_update_none)
+        updateSummary.text = when {
+            installed == AppRelease.DEV_VERSION -> host.getString(R.string.settings_update_dev)
+            checking -> host.getString(R.string.settings_update_checking)
+            checkError != null -> host.getString(R.string.settings_update_check_failed, checkError)
+            newer && checked != null -> host.getString(R.string.settings_update_you_have_checked, installed, checked)
+            newer -> host.getString(R.string.settings_update_you_have, installed)
+            latest == null || checked == null -> host.getString(R.string.settings_update_never_checked)
+            else -> host.getString(R.string.settings_update_up_to_date, checked)
+        }
+        // One button: Update (primary) when a newer version exists, otherwise Check.
+        updateAction.setText(if (newer) R.string.settings_update_install else R.string.settings_update_check_short)
+        updateAction.setBackgroundResource(if (newer) R.drawable.bg_button_primary else R.drawable.bg_button_secondary)
+        @Suppress("DEPRECATION") // Resources.getColorStateList(int, Theme) needs API 23; these colors ignore the theme.
+        updateAction.setTextColor(host.resources.getColorStateList(if (newer) R.color.button_primary_text else R.color.button_secondary_text))
+        updateAction.isEnabled = if (newer) !host.updateFlow.busy else !checking
+        whatsNew.findViewById<TextView>(R.id.title).text = host.getString(R.string.whats_new_title, if (newer) latest else installed)
+        whatsNew.findViewById<TextView>(R.id.summary).setText(
+            if (newer) R.string.settings_update_changelog_summary else R.string.settings_whats_new_summary,
+        )
     }
 
     override fun render() {

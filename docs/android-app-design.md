@@ -396,7 +396,9 @@ JVM tests.
   GitHub API request per update, never one per launch: the last 100 releases for a range, or the
   installed release by tag when only its notes are wanted. It is skipped silently on a fresh
   install, for development builds, or when the notes cannot be fetched. Settings shows the notes of
-  the installed version on demand.
+  the installed version on demand, or of every newer version once an update exists. Its App
+  updates card is three rows: the status with one Check-or-Update button, those notes, and the
+  notify switch.
 
 ### 11. Languages
 

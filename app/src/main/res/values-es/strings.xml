@@ -313,30 +313,22 @@
     <string name="settings_acestream_identity_summary">Muestra este motor a pares, trackers, la búsqueda y el catálogo como el motor oficial de AceStream para Linux en lugar de Outpace. Los pares ven la dirección IP pública de este dispositivo en cualquier caso; para completar su red y su país, el motor hace una consulta HTTPS a RIPEstat (stat.ripe.net) cuando los pares informan de esa dirección. Necesita el motor v1.1.0 o posterior.</string>
     <string name="settings_section_background">Segundo plano</string>
     <string name="settings_section_about">Acerca de</string>
-    <string name="settings_about">Outpace para Android %1$s\nLas versiones de la app vienen de github.com/%3$s\nLas versiones del motor vienen de github.com/%2$s</string>
+    <string name="settings_about">Las versiones de la app vienen de github.com/%2$s\nLas versiones del motor vienen de github.com/%1$s</string>
     <string name="settings_licenses">Licencias de código abierto</string>
     <string name="settings_licenses_summary">Las licencias de esta app, del motor y de los componentes que usan</string>
     <string name="licenses_title">Licencias de código abierto</string>
     <string name="licenses_intro">Outpace para Android es software libre bajo la GNU AGPL v3.0. También usa los componentes siguientes. Elige uno para leer su licencia.</string>
     <string name="licenses_detail">%1$s\n%2$s\nCódigo fuente: %3$s\n\n%4$s</string>
     <string name="settings_section_updates">Actualizaciones de la app</string>
-    <string name="settings_update_status">Versión instalada %1$s</string>
     <string name="settings_update_up_to_date">Actualizada. Comprobado %1$s.</string>
-    <string name="settings_update_available">La versión %1$s está disponible.</string>
-    <string name="settings_update_available_checked">La versión %1$s está disponible. Comprobado %2$s.</string>
     <string name="settings_update_never_checked">Aún no se ha comprobado.</string>
     <string name="settings_update_dev">Versión de desarrollo. Las actualizaciones están desactivadas.</string>
     <string name="settings_update_check_failed">La última comprobación falló: %1$s</string>
     <string name="settings_whats_new">Novedades</string>
     <string name="settings_whats_new_summary">Notas de la versión que tienes.</string>
-    <string name="settings_update_check">Buscar actualizaciones</string>
-    <string name="settings_update_check_summary">Pregunta ahora a GitHub por la última versión.</string>
     <string name="settings_update_checking">Comprobando…</string>
-    <string name="settings_update_changelog">Registro de cambios</string>
     <string name="settings_update_changelog_summary">Notas de las versiones más nuevas que la tuya.</string>
     <string name="settings_update_install">Actualizar</string>
-    <string name="settings_update_install_summary">Descargar e instalar la versión %1$s.</string>
-    <string name="settings_update_none">No hay ninguna versión más nueva.</string>
     <string name="settings_update_notify">Avisarme de actualizaciones</string>
     <string name="settings_update_notify_summary">Muestra un aviso cuando sale una versión nueva, como mucho una vez al día.</string>
 
@@ -408,4 +400,10 @@
     <string name="exit_message">Outpace dejará de ejecutarse en segundo plano. Para que siga funcionando, sal con el botón de inicio.</string>
     <string name="action_exit">Salir</string>
     <string name="action_keep_background">Dejar en segundo plano</string>
+    <string name="settings_update_title_current">Outpace %1$s</string>
+    <string name="settings_update_title_available">Actualización disponible: %1$s</string>
+    <string name="settings_update_you_have">Tienes la %1$s.</string>
+    <string name="settings_update_you_have_checked">Tienes la %1$s. Comprobado %2$s.</string>
+    <string name="settings_update_check_short">Comprobar</string>
+    <string name="settings_update_just_now">hace un momento</string>
 </resources>
