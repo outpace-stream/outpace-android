@@ -100,6 +100,24 @@ checkout on `main` and work in a separate worktree. A user-visible change update
 `docs/Android-App.md` (and the design doc if behavior changed) in the same PR. Write docs and PR
 text with colons or commas in place of em dashes.
 
+## Merging and CodeRabbit
+
+CodeRabbit reviews every PR, but its check is not a required one, so GitHub auto-merge does not
+wait for it. A PR that merges while the review is still running gets "Review failed: the pull
+request is closed" and its findings are never posted; PR #46 merged that way. Before merging:
+
+- Wait for the CodeRabbit check to finish (`gh pr checks <n>` no longer shows it `pending`) and
+  for its review to be posted. A "currently processing" comment means it is still running.
+- Fix or answer every actionable CodeRabbit comment. A new commit starts a new review, so wait
+  for that one too.
+- Merge, or enable auto-merge, only once the review is done and no finding is left open. Auto-merge
+  waits only for the required checks, so enabling it earlier skips the review.
+- Before pushing to a PR that has auto-merge enabled, disable it (`gh pr merge <n> --disable-auto`):
+  it stays on through new commits, which could then merge before their review finishes. Enable it
+  again only after the review of the new commit is done.
+- Agents follow the same order. Do not poll in a loop: re-check when a PR watch or notification
+  reports a new check result or comment.
+
 ## Releases
 
 App versions are independent of engine versions. Pushing a `vX.Y.Z` tag runs `release.yml`,
