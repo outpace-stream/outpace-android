@@ -21,9 +21,14 @@ import java.util.Locale
 class SettingRows(private val host: MainActivity, private val onChange: () -> Unit) {
     private val prefs: Prefs get() = host.prefs
 
-    /** A switch row bound to a preference: how to read it and how to store a new value. */
-    private class Toggle(val row: View, val read: () -> Boolean, val write: (Boolean) -> Unit) {
+    /**
+     * A switch row bound to a preference: how to read it and how to store a new value. [locked] gives
+     * the reason the toggle is forced off by another setting, or null while it is free.
+     */
+    private class Toggle(val row: View, val summary: Int, val read: () -> Boolean, val locked: (() -> Int?)?, val write: (Boolean) -> Unit) {
         val switch: Switch = row.findViewById(R.id.toggle)
+        val summaryView: TextView = row.findViewById(R.id.summary)
+        val isLocked: Boolean get() = locked?.invoke() != null
     }
 
     private class PortField(val field: EditText, val get: (EngineSettings) -> Int)
@@ -40,8 +45,16 @@ class SettingRows(private val host: MainActivity, private val onChange: () -> Un
         return row
     }
 
-    fun toggle(group: LinearLayout, title: Int, summary: Int, read: () -> Boolean, index: Int = -1, write: (Boolean) -> Unit): View {
-        val t = Toggle(row(group, title, summary, index), read, write)
+    fun toggle(
+        group: LinearLayout,
+        title: Int,
+        summary: Int,
+        read: () -> Boolean,
+        index: Int = -1,
+        locked: (() -> Int?)? = null,
+        write: (Boolean) -> Unit,
+    ): View {
+        val t = Toggle(row(group, title, summary, index), summary, read, locked, write)
         t.switch.visibility = View.VISIBLE
         // The switch is hidden from accessibility, so the row reports itself as the switch, reading
         // its state live so it never goes stale.
@@ -54,6 +67,7 @@ class SettingRows(private val host: MainActivity, private val onChange: () -> Un
             }
         }
         t.row.setOnClickListener {
+            if (t.isLocked) return@setOnClickListener
             val value = !t.switch.isChecked
             t.switch.isChecked = value
             t.write(value)
@@ -69,8 +83,9 @@ class SettingRows(private val host: MainActivity, private val onChange: () -> Un
         summary: Int,
         get: (EngineSettings) -> Boolean,
         index: Int = -1,
+        locked: (() -> Int?)? = null,
         set: (EngineSettings, Boolean) -> EngineSettings,
-    ): View = toggle(group, title, summary, { get(prefs.settings) }, index) { v -> prefs.settings = set(prefs.settings, v) }
+    ): View = toggle(group, title, summary, { get(prefs.settings) }, index, locked) { v -> prefs.settings = set(prefs.settings, v) }
 
     /** A row whose summary names the current option; clicking it opens a single-choice dialog. */
     fun <T> engineChoice(
@@ -123,11 +138,26 @@ class SettingRows(private val host: MainActivity, private val onChange: () -> Un
     }
 
     fun refresh() {
-        for (t in toggles) t.switch.isChecked = t.read()
+        applyLocks()
         for (c in choices) c()
         for (p in ports) {
             p.field.setText(String.format(Locale.ROOT, "%d", p.get(prefs.settings)))
             p.field.error = null
+        }
+    }
+
+    /**
+     * Redraws every toggle's state: a locked one shows off, dimmed, with its reason as the summary,
+     * and keeps the stored value for when the lock lifts. Call after a change another row depends on.
+     */
+    fun applyLocks() {
+        for (t in toggles) {
+            val reason = t.locked?.invoke()
+            t.row.isEnabled = reason == null
+            t.switch.isEnabled = reason == null
+            t.row.alpha = if (reason == null) 1f else LOCKED_ALPHA
+            t.switch.isChecked = reason == null && t.read()
+            t.summaryView.setText(reason ?: t.summary)
         }
     }
 
@@ -147,5 +177,9 @@ class SettingRows(private val host: MainActivity, private val onChange: () -> Un
             prefs.settings = next
             onChange()
         }
+    }
+
+    private companion object {
+        const val LOCKED_ALPHA = 0.5f
     }
 }

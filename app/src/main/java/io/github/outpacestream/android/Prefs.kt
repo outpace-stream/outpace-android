@@ -4,10 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.HlsStart
+import io.github.outpacestream.android.core.ProxyMode
 import io.github.outpacestream.android.core.RecentEntry
 import io.github.outpacestream.android.core.RecentList
 import io.github.outpacestream.android.core.RemoteEngine
 import io.github.outpacestream.android.core.RemoteEngines
+import io.github.outpacestream.android.core.SocksProxy
 import io.github.outpacestream.android.core.StartupBuffer
 import io.github.outpacestream.android.core.UploadLimit
 import io.github.outpacestream.android.core.WhatsNew
@@ -34,6 +36,8 @@ class Prefs(context: Context) {
             uploadLimit = UploadLimit.fromKey(sp.getString("upload_limit", null)),
             peerPort = sp.getInt("peer_port", EngineSettings.DEFAULT_PEER_PORT),
             acestreamIdentity = sp.getBoolean("acestream_identity", false),
+            proxyMode = ProxyMode.fromKey(sp.getString("proxy_mode", null)),
+            proxy = storedProxy(),
         )
         set(s) = sp.edit()
             .putBoolean("lan", s.lan).putInt("port", s.port).putBoolean("seeding", s.seeding)
@@ -42,7 +46,27 @@ class Prefs(context: Context) {
             .putString("startup_buffer", s.startupBuffer.key).putString("hls_start", s.hlsStart.key)
             .putBoolean("catalog_fallback", s.catalogFallback).putBoolean("low_memory", s.lowMemory)
             .putString("upload_limit", s.uploadLimit.key).putInt("peer_port", s.peerPort)
-            .putBoolean("acestream_identity", s.acestreamIdentity).apply()
+            .putBoolean("acestream_identity", s.acestreamIdentity)
+            .putString("proxy_mode", s.proxyMode.key).also { putProxy(it, s.proxy) }.apply()
+
+    /**
+     * The proxy, revalidated on read so a bad stored value never reaches the engine. The password
+     * lives only in these app-private preferences (backups are off) and is never logged.
+     */
+    private fun storedProxy(): SocksProxy? {
+        val host = sp.getString("proxy_host", null) ?: return null
+        val address = SocksProxy(host, sp.getInt("proxy_port", 0)).address
+        return SocksProxy.of(address, sp.getString("proxy_user", null).orEmpty(), sp.getString("proxy_password", null).orEmpty())
+    }
+
+    private fun putProxy(e: SharedPreferences.Editor, p: SocksProxy?) {
+        if (p == null) {
+            e.remove("proxy_host").remove("proxy_port").remove("proxy_user").remove("proxy_password")
+        } else {
+            e.putString("proxy_host", p.host).putInt("proxy_port", p.port)
+                .putString("proxy_user", p.username).putString("proxy_password", p.password)
+        }
+    }
 
     /** Before engine selection existed: the chosen local version. Read once, to migrate. */
     val legacyActiveVersion: String? get() = sp.getString("active_version", null)

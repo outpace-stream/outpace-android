@@ -17,6 +17,7 @@ import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.EngineChoice
+import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.EngineTarget
 import io.github.outpacestream.android.core.Launch
 import io.github.outpacestream.android.core.RemoteEngine
@@ -170,7 +171,7 @@ class EngineService : Service() {
             val command = Launch.command(Build.VERSION.SDK_INT, Launch.elfIs64(binary), binary.path)
             EngineController.log.add("[app] starting outpace $version: ${command.joinToString(" ")}")
             ProcessBuilder(command).redirectErrorStream(true).directory(data).also { pb ->
-                pb.environment().putAll(settings.env(data.path, cache.path))
+                pb.environment().putAll(settings.env(data.path, cache.path, EngineSettings.proxySupported(version)))
             }.start()
         } catch (e: Exception) {
             fail(getString(R.string.engine_failed_to_start, e.message ?: e.javaClass.simpleName))

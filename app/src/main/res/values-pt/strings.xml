@@ -344,4 +344,26 @@
     <string name="update_installing">Abrindo o instalador…</string>
     <string name="update_install_failed">Não foi possível instalar a atualização: %1$s</string>
     <string name="update_download_failed">Não foi possível baixar a atualização: %1$s</string>
+
+    <!-- Outbound SOCKS5 proxy (engine 1.2.0 and later). -->
+    <string name="settings_section_proxy">Proxy</string>
+    <string name="settings_proxy">Proxy SOCKS5</string>
+    <string name="settings_proxy_summary">%1$s. Envia o tráfego de pares, trackers e catálogo por um proxy SOCKS5, para redes que bloqueiam P2P. Desativado por padrão.</string>
+    <string name="settings_proxy_off">Desativado</string>
+    <string name="settings_proxy_always">Sempre</string>
+    <string name="settings_proxy_fallback">Só quando não houver pares</string>
+    <string name="settings_proxy_server">Servidor proxy</string>
+    <string name="settings_proxy_server_none">Não definido</string>
+    <string name="settings_proxy_server_auth">%1$s, com usuário e senha</string>
+    <string name="settings_proxy_cleartext">O proxy recebe a senha sem criptografia. Use um proxy neste dispositivo ou em uma rede confiável.</string>
+    <string name="settings_locked_by_proxy">Desativado enquanto o proxy estiver em Sempre: nenhum par consegue chegar a este dispositivo por ele.</string>
+    <string name="proxy_address">Endereço</string>
+    <string name="proxy_address_help">O nome de host ou endereço IP e a porta de um proxy SOCKS5. Deixe vazio para remover o proxy.</string>
+    <string name="proxy_address_invalid">Use host:porta, por exemplo 127.0.0.1:1080.</string>
+    <string name="proxy_username">Usuário (opcional)</string>
+    <string name="proxy_password">Senha (opcional)</string>
+    <string name="proxy_credentials_help">Só se o proxy pedir. Ficam neste dispositivo.</string>
+    <string name="proxy_credentials_incomplete">Informe um usuário e uma senha, ou nenhum dos dois.</string>
+    <string name="proxy_credentials_too_long">O usuário e a senha podem ter até 255 bytes cada.</string>
+    <string name="stream_via_proxy">pelo proxy</string>
 </resources>

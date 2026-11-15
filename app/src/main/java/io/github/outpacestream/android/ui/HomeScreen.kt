@@ -171,6 +171,7 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
                 host.resources.getQuantityString(R.plurals.stream_clients, st.clients, st.clients),
                 st.peers?.let { host.resources.getQuantityString(R.plurals.stream_peers, it, it) },
                 st.bufferMs?.let { host.getString(R.string.stream_buffer, it / 1000.0) },
+                if (st.viaProxy) host.getString(R.string.stream_via_proxy) else null,
             ),
         )
         val play = row.findViewById<Button>(R.id.play)

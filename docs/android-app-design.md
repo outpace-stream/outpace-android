@@ -198,6 +198,7 @@ Each maps to an existing variable; see `docs/wiki/Environment-Variables.md` for 
 | Seeding | `OUTPACE_ENABLE_SEEDING` | engine default (on) |
 | Accept inbound peers | `OUTPACE_ENABLE_INBOUND` | engine default (on) |
 | Router port mapping | `OUTPACE_ENABLE_PORT_MAPPING` | engine default (off) |
+| SOCKS5 proxy (engine 1.2.0+) | `OUTPACE_PROXY_MODE` (`on`, `fallback`) and `OUTPACE_PROXY`, only when not off | off |
 | AceStream-compatible API | `OUTPACE_ACE_COMPAT` | off |
 | Stream search | `OUTPACE_COMPAT_ACESTREAM_SERVICES` | off |
 | AceStream identity | `OUTPACE_ACESTREAM_IDENTITY` (engine 1.1.0 and later, hidden below) | off, variable omitted |
@@ -205,6 +206,14 @@ Each maps to an existing variable; see `docs/wiki/Environment-Variables.md` for 
 | Stop when idle | app only | on for phone (suggested 10 min with no active streams), off for TV |
 
 Settings save as soon as they change; there is no Save button. Turning on LAN access shows a one-line warning to use it only on a trusted network.
+
+The proxy ([#40](https://github.com/outpace-stream/outpace-android/issues/40)) configures only the
+local engine and is hidden for engines older than 1.2.0, which also get none of its variables.
+With mode `on` the engine refuses to start if inbound peers or port mapping are explicitly on, so
+in that mode the app sends both as `false` and shows their rows disabled with the reason. The
+proxy password lives only in app-private preferences (backups are off) and is never logged. The
+Home stream rows show the `network_path` the per-stream `/status` already returns, so the proxy
+adds no requests.
 An "advanced" free-form list of extra `KEY=value` variables is the builder's call; if added, it
 only accepts `OUTPACE_*` keys.
 
