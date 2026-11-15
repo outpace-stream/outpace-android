@@ -43,7 +43,10 @@ It must work equally well on a phone and on an Android TV box.
 - No root features.
 - No Play Store listing in v1 (sideloaded from GitHub releases). Do not design anything that
   rules a store listing out later, but do not do the store-specific work now.
-- No phone-to-TV "send this link to my TV" feature in v1.
+- No app-to-app link sending (Outpace on one device handing a link to Outpace on another,
+  [#26](https://github.com/outpace-stream/outpace-android/issues/26)). Casting to DLNA renderers
+  through the engine's own API is a feature (feature 12), amended at the maintainer's request in
+  [#41](https://github.com/outpace-stream/outpace-android/issues/41).
 - No changes to the engine's behavior to suit the app. If the app needs something the engine
   lacks, file it as a separate engine issue.
 
@@ -125,6 +128,8 @@ It must work equally well on a phone and on an Android TV box.
   One bounded exception: after a hand-off to a player, the service follows that stream's start
   with one `GET /streams/ace/<id>/status` a second (each with a 1 s deadline) until `playing`,
   `failed` or 90 s, even with no screen visible, so the notification can say why a start failed.
+  A second bounded exception: while a DLNA cast is active (feature 12), the service polls that
+  cast's `/cast/targets/<id>/status` every 30 s, or every 3 s while the cast screen is visible.
   Nothing polls while the engine is stopped. The engine's stderr goes into a bounded in-memory
   ring buffer (a few hundred lines); the app never parses it.
 - **Kotlin**, minimal dependencies (AndroidX core, the leanback launcher bits for TV). No
@@ -202,6 +207,7 @@ Each maps to an existing variable; see `docs/wiki/Environment-Variables.md` for 
 | AceStream-compatible API | `OUTPACE_ACE_COMPAT` | off |
 | Stream search | `OUTPACE_COMPAT_ACESTREAM_SERVICES` | off |
 | AceStream identity | `OUTPACE_ACESTREAM_IDENTITY` (engine 1.1.0 and later, hidden below) | off, variable omitted |
+| Cast to TVs (DLNA) | `OUTPACE_ENABLE_CAST` (engine 1.2.0+, needs LAN access) | off |
 | Start on boot | app only | on for TV, off for phone |
 | Stop when idle | app only | on for phone (suggested 10 min with no active streams), off for TV |
 
@@ -392,6 +398,40 @@ JVM tests.
 - `TranslationsTest` fails when a translatable string is missing from a language, a format
   argument differs, or `locales_config.xml` falls out of step, so a new string ships with all
   its translations.
+
+### 12. Cast to DLNA TVs
+
+[#41](https://github.com/outpace-stream/outpace-android/issues/41). Engine 1.2.0 can discover
+DLNA/UPnP media renderers and tell one to play a live stream (`/cast/` routes, on only with
+`OUTPACE_ENABLE_CAST`). The app is the remote control; the engine, local or remote, casts.
+
+- **Setting:** Engines > Network > **Cast to TVs (DLNA)**, default off, shown for engine 1.2.0 or
+  newer (`CAST_MIN_VERSION`), emits `OUTPACE_ENABLE_CAST=true`. The engine answers `409
+  loopback_bind` on a loopback bind, so turning casting on with LAN access off explains why and
+  offers LAN access with the existing warning; the restart banner applies both. LAN access is
+  never turned on silently.
+- **Play on TV:** from the play screen, or a long press on a Now playing row. A non-exported
+  `CastActivity` lists `GET /cast/targets` (cached 60 s by the engine; **Search again** sends
+  `?refresh=1`) and sends `POST /cast/targets/<id>/play` with `{"network":"ace","id":"<selector>"}`
+  on its own thread with a 45 s deadline, since `play` starts the stream and waits on the TV.
+  For this device's engine it first checks local facts (`CastGate`): version, setting, LAN access,
+  and whether the running engine started with them.
+- **While casting:** one cast at a time. The engine service keeps running (it already is) and its
+  notification shows "Playing on *TV*" with **Stop casting** (`POST .../stop`); Home shows the
+  same. Notification permission is requested on API 33+ when a cast starts. Stopping the engine
+  or disconnecting from a remote engine stops the TV first (one bounded request). The wake lock
+  follows `/streams` as before: the TV is one of the stream's clients.
+- **Status:** the service polls `GET .../status` on its own thread, 3 s while the cast screen
+  shows and 30 s otherwise. `CastWatch` (pure, JVM-tested) maps the answers: TV stopped playback
+  (`STOPPED`/`NO_MEDIA_PRESENT`), TV stopped fetching (`PLAYING` with `fetching` false), TV not
+  answering (three failures in a row end the cast), and the engine no longer casting (`cast`
+  null, `unknown_target`, or `404`). A settling window of 15 s after `play` hides transient
+  states. Error codes from `{"error":"<code>","message":...}` map to localized messages
+  (`CastFailure`); a bare `404` means casting is off on that engine.
+- **Remote engines:** the same API is called on the remote engine; a `404` names the engine and
+  says casting is off there (or the engine predates 1.2.0).
+- Live streams only, IPv4 renderers only, matching the engine. No discovery or status requests
+  unless the cast screen is open or a cast is active.
 
 ## Build, CI and release
 

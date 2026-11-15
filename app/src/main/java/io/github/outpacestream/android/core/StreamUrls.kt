@@ -22,5 +22,16 @@ object StreamUrls {
     /** The compat `get_version` call; only engines with the AceStream compat API answer it. */
     fun version(e: Endpoint): String = "${e.base}/server/api?method=get_version"
 
+    /** DLNA renderers the engine found; [refresh] makes it search again instead of using its 60 s cache. */
+    fun castTargets(e: Endpoint, refresh: Boolean = false): String = "${e.base}/cast/targets" + if (refresh) "?refresh=1" else ""
+
+    fun castPlay(e: Endpoint, target: String): String = castTarget(e, target) + "/play"
+
+    fun castStop(e: Endpoint, target: String): String = castTarget(e, target) + "/stop"
+
+    fun castStatus(e: Endpoint, target: String): String = castTarget(e, target) + "/status"
+
+    private fun castTarget(e: Endpoint, target: String): String = "${e.base}/cast/targets/${segment(target)}"
+
     private fun segment(s: String): String = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
 }

@@ -51,4 +51,27 @@ class HttpDeadlineTest {
         val elapsedMs = (System.nanoTime() - started) / 1_000_000
         assertTrue("took $elapsedMs ms", elapsedMs < 1_500)
     }
+
+    @Test fun requestWithinReturnsTheErrorBody() {
+        val body = """{"error":"loopback_bind","message":"m"}"""
+        val request = StringBuilder()
+        thread(isDaemon = true) {
+            runCatching {
+                server.accept().use { s ->
+                    val buf = ByteArray(4096)
+                    val n = s.getInputStream().read(buf)
+                    request.append(String(buf, 0, maxOf(n, 0)))
+                    s.getOutputStream().apply {
+                        write("HTTP/1.1 409 Conflict\r\nContent-Type: application/json\r\nContent-Length: ${body.length}\r\nConnection: close\r\n\r\n$body".toByteArray())
+                        flush()
+                    }
+                }
+            }
+        }
+        val r = Http.requestWithin("POST", url, 2_000, """{"network":"ace"}""")
+        assertEquals(409, r.code)
+        assertEquals(body, r.body)
+        assertTrue(request.toString(), request.startsWith("POST /status"))
+        assertTrue(request.toString(), request.contains("Content-Type: application/json"))
+    }
 }

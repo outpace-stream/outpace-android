@@ -22,6 +22,8 @@ data class EngineSettings(
     /** Outbound SOCKS5 proxy (engine 1.2.0 and later); [proxyMode] applies only with a [proxy]. */
     val proxyMode: ProxyMode = ProxyMode.OFF,
     val proxy: SocksProxy? = null,
+    /** DLNA casting through the engine's `/cast/...` routes (engine 1.2.0 and later); needs [lan]. */
+    val cast: Boolean = false,
 ) {
     /** Whether the next start sends peer traffic through [proxy] at all, on an engine that supports it. */
     fun proxyOn(proxySupported: Boolean): Boolean = proxySupported && proxy != null && proxyMode != ProxyMode.OFF
@@ -60,6 +62,7 @@ data class EngineSettings(
             put("OUTPACE_PROXY", proxy!!.url())
             put("OUTPACE_PROXY_MODE", proxyMode.wire!!)
         }
+        if (cast) put("OUTPACE_ENABLE_CAST", "true")
     }
 
     companion object {
@@ -83,6 +86,8 @@ data class EngineSettings(
         const val PROXY_MIN_VERSION = "1.2.0"
 
         fun proxySupported(version: String): Boolean = Releases.compareVersions(version, PROXY_MIN_VERSION) >= 0
+        /** The first engine release with the `/cast/...` routes. */
+        const val CAST_MIN_VERSION = "1.2.0"
 
         fun validPort(p: Int) = p in 1024..65535
 

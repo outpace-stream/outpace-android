@@ -103,6 +103,7 @@
             android:exported="false"
             android:targetActivity=".ui.PlayActivity" />
 
+        <activity android:name=".ui.CastActivity" android:exported="false" android:theme="@style/AppTheme.Dialog" />
         <activity android:name=".ui.VersionsActivity" android:exported="false" />
         <activity android:name=".ui.LogsActivity" android:exported="false" />
         <activity android:name=".ui.LicensesActivity" android:exported="false" />

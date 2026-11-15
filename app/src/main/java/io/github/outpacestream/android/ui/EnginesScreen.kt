@@ -11,6 +11,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.R
+import io.github.outpacestream.android.core.CastGate
 import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.EngineTarget
@@ -74,6 +75,7 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
 
     /** Shown only when the selected engine reads `OUTPACE_ACESTREAM_IDENTITY`. */
     private lateinit var identityRow: View
+    private lateinit var castRow: View
 
     /** Remote id to whether its last probe answered; absent until probed. */
     private val health = ConcurrentHashMap<String, Boolean>()
@@ -135,6 +137,11 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
         // LAN access goes above the port, which is already in the layout.
         rows.engineToggle(network, R.string.settings_lan, R.string.settings_lan_warning, { it.lan }, index = 0) { s, v -> s.copy(lan = v) }
         rows.portField(find<EditText>(R.id.port), { it.port }) { s, v -> s.copy(port = v) }
+        // Casting needs LAN access: turning it on with LAN access off explains why and offers it.
+        castRow = rows.toggle(network, R.string.settings_cast, R.string.settings_cast_summary, { prefs.settings.cast }) { v ->
+            prefs.settings = prefs.settings.copy(cast = v)
+            if (v && !prefs.settings.lan) CastSetup.confirmLan(host) { rows.refresh(); render() }
+        }
         rows.engineToggle(peers, R.string.settings_seeding, R.string.settings_seeding_summary, { it.seeding }) { s, v -> s.copy(seeding = v) }
         rows.engineChoice(
             peers, R.string.settings_upload_limit, R.string.settings_upload_limit_summary,
@@ -357,6 +364,7 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
         } else {
             update.visibility = View.GONE
         }
+        castRow.visibility = if (CastGate.supports(shown)) View.VISIBLE else View.GONE
         val running = EngineController.runningSettings
         restartBanner.visibility = if (s == EngineState.Running && running != null && running != prefs.settings) View.VISIBLE else View.GONE
     }

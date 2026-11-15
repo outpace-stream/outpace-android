@@ -36,6 +36,9 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
     private val recentHeader = find<View>(R.id.recent_header)
     private val recent = find<LinearLayout>(R.id.recent)
     private val empty = find<View>(R.id.empty)
+    private val castBanner = find<View>(R.id.cast_banner)
+    private val castTextView = find<TextView>(R.id.cast_text)
+    private val castStop = find<Button>(R.id.cast_stop)
 
     init {
         startStop.setOnClickListener { onAction() }
@@ -50,6 +53,10 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
             }
         }
         find<Button>(R.id.clear_recent).setOnClickListener { prefs.clearRecent(); render() }
+        castStop.setOnClickListener {
+            castStop.isEnabled = false
+            EngineController.stopCast()
+        }
         idInput.setOnEditorActionListener { _, action, event ->
             val enter = event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_UP
             if (action == EditorInfo.IME_ACTION_GO || enter) { playInput(); true } else false
@@ -85,6 +92,7 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
 
     override fun render() {
         renderEngine()
+        renderCast()
         renderStreams()
         renderRecent()
         empty.visibility = if (EngineController.streams.isEmpty() && prefs.recent.isEmpty()) View.VISIBLE else View.GONE
@@ -157,6 +165,17 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
         startStop.isEnabled = s != EngineState.Stopping
     }
 
+    private fun renderCast() {
+        val cast = EngineController.cast
+        if (cast == null && castBanner.hasFocus()) startStop.requestFocus()
+        castBanner.visibility = if (cast == null) View.GONE else View.VISIBLE
+        if (cast == null) {
+            castStop.isEnabled = true
+            return
+        }
+        castTextView.text = host.castText(EngineController.castMessage, cast.targetName)
+    }
+
     private fun renderStreams() {
         val list = EngineController.streams
         streamsTitle.visibility = if (list.isEmpty()) View.GONE else View.VISIBLE
@@ -180,6 +199,24 @@ class HomeScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent, R
         val action = ref?.let { r -> View.OnClickListener { host.play(r, st.title) } }
         play.setOnClickListener(action)
         row.setOnClickListener(action)
+        // Long press (hold OK on a remote) offers the TV as well, without opening a player first.
+        val menu = ref?.takeIf { CastActivity.offered(host) }?.let { r ->
+            View.OnLongClickListener { showStreamMenu(r, st.title); true }
+        }
+        play.setOnLongClickListener(menu)
+        row.setOnLongClickListener(menu)
+    }
+
+    private fun showStreamMenu(ref: StreamRef, title: String?) {
+        val options = listOf(
+            host.getString(R.string.recent_menu_play) to { host.play(ref, title) },
+            host.getString(R.string.play_on_tv) to { host.startActivity(CastActivity.intent(host, ref, title)) },
+        )
+        AlertDialog.Builder(host)
+            .setTitle(title ?: ref.short)
+            .setItems(options.map { it.first }.toTypedArray()) { _, which -> options[which].second() }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun renderRecent() {

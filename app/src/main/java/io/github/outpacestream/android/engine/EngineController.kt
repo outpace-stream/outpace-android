@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import io.github.outpacestream.android.Prefs
+import io.github.outpacestream.android.core.CastMessage
 import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.EngineChoice
 import io.github.outpacestream.android.core.EngineChoices
@@ -27,6 +28,15 @@ sealed interface EngineState {
     /** A remote engine the app is connected to stopped answering; the connection keeps retrying. */
     data class Unreachable(val reason: String) : EngineState
 }
+
+/**
+ * A cast this app started on a DLNA TV through [endpoint]'s engine. Compared by identity: each
+ * `play` makes a new one, so a poll for an earlier cast cannot touch a newer one.
+ */
+class CastSession(val targetId: String, val targetName: String, val ref: StreamRef, val endpoint: Endpoint, val startedAt: Long)
+
+/** A cast that ended, and why; [message] is null when the user stopped it. */
+data class CastEnd(val session: CastSession, val message: CastMessage?)
 
 /** The start of [ref] the service is following, or followed last; [view] null shows nothing. */
 data class StartProgress(val ref: StreamRef, val view: StartView?, val done: Boolean)
@@ -131,6 +141,78 @@ object EngineController {
         startOwner = null
         startProgress = null
         notifyListeners()
+    }
+
+    /** The cast the service follows; null when nothing is casting. One TV at a time. */
+    @Volatile var cast: CastSession? = null
+        private set
+
+    /** What the last status poll of [cast] said. */
+    @Volatile var castMessage: CastMessage = CastMessage.Starting
+        private set
+
+    /** The last cast that ended, so the cast screen can say why. */
+    @Volatile var castEnded: CastEnd? = null
+        private set
+
+    /** Cast screens showing; while > 0 the service polls the cast's status quickly. */
+    @Volatile var castScreens = 0
+        private set
+
+    @Volatile internal var castHook: ((CastSession) -> Unit)? = null
+    @Volatile internal var castStopHook: (() -> Unit)? = null
+    @Volatile internal var castPollNow: (() -> Unit)? = null
+
+    /** Refreshes the service's notification when a cast ends without an explicit `then`. */
+    @Volatile internal var castNotify: (() -> Unit)? = null
+
+    /** Records a cast the engine just accepted and lets the service follow it. */
+    fun castStarted(session: CastSession) {
+        synchronized(this) {
+            cast = session
+            castMessage = CastMessage.Starting
+            castEnded = null
+        }
+        notifyListeners()
+        castHook?.invoke(session)
+    }
+
+    /** Stops the current cast on its TV, through the service; without a service it is just forgotten. */
+    fun stopCast() {
+        val hook = castStopHook
+        if (hook != null) hook() else cast?.let { endCast(it, null) }
+    }
+
+    fun castScreenShown() {
+        castScreens++
+        castPollNow?.invoke()
+    }
+
+    fun castScreenHidden() {
+        castScreens = maxOf(0, castScreens - 1)
+    }
+
+    /**
+     * Publishes [message] for [session] unless another cast replaced it. [then] (a notification
+     * update) runs under the same lock, so it cannot repost after [endCast].
+     */
+    @Synchronized
+    internal fun publishCastMessage(session: CastSession, message: CastMessage, then: (() -> Unit)? = null) {
+        if (cast !== session || castMessage == message) return
+        castMessage = message
+        notifyListeners()
+        then?.invoke()
+    }
+
+    /** Ends [session] if it is still the current cast; false when it was already replaced or ended. */
+    @Synchronized
+    internal fun endCast(session: CastSession, message: CastMessage?, then: (() -> Unit)? = null): Boolean {
+        if (cast !== session) return false
+        cast = null
+        castEnded = CastEnd(session, message)
+        notifyListeners()
+        (then ?: castNotify)?.invoke()
+        return true
     }
 
     fun addListener(l: () -> Unit) {

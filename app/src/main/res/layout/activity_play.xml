@@ -19,6 +19,8 @@
             android:layout_height="wrap_content" android:text="@string/play_open_player" />
         <Button android:id="@+id/open_hls" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:layout_marginTop="8dp" android:text="@string/play_open_hls" />
+        <Button android:id="@+id/cast" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:text="@string/play_on_tv" android:visibility="gone" />
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:layout_marginTop="8dp">
             <Button android:id="@+id/copy" android:layout_width="0dp" android:layout_height="wrap_content"
