@@ -200,7 +200,7 @@ class EngineService : Service() {
             if (proc.isAliveCompat()) {
                 terminate(proc)
                 process = null
-                fail(getString(R.string.engine_no_answer, START_TIMEOUT_MS / 1000))
+                fail((START_TIMEOUT_MS / 1000).toInt().let { resources.getQuantityString(R.plurals.engine_no_answer, it, it) })
             }
             // Otherwise the process exited during startup; onExit reports it.
         }

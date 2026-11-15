@@ -3,6 +3,7 @@ package io.github.outpacestream.android.ui
 import android.app.Activity
 import android.app.AlertDialog
 import android.os.Bundle
+import android.text.format.Formatter
 import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
@@ -169,7 +170,7 @@ class VersionsActivity : Activity() {
     private fun install(rel: Release) {
         val store = EngineFiles.store(this)
         if (store.installed().size >= EngineStore.MAX_INSTALLED) {
-            toast(getString(R.string.version_full, EngineStore.MAX_INSTALLED))
+            toast(resources.getQuantityString(R.plurals.version_full, EngineStore.MAX_INSTALLED, EngineStore.MAX_INSTALLED))
             return
         }
         busy = true
@@ -181,7 +182,7 @@ class VersionsActivity : Activity() {
             val outcome = try {
                 releases.install(rel, cancelled = { cancel }) { done, total ->
                     onMain {
-                        val mb = "%.1f MB".format(done / 1_048_576.0)
+                        val mb = Formatter.formatShortFileSize(this@VersionsActivity, done)
                         downloadText.text = getString(R.string.version_downloading, rel.version, mb)
                         if (total > 0) {
                             downloadProgress.isIndeterminate = false
