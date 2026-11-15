@@ -12,6 +12,7 @@ import android.widget.TextView
 import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.EngineChoice
+import io.github.outpacestream.android.core.EngineSettings
 import io.github.outpacestream.android.core.EngineTarget
 import io.github.outpacestream.android.core.HlsStart
 import io.github.outpacestream.android.core.Releases
@@ -65,6 +66,9 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
     private val settingsBody = find<View>(R.id.settings_body)
     private val settingsChevron = find<ImageView>(R.id.settings_chevron)
     private val rows = SettingRows(host) { render() }
+
+    /** Shown only when the selected engine reads `OUTPACE_ACESTREAM_IDENTITY`. */
+    private lateinit var identityRow: View
 
     /** Remote id to whether its last probe answered; absent until probed. */
     private val health = ConcurrentHashMap<String, Boolean>()
@@ -142,6 +146,9 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
         }
         rows.portRow(peers, R.string.settings_peer_port, R.string.settings_peer_port_summary, { it.peerPort }) { s, v -> s.copy(peerPort = v) }
         rows.engineToggle(peers, R.string.settings_ace_compat, R.string.settings_ace_compat_summary, { it.aceCompat }) { s, v -> s.copy(aceCompat = v) }
+        identityRow = rows.engineToggle(peers, R.string.settings_acestream_identity, R.string.settings_acestream_identity_summary, { it.acestreamIdentity }) { s, v ->
+            s.copy(acestreamIdentity = v)
+        }
     }
 
     override fun focusTarget(): View = list.getChildAt(0) ?: addButton
@@ -318,6 +325,8 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
             if (s == EngineState.Running || s == EngineState.Starting || s == EngineState.Stopping) R.string.action_stop else R.string.action_start,
         )
         startStop.isEnabled = s != EngineState.Stopping
+        // The setting applies on the next start, which runs the selected version.
+        identityRow.visibility = if (EngineSettings.supportsAcestreamIdentity(version)) View.VISIBLE else View.GONE
         restart.isEnabled = s == EngineState.Running
         val latest = prefs.latestVersion
         if (latest != null && Releases.compareVersions(latest, shown) > 0) {

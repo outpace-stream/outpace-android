@@ -3,6 +3,7 @@ package io.github.outpacestream.android.core
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -51,6 +52,24 @@ class LaunchAndSettingsTest {
 
     @Test fun envSearch() =
         assertEquals("true", EngineSettings(search = true).env("/d", "/c")["OUTPACE_COMPAT_ACESTREAM_SERVICES"])
+
+    @Test fun envOmitsAcestreamIdentityByDefault() =
+        assertFalse(EngineSettings().env("/d", "/c").keys.any { it.startsWith("OUTPACE_ACESTREAM_IDENTITY") })
+
+    @Test fun envAcestreamIdentity() {
+        val env = EngineSettings(acestreamIdentity = true).env("/d", "/c")
+        assertEquals("true", env["OUTPACE_ACESTREAM_IDENTITY"])
+        // Only the switch: every OUTPACE_ACESTREAM_IDENTITY_* override is left to the engine profile.
+        assertEquals(listOf("OUTPACE_ACESTREAM_IDENTITY"), env.keys.filter { it.startsWith("OUTPACE_ACESTREAM_IDENTITY") })
+    }
+
+    @Test fun acestreamIdentityNeedsEngine110() {
+        assertFalse(EngineSettings.supportsAcestreamIdentity("1.0.2"))
+        assertFalse(EngineSettings.supportsAcestreamIdentity("1.0.3"))
+        assertFalse(EngineSettings.supportsAcestreamIdentity("1.1.0-rc.1"))
+        assertTrue(EngineSettings.supportsAcestreamIdentity("1.1.0"))
+        assertTrue(EngineSettings.supportsAcestreamIdentity("1.2.0"))
+    }
 
     @Test fun ringDropsOldest() {
         val ring = LogRing(3)

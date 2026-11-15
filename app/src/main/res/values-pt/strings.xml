@@ -285,6 +285,8 @@
     <string name="settings_section_peers">Pares</string>
     <string name="settings_ace_compat">API compatível com AceStream</string>
     <string name="settings_ace_compat_summary">Também oferece a API /ace/getstream usada por clientes e playlists da AceStream.</string>
+    <string name="settings_acestream_identity">Identidade AceStream</string>
+    <string name="settings_acestream_identity_summary">Apresenta este motor a pares, trackers, à busca e ao catálogo como o motor oficial da AceStream para Linux em vez do Outpace. Os pares veem o endereço público deste dispositivo de qualquer forma; para completar a rede e o país, o motor faz uma consulta HTTPS ao RIPEstat (stat.ripe.net) quando os pares informam esse endereço. Precisa do motor v1.1.0 ou mais recente.</string>
     <string name="settings_section_background">Segundo plano</string>
     <string name="settings_section_about">Sobre</string>
     <string name="settings_about">Outpace para Android %1$s\nVersões do app vêm de github.com/%3$s\nVersões do motor vêm de github.com/%2$s</string>

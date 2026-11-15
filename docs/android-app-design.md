@@ -200,6 +200,7 @@ Each maps to an existing variable; see `docs/wiki/Environment-Variables.md` for 
 | Router port mapping | `OUTPACE_ENABLE_PORT_MAPPING` | engine default (off) |
 | AceStream-compatible API | `OUTPACE_ACE_COMPAT` | off |
 | Stream search | `OUTPACE_COMPAT_ACESTREAM_SERVICES` | off |
+| AceStream identity | `OUTPACE_ACESTREAM_IDENTITY` (engine 1.1.0 and later, hidden below) | off, variable omitted |
 | Start on boot | app only | on for TV, off for phone |
 | Stop when idle | app only | on for phone (suggested 10 min with no active streams), off for TV |
 

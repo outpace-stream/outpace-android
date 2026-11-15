@@ -277,6 +277,8 @@
     <string name="settings_section_peers">Peers</string>
     <string name="settings_ace_compat">AceStream-kompatible API</string>
     <string name="settings_ace_compat_summary">Stellt zusätzlich die /ace/getstream-API bereit, die AceStream-Clients und -Playlists nutzen.</string>
+    <string name="settings_acestream_identity">AceStream-Identität</string>
+    <string name="settings_acestream_identity_summary">Zeigt diese Engine Peers, Trackern, der Suche und dem Katalog als offizielle AceStream-Linux-Engine statt als Outpace. Peers sehen die öffentliche Adresse dieses Geräts ohnehin; um Netz und Land zu ergänzen, fragt die Engine einmal per HTTPS bei RIPEstat (stat.ripe.net) an, sobald Peers diese Adresse melden. Benötigt Engine v1.1.0 oder neuer.</string>
     <string name="settings_section_background">Hintergrund</string>
     <string name="settings_section_about">Info</string>
     <string name="settings_about">Outpace für Android %1$s\nApp-Versionen kommen von github.com/%3$s\nEngine-Versionen kommen von github.com/%2$s</string>
