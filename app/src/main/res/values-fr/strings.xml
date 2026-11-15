@@ -7,9 +7,9 @@
     <string name="state_running">Moteur en marche</string>
     <string name="state_stopping">Arrêt du moteur</string>
     <plurals name="notification_running">
-        <item quantity="one">%1$s en marche, %2$d flux</item>
-        <item quantity="many">%1$s en marche, %2$d flux</item>
-        <item quantity="other">%1$s en marche, %2$d flux</item>
+        <item quantity="one">Moteur %1$s en marche, %2$d flux</item>
+        <item quantity="many">Moteur %1$s en marche, %2$d flux</item>
+        <item quantity="other">Moteur %1$s en marche, %2$d flux</item>
     </plurals>
 
     <string name="action_start">Démarrer le moteur</string>
@@ -42,7 +42,7 @@
     <string name="state_error">Erreur du moteur</string>
     <string name="play_no_id">Aucun ID de contenu trouvé.</string>
     <string name="play_engine_failed">Le moteur n\'est pas en marche : %1$s</string>
-    <string name="play_lan_hint">Les autres appareils ont besoin de l\'accès réseau local activé dans Moteurs.</string>
+    <string name="play_lan_hint">Pour les autres appareils, activez l\'accès réseau local dans Moteurs.</string>
     <string name="start_waiting">En attente de l\'ouverture du flux par le lecteur…</string>
     <string name="start_resolving">Recherche du flux…</string>
     <string name="start_connecting">Recherche de pairs (%1$d)…</string>
@@ -216,8 +216,8 @@
     <string name="action_search">Rechercher</string>
     <string name="search_more">Plus de résultats</string>
     <string name="search_recent_queries">Recherches récentes</string>
-    <string name="search_privacy">Les recherches sont envoyées à l\'index public d\'AceStream en HTTP non chiffré. L\'index et quiconque sur le chemin réseau peuvent voir la requête et l\'adresse IP de cet appareil. Les résultats sont des données de découverte : certains peuvent ne pas se lire.</string>
-    <string name="search_searching">Recherche</string>
+    <string name="search_privacy">Les recherches sont envoyées à l\'index public d\'AceStream en HTTP non chiffré. L\'index et quiconque sur le chemin réseau peuvent voir la requête et l\'adresse IP de cet appareil. Les résultats ne sont pas vérifiés : certains peuvent ne pas se lire.</string>
+    <string name="search_searching">Recherche en cours</string>
     <string name="search_starting_engine">Démarrage du moteur</string>
     <plurals name="search_count">
         <item quantity="one">%d résultat</item>
@@ -226,7 +226,7 @@
     </plurals>
     <string name="search_count_more">%1$s, %2$d affichés</string>
     <string name="search_empty">Aucun résultat pour « %1$s ».</string>
-    <string name="search_disabled_badge">marqué désactivé</string>
+    <string name="search_disabled_badge">marqué comme désactivé</string>
     <string name="search_availability">%1$d %% disponible</string>
     <string name="notice_off_title">La recherche est désactivée</string>
     <string name="notice_off_text">La recherche envoie votre requête à l\'index public d\'AceStream. Activez-la pour trouver des flux par nom.</string>
@@ -268,11 +268,11 @@
     <string name="settings_hls_start_summary">%1$s. Nombre de segments prêts avant qu\'un lecteur HLS reçoive la playlist. Concerne uniquement Ouvrir en HLS.</string>
     <string name="settings_hls_start_default">Par défaut (6 segments de 5 s)</string>
     <string name="settings_hls_start_fast">Rapide (2 segments de 4 s)</string>
-    <string name="settings_catalog_fallback">Repli du catalogue</string>
+    <string name="settings_catalog_fallback">Repli hors catalogue</string>
     <string name="settings_catalog_fallback_summary">Si le catalogue ne peut pas résoudre un ID de contenu, demande ses détails aux pairs. Nécessaire pour lire une diffusion Outpace lancée sur un autre appareil.</string>
     <string name="settings_low_memory">Mode mémoire réduite</string>
     <string name="settings_low_memory_summary">Garde les données partagées dans le stockage plutôt qu\'en mémoire et utilise des tampons plus petits. Pour les appareils avec peu de RAM. Un plafond de démarrage de 32 Mio raccourcit le tampon de démarrage sur les flux à haut débit.</string>
-    <string name="settings_upload_limit">Limite d\'envoi entrant</string>
+    <string name="settings_upload_limit">Limite d\'envoi aux pairs entrants</string>
     <string name="settings_upload_limit_summary">%1$s. Nombre de pairs connectés à cet appareil qui peuvent télécharger depuis lui en même temps. Les envois vers les pairs auxquels cet appareil s\'est connecté ne sont pas limités ; désactivez Partage pour arrêter tous les envois.</string>
     <string name="settings_upload_limit_normal">Normale (par défaut)</string>
     <string name="settings_upload_limit_low">Basse (jusqu\'à 3 pairs entrants par flux)</string>

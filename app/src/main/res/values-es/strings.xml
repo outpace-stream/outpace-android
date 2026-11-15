@@ -42,7 +42,7 @@
     <string name="state_error">Error del motor</string>
     <string name="play_no_id">No se encontró ningún ID de contenido.</string>
     <string name="play_engine_failed">El motor no está en marcha: %1$s</string>
-    <string name="play_lan_hint">Otros dispositivos necesitan el acceso LAN activado en Motores.</string>
+    <string name="play_lan_hint">Para usarlo desde otros dispositivos, activa el acceso LAN en Motores.</string>
     <string name="start_waiting">Esperando a que el reproductor abra el stream…</string>
     <string name="start_resolving">Buscando el stream…</string>
     <string name="start_connecting">Buscando pares (%1$d)…</string>
@@ -216,7 +216,7 @@
     <string name="action_search">Buscar</string>
     <string name="search_more">Cargar más resultados</string>
     <string name="search_recent_queries">Búsquedas recientes</string>
-    <string name="search_privacy">Las búsquedas van al índice público de AceStream por HTTP sin cifrar. El índice y cualquiera en la ruta de red pueden ver la consulta y la dirección IP de este dispositivo. Los resultados son datos de descubrimiento: puede que algunos no se reproduzcan.</string>
+    <string name="search_privacy">Las búsquedas van al índice público de AceStream por HTTP sin cifrar. El índice y cualquiera en la ruta de red pueden ver la consulta y la dirección IP de este dispositivo. Los resultados no están verificados: puede que algunos no se reproduzcan.</string>
     <string name="search_searching">Buscando</string>
     <string name="search_starting_engine">Iniciando el motor</string>
     <plurals name="search_count">
@@ -272,7 +272,7 @@
     <string name="settings_catalog_fallback_summary">Si el catálogo no puede resolver un ID de contenido, pide sus datos a los pares. Necesario para reproducir una emisión de Outpace iniciada en otro dispositivo.</string>
     <string name="settings_low_memory">Modo de poca memoria</string>
     <string name="settings_low_memory_summary">Guarda los datos compartidos en el almacenamiento en vez de en memoria y usa búferes más pequeños. Para dispositivos con poca RAM. Un límite inicial de 32 MiB acorta el búfer inicial en streams de alta tasa de bits.</string>
-    <string name="settings_upload_limit">Límite de subida entrante</string>
+    <string name="settings_upload_limit">Límite de subida a pares entrantes</string>
     <string name="settings_upload_limit_summary">%1$s. Cuántos pares que se conectan a este dispositivo pueden descargar de él a la vez. Las subidas a pares a los que se conectó este dispositivo no tienen límite; desactiva Compartir para detener todas las subidas.</string>
     <string name="settings_upload_limit_normal">Normal (predeterminado)</string>
     <string name="settings_upload_limit_low">Bajo (hasta 3 pares entrantes por stream)</string>

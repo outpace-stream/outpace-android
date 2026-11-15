@@ -12,7 +12,11 @@ import org.w3c.dom.Element
  * without translations, or a translation that drops a format argument, fails the build.
  */
 class TranslationsTest {
-    private val res = listOf(File("src/main/res"), File("app/src/main/res")).first { it.isDirectory }
+    /** Set by the Gradle test task; the fallbacks cover IDE runs from the module or project root. */
+    private val res: File = (listOfNotNull(System.getProperty("outpace.resDir")) + listOf("src/main/res", "app/src/main/res"))
+        .map(::File)
+        .firstOrNull { File(it, "values/strings.xml").isFile }
+        ?: error("app resources not found; set -Doutpace.resDir to app/src/main/res")
 
     /** A translatable entry: a string's text, or a plural's items by quantity. */
     private data class Entry(val texts: Map<String, String>)
@@ -68,7 +72,7 @@ class TranslationsTest {
             val (entries, _) = parse(File(dir, "strings.xml"))
             assertEquals("${dir.name}: missing", emptySet<String>(), base.keys - entries.keys)
             assertEquals("${dir.name}: extra or non-translatable", emptySet<String>(), entries.keys - base.keys)
-            assertTrue(untranslatable.none { it in entries })
+            assertEquals("${dir.name}: translates a non-translatable string", emptySet<String>(), untranslatable intersect entries.keys)
         }
     }
 

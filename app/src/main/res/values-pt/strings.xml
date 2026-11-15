@@ -42,7 +42,7 @@
     <string name="state_error">Erro do motor</string>
     <string name="play_no_id">Nenhum ID de conteúdo encontrado.</string>
     <string name="play_engine_failed">O motor não está em execução: %1$s</string>
-    <string name="play_lan_hint">Outros dispositivos precisam do acesso pela LAN ativado em Motores.</string>
+    <string name="play_lan_hint">Para usar em outros dispositivos, ative o acesso pela LAN em Motores.</string>
     <string name="start_waiting">Aguardando o player abrir o stream…</string>
     <string name="start_resolving">Procurando o stream…</string>
     <string name="start_connecting">Procurando pares (%1$d)…</string>
@@ -99,7 +99,7 @@
     <string name="settings_boot">Iniciar com o dispositivo</string>
     <string name="settings_boot_summary">Inicia o motor deste dispositivo quando ele é ligado. Um motor remoto que ficou conectado se reconecta de qualquer forma.</string>
     <string name="settings_idle">Parar quando ocioso</string>
-    <string name="settings_idle_summary">Para o motor deste dispositivo após 10 minutos sem streams, para economizar bateria.</string>
+    <string name="settings_idle_summary">Desliga o motor deste dispositivo após 10 minutos sem streams, para economizar bateria.</string>
     <string name="settings_battery">Otimização de bateria</string>
     <string name="settings_battery_summary">Permite que o motor continue em execução em segundo plano.</string>
 
@@ -216,7 +216,7 @@
     <string name="action_search">Buscar</string>
     <string name="search_more">Carregar mais resultados</string>
     <string name="search_recent_queries">Buscas recentes</string>
-    <string name="search_privacy">As buscas vão para o índice público da AceStream por HTTP sem criptografia. O índice e qualquer um no caminho da rede podem ver a busca e o endereço IP deste dispositivo. Os resultados são dados de descoberta: alguns podem não funcionar.</string>
+    <string name="search_privacy">As buscas vão para o índice público da AceStream por HTTP sem criptografia. O índice e qualquer um no caminho da rede podem ver a busca e o endereço IP deste dispositivo. Os resultados não são verificados: alguns podem não funcionar.</string>
     <string name="search_searching">Buscando</string>
     <string name="search_starting_engine">Iniciando o motor</string>
     <plurals name="search_count">
@@ -272,7 +272,7 @@
     <string name="settings_catalog_fallback_summary">Se o catálogo não conseguir resolver um ID de conteúdo, pede os detalhes aos pares. Necessário para reproduzir uma transmissão do Outpace iniciada em outro dispositivo.</string>
     <string name="settings_low_memory">Modo de pouca memória</string>
     <string name="settings_low_memory_summary">Guarda os dados compartilhados no armazenamento em vez da memória e usa buffers menores. Para dispositivos com pouca RAM. Um limite inicial de 32 MiB encurta o buffer inicial em streams de alta taxa de bits.</string>
-    <string name="settings_upload_limit">Limite de envio para entrada</string>
+    <string name="settings_upload_limit">Limite de envio a pares de entrada</string>
     <string name="settings_upload_limit_summary">%1$s. Quantos pares que se conectam a este dispositivo podem baixar dele ao mesmo tempo. Envios para pares aos quais este dispositivo se conectou não têm limite; desative Compartilhamento para parar todos os envios.</string>
     <string name="settings_upload_limit_normal">Normal (padrão)</string>
     <string name="settings_upload_limit_low">Baixo (até 3 pares de entrada por stream)</string>

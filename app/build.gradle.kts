@@ -63,6 +63,8 @@ android {
 
     testOptions {
         unitTests.isReturnDefaultValues = false
+        // TranslationsTest reads the resource XML; pass its path rather than rely on the working directory.
+        unitTests.all { it.systemProperty("outpace.resDir", file("src/main/res").absolutePath) }
     }
 
     lint {

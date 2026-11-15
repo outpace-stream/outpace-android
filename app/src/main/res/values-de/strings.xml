@@ -7,8 +7,8 @@
     <string name="state_running">Engine läuft</string>
     <string name="state_stopping">Engine wird gestoppt</string>
     <plurals name="notification_running">
-        <item quantity="one">%1$s läuft, %2$d Stream</item>
-        <item quantity="other">%1$s läuft, %2$d Streams</item>
+        <item quantity="one">Engine %1$s läuft, %2$d Stream</item>
+        <item quantity="other">Engine %1$s läuft, %2$d Streams</item>
     </plurals>
 
     <string name="action_start">Engine starten</string>
@@ -18,7 +18,7 @@
     <string name="action_play">Abspielen</string>
 
     <string name="engine_update_available">v%1$s verfügbar</string>
-    <string name="engine_failed_to_start">Engine konnte nicht starten: %1$s</string>
+    <string name="engine_failed_to_start">Die Engine konnte nicht gestartet werden: %1$s</string>
     <plurals name="engine_no_answer">
         <item quantity="one">Die Engine hat nicht innerhalb von %1$d Sekunde geantwortet.</item>
         <item quantity="other">Die Engine hat nicht innerhalb von %1$d Sekunden geantwortet.</item>
@@ -88,11 +88,11 @@
     <string name="settings_port">HTTP-Port</string>
     <string name="settings_port_invalid">Verwende einen Port zwischen 1024 und 65535.</string>
     <string name="settings_seeding">Seeding</string>
-    <string name="settings_seeding_summary">Teile an andere Zuschauer desselben Streams hochladen.</string>
+    <string name="settings_seeding_summary">Lädt Teile an andere Zuschauer desselben Streams hoch.</string>
     <string name="settings_inbound">Eingehende Peers annehmen</string>
     <string name="settings_inbound_summary">Andere Peers dürfen sich mit diesem Gerät verbinden, nicht nur umgekehrt.</string>
     <string name="settings_port_mapping">Portweiterleitung am Router</string>
-    <string name="settings_port_mapping_summary">Den Router bitten, den Peer-Port per UPnP oder NAT-PMP zu öffnen.</string>
+    <string name="settings_port_mapping_summary">Bittet den Router, den Peer-Port per UPnP oder NAT-PMP zu öffnen.</string>
     <string name="settings_boot">Beim Einschalten starten</string>
     <string name="settings_boot_summary">Startet die Engine dieses Geräts, wenn das Gerät eingeschaltet wird. Eine verbunden gebliebene Remote-Engine verbindet sich so oder so neu.</string>
     <string name="settings_idle">Bei Leerlauf stoppen</string>
@@ -209,7 +209,7 @@
     <string name="action_search">Suchen</string>
     <string name="search_more">Weitere Ergebnisse laden</string>
     <string name="search_recent_queries">Letzte Suchen</string>
-    <string name="search_privacy">Suchanfragen gehen unverschlüsselt per HTTP an den öffentlichen Index von AceStream. Der Index und jeder auf dem Netzwerkpfad können die Anfrage und die IP-Adresse dieses Geräts sehen. Ergebnisse sind Fundstellen: Manche lassen sich vielleicht nicht abspielen.</string>
+    <string name="search_privacy">Suchanfragen gehen unverschlüsselt per HTTP an den öffentlichen Index von AceStream. Der Index und jeder auf dem Netzwerkpfad können die Anfrage und die IP-Adresse dieses Geräts sehen. Die Ergebnisse sind ungeprüft: Manche lassen sich vielleicht nicht abspielen.</string>
     <string name="search_searching">Suche läuft</string>
     <string name="search_starting_engine">Engine wird gestartet</string>
     <plurals name="search_count">
@@ -248,7 +248,7 @@
     <string name="settings_autosave">Änderungen werden sofort gespeichert und gelten beim nächsten Start der Engine.</string>
     <string name="settings_section_search">Suche</string>
     <string name="settings_search">Stream-Suche</string>
-    <string name="settings_search_summary">Streams nach Namen im öffentlichen Index von AceStream suchen. Anfragen und die IP-Adresse dieses Geräts gehen unverschlüsselt per HTTP an diesen Dienst. Benötigt Engine v1.0.0 oder neuer.</string>
+    <string name="settings_search_summary">Sucht Streams nach Namen im öffentlichen Index von AceStream. Anfragen und die IP-Adresse dieses Geräts gehen unverschlüsselt per HTTP an diesen Dienst. Benötigt Engine v1.0.0 oder neuer.</string>
     <string name="settings_section_playback">Wiedergabe</string>
     <string name="settings_startup_buffer">Startpuffer</string>
     <string name="settings_startup_buffer_summary">%1$s. Wie viel Video die Engine sammelt, bevor ein Stream startet. Mehr Puffer startet langsamer, ruckelt aber weniger.</string>
@@ -260,11 +260,11 @@
     <string name="settings_hls_start_summary">%1$s. Wie viele Segmente bereit sind, bevor ein HLS-Player die Playlist bekommt. Betrifft nur Als HLS öffnen.</string>
     <string name="settings_hls_start_default">Standard (6 Segmente à 5 s)</string>
     <string name="settings_hls_start_fast">Schnell (2 Segmente à 4 s)</string>
-    <string name="settings_catalog_fallback">Katalog-Ersatz</string>
+    <string name="settings_catalog_fallback">Katalog-Fallback</string>
     <string name="settings_catalog_fallback_summary">Kann der Katalog eine Inhalts-ID nicht auflösen, werden Peers nach den Details gefragt. Nötig, um eine auf einem anderen Gerät gestartete Outpace-Übertragung abzuspielen.</string>
     <string name="settings_low_memory">Sparmodus für Arbeitsspeicher</string>
     <string name="settings_low_memory_summary">Hält Seeding-Daten im Gerätespeicher statt im RAM und nutzt kleinere Puffer. Für Geräte mit wenig RAM. Eine Startgrenze von 32 MiB verkürzt den Startpuffer bei Streams mit hoher Bitrate.</string>
-    <string name="settings_upload_limit">Limit für eingehende Uploads</string>
+    <string name="settings_upload_limit">Upload-Limit für eingehende Peers</string>
     <string name="settings_upload_limit_summary">%1$s. Wie viele Peers, die sich mit diesem Gerät verbinden, gleichzeitig davon herunterladen dürfen. Uploads an Peers, mit denen sich dieses Gerät verbunden hat, sind nicht begrenzt; schalte Seeding aus, um alle Uploads zu stoppen.</string>
     <string name="settings_upload_limit_normal">Normal (Standard)</string>
     <string name="settings_upload_limit_low">Niedrig (bis zu 3 eingehende Peers pro Stream)</string>
@@ -291,7 +291,7 @@
     <string name="settings_whats_new">Neuigkeiten</string>
     <string name="settings_whats_new_summary">Versionshinweise deiner installierten Version.</string>
     <string name="settings_update_check">Nach Updates suchen</string>
-    <string name="settings_update_check_summary">Jetzt bei GitHub nach der neuesten Version fragen.</string>
+    <string name="settings_update_check_summary">Fragt jetzt bei GitHub nach der neuesten Version.</string>
     <string name="settings_update_checking">Wird geprüft…</string>
     <string name="settings_update_changelog">Änderungsprotokoll</string>
     <string name="settings_update_changelog_summary">Versionshinweise der Versionen, die neuer sind als deine.</string>

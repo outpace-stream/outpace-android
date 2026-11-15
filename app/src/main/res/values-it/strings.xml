@@ -7,9 +7,9 @@
     <string name="state_running">Motore in esecuzione</string>
     <string name="state_stopping">Arresto del motore</string>
     <plurals name="notification_running">
-        <item quantity="one">%1$s in esecuzione, %2$d stream</item>
-        <item quantity="many">%1$s in esecuzione, %2$d stream</item>
-        <item quantity="other">%1$s in esecuzione, %2$d stream</item>
+        <item quantity="one">Motore %1$s in esecuzione, %2$d stream</item>
+        <item quantity="many">Motore %1$s in esecuzione, %2$d stream</item>
+        <item quantity="other">Motore %1$s in esecuzione, %2$d stream</item>
     </plurals>
 
     <string name="action_start">Avvia motore</string>
@@ -101,7 +101,7 @@
     <string name="settings_idle">Ferma se inattivo</string>
     <string name="settings_idle_summary">Ferma il motore di questo dispositivo dopo 10 minuti senza stream, per risparmiare batteria.</string>
     <string name="settings_battery">Ottimizzazione batteria</string>
-    <string name="settings_battery_summary">Consenti al motore di restare attivo in background.</string>
+    <string name="settings_battery_summary">Consente al motore di restare attivo in background.</string>
 
     <string name="logs_title">Log</string>
     <string name="logs_copy">Copia</string>
@@ -216,7 +216,7 @@
     <string name="action_search">Cerca</string>
     <string name="search_more">Carica altri risultati</string>
     <string name="search_recent_queries">Ricerche recenti</string>
-    <string name="search_privacy">Le ricerche vanno all\'indice pubblico di AceStream tramite HTTP non cifrato. L\'indice e chiunque sul percorso di rete possono vedere la query e l\'indirizzo IP di questo dispositivo. I risultati sono dati di scoperta: alcuni potrebbero non funzionare.</string>
+    <string name="search_privacy">Le ricerche vanno all\'indice pubblico di AceStream tramite HTTP non cifrato. L\'indice e chiunque sul percorso di rete possono vedere la query e l\'indirizzo IP di questo dispositivo. I risultati non sono verificati: alcuni potrebbero non funzionare.</string>
     <string name="search_searching">Ricerca in corso</string>
     <string name="search_starting_engine">Avvio del motore</string>
     <plurals name="search_count">
@@ -226,7 +226,7 @@
     </plurals>
     <string name="search_count_more">%1$s, mostrati %2$d</string>
     <string name="search_empty">Nessun risultato per «%1$s».</string>
-    <string name="search_disabled_badge">segnato come disattivato</string>
+    <string name="search_disabled_badge">contrassegnato come disattivato</string>
     <string name="search_availability">%1$d%% disponibile</string>
     <string name="notice_off_title">La ricerca è disattivata</string>
     <string name="notice_off_text">La ricerca invia la tua query all\'indice pubblico di AceStream. Attivala per cercare stream per nome.</string>
@@ -272,7 +272,7 @@
     <string name="settings_catalog_fallback_summary">Se il catalogo non riesce a risolvere un ID contenuto, chiede i dettagli ai peer. Necessario per riprodurre una trasmissione Outpace avviata su un altro dispositivo.</string>
     <string name="settings_low_memory">Modalità poca memoria</string>
     <string name="settings_low_memory_summary">Tiene i dati condivisi nella memoria di archiviazione invece che in RAM e usa buffer più piccoli. Per dispositivi con poca RAM. Un limite iniziale di 32 MiB accorcia il buffer iniziale sugli stream ad alto bitrate.</string>
-    <string name="settings_upload_limit">Limite di upload in entrata</string>
+    <string name="settings_upload_limit">Limite di upload ai peer in entrata</string>
     <string name="settings_upload_limit_summary">%1$s. Quanti peer connessi a questo dispositivo possono scaricare da esso contemporaneamente. Gli upload verso i peer a cui si è connesso questo dispositivo non hanno limiti; disattiva Condivisione per fermare tutti gli upload.</string>
     <string name="settings_upload_limit_normal">Normale (predefinito)</string>
     <string name="settings_upload_limit_low">Basso (fino a 3 peer in entrata per stream)</string>
