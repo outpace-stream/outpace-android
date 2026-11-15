@@ -25,6 +25,9 @@ enum class CastFailure {
     /** `404` with no error code: the `/cast/...` routes are off (or the engine predates them). */
     Disabled,
     UnknownTarget,
+
+    /** `invalid_request`, `invalid_id` or `unknown_network`: the request itself was rejected. */
+    InvalidRequest,
     LoopbackBind,
     UnsupportedBind,
     StreamNotFound,
@@ -46,6 +49,7 @@ enum class CastFailure {
         fun fromCode(status: Int, code: String?): CastFailure = when (code) {
             null, "" -> if (status == 404) Disabled else Other
             "unknown_target" -> UnknownTarget
+            "invalid_request", "invalid_id", "unknown_network" -> InvalidRequest
             "loopback_bind" -> LoopbackBind
             "unsupported_bind" -> UnsupportedBind
             "stream_not_found" -> StreamNotFound
@@ -147,8 +151,17 @@ data class CastStep(val message: CastMessage, val ended: Boolean)
 class CastWatch(private val startedAt: Long) {
     private var misses = 0
 
+    /** A Stop got no answer, so the TV may still play: misses must not end the cast. */
+    private var stopUncertain = false
+
+    /** Records a Stop without answer; the next answered status poll settles it. */
+    fun stopFailed() {
+        stopUncertain = true
+    }
+
     fun status(s: CastStatus, now: Long): CastStep {
         misses = 0
+        stopUncertain = false
         if (!s.casting) return CastStep(CastMessage.Ended, ended = true)
         val settling = now - startedAt < GRACE_MS
         return when (s.transportState?.uppercase()) {
@@ -176,6 +189,8 @@ class CastWatch(private val startedAt: Long) {
     fun unreachable(): CastStep = miss(CastMessage.EngineUnreachable)
 
     private fun miss(message: CastMessage): CastStep {
+        // Keep the retryable Stop until the engine answers again; polling stays at its usual pace.
+        if (stopUncertain) return CastStep(CastMessage.StopFailed, ended = false)
         misses++
         return CastStep(message, ended = misses >= MAX_MISSES)
     }
@@ -212,14 +227,18 @@ enum class CastPlayAction {
 
 object CastPlay {
     /**
-     * Engine 1.2.0 fails these only before it contacts the TV: casting off, unknown TV, loopback or
-     * IPv6 bind, too many casts, or a stream that would not start. Renderer errors (`renderer_*`)
-     * come after `SetAVTransportURI` or `Play` were sent, so the TV may already play, and the
-     * engine does not stop it (outpace-stream/outpace-engine#497).
+     * An allowlist of failures engine 1.2.0 raises before it contacts the TV: casting off, unknown
+     * TV, a rejected request, loopback or IPv6 bind, too many casts, or a stream that would not
+     * start. Anything else, renderer errors (`renderer_*`, after `SetAVTransportURI` or `Play` were
+     * sent) as well as unrecognized codes or bare errors such as a proxy's `504`, may have left the
+     * TV playing, and the engine does not stop it (outpace-stream/outpace-engine#497).
      */
     fun resultOf(failure: CastFailure): CastPlayResult = when (failure) {
-        CastFailure.RendererFault, CastFailure.RendererUnreachable, CastFailure.RendererTimeout -> CastPlayResult.Unknown
-        else -> CastPlayResult.Refused
+        CastFailure.Disabled, CastFailure.UnknownTarget, CastFailure.InvalidRequest,
+        CastFailure.LoopbackBind, CastFailure.UnsupportedBind, CastFailure.Capacity,
+        CastFailure.StreamNotFound, CastFailure.NoPeers, CastFailure.StreamUnavailable, CastFailure.Network,
+        -> CastPlayResult.Refused
+        else -> CastPlayResult.Unknown
     }
 
     /**

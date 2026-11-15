@@ -146,7 +146,8 @@ class EngineService : Service() {
                 finish()
             }
             ACTION_CAST_STOP -> {
-                castWorker.execute { stopCast() }
+                // The same path as the in-app Stop, so it also supersedes any play queued before it.
+                EngineController.stopCast()
                 // A stale notification can start a service with no engine; it has nothing to keep running.
                 worker.execute {
                     // Every command records its id, so a later finish() passes the newest one.
@@ -627,6 +628,7 @@ class EngineService : Service() {
         } catch (e: Exception) {
             EngineController.log.add("[app] could not stop casting to ${session.targetName}: ${e.message ?: e.javaClass.simpleName}")
             EngineController.castStopFailed(session, ::updateNotification)
+            castWatch?.stopFailed()
             scheduleCast(session, castInterval())
             return
         }

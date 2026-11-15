@@ -51,7 +51,10 @@ class CastTest {
         assertEquals(CastFailure.RendererUnreachable, f(502, "renderer_invalid"))
         assertEquals(CastFailure.RendererTimeout, f(504, "renderer_timeout"))
         assertEquals(CastFailure.Network, f(502, "network"))
-        assertEquals(CastFailure.Other, f(400, "invalid_id"))
+        assertEquals(CastFailure.InvalidRequest, f(400, "invalid_id"))
+        assertEquals(CastFailure.InvalidRequest, f(400, "invalid_request"))
+        assertEquals(CastFailure.InvalidRequest, f(400, "unknown_network"))
+        assertEquals(CastFailure.Other, f(400, "something_new"))
     }
 
     @Test fun keepsMessageAndUpnpCode() {
@@ -151,9 +154,29 @@ class CastTest {
         }
         // Casting off: a bare 404 before anything else.
         assertEquals(CastPlayResult.Refused, CastPlay.resultOf(CastJson.parseError(404, "").failure))
+        // Not on the allowlist: a bare 504 (a proxy timing out) or a code this app does not know.
+        assertEquals(CastPlayResult.Unknown, CastPlay.resultOf(CastJson.parseError(504, "").failure))
+        assertEquals(CastPlayResult.Unknown, CastPlay.resultOf(CastJson.parseError(502, "<html>Bad Gateway</html>").failure))
+        assertEquals(CastPlayResult.Unknown, result(500, "something_new"))
     }
 
-    @Test fun gateForThisDevice() {
+    @Test fun watchKeepsAnUnansweredStopRetryable() {
+        val w = CastWatch(0)
+        w.stopFailed()
+        repeat(CastWatch.MAX_MISSES * 2) {
+            assertEquals(CastStep(CastMessage.StopFailed, false), w.unreachable())
+            assertEquals(CastStep(CastMessage.StopFailed, false), w.failure(CastFailure.RendererTimeout))
+        }
+        // An answer settles it: the cast is followed normally again.
+        assertEquals(CastStep(CastMessage.Playing, false), w.status(status("PLAYING"), 60_000))
+        repeat(CastWatch.MAX_MISSES - 1) { w.unreachable() }
+        assertEquals(CastStep(CastMessage.EngineUnreachable, true), w.unreachable())
+        // The engine answering that the cast is gone still ends it.
+        val gone = CastWatch(0).apply { stopFailed() }
+        assertEquals(CastStep(CastMessage.Ended, true), gone.status(status("STOPPED", casting = false), 60_000))
+    }
+
+        @Test fun gateForThisDevice() {
         val on = EngineSettings(cast = true, lan = true)
         assertEquals(CastBlock.Old("1.1.0"), CastGate.check("1.1.0", on, null))
         assertEquals(CastBlock.Off, CastGate.check("1.2.0", EngineSettings(lan = true), null))

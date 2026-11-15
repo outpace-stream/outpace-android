@@ -37,5 +37,5 @@ fun Context.castErrorText(error: CastError, remote: String?): String = when (err
     CastFailure.RendererTimeout -> getString(R.string.cast_err_tv_timeout)
     CastFailure.Discovery -> getString(R.string.cast_err_discovery)
     CastFailure.Network -> getString(R.string.start_network)
-    CastFailure.Other -> getString(R.string.cast_err_other, error.message ?: "")
+    CastFailure.InvalidRequest, CastFailure.Other -> getString(R.string.cast_err_other, error.message ?: "")
 }
