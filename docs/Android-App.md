@@ -22,7 +22,7 @@ Player or Kodi. It has no player of its own.
 The app needs Android 5 or newer, on 64-bit ARM (`arm64-v8a`), 32-bit ARM (`armeabi-v7a`) or
 x86_64 (emulator images, ChromeOS and Intel or AMD TV boxes). Many Android TV devices run 32-bit
 Android even on 64-bit chips; the app picks the right engine build for you. 32-bit ARM engine
-builds are published from engine v1.0.2, and x86_64 builds in engine releases after v1.2.1.
+builds are published from engine v1.0.2, and x86_64 builds from engine v1.2.1.
 There is no 32-bit x86 engine build.
 
 The APK is sideloaded only. It isn't on the Play Store, because Play policy doesn't allow apps
@@ -337,7 +337,7 @@ badges:
 | installed | Downloaded and ready on this device. |
 | latest | The newest release. |
 | pre-release | Hidden unless **Show pre-releases** is ticked. |
-| not available for this device | That release has no Android build for this device. Releases before v1.0.0 have none, 32-bit ARM builds (`armv7-linux-androideabi`) start with v1.0.2, x86_64 builds (`x86_64-linux-android`) with the first release after v1.2.1, and there is no 32-bit x86 build. |
+| not available for this device | That release has no Android build for this device. Releases before v1.0.0 have none, 32-bit ARM builds (`armv7-linux-androideabi`) start with v1.0.2, x86_64 builds (`x86_64-linux-android`) with v1.2.1, and there is no 32-bit x86 build. |
 
 Each row has its own buttons: **Install** downloads that release, **Use** switches to an
 installed one, and **Remove** deletes it. Nothing downloads on its own; you choose the release.
