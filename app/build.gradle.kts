@@ -97,3 +97,15 @@ tasks.withType<Test>().configureEach {
     inputs.property("releaseRuntimeModules", releaseRuntimeModules)
     jvmArgumentProviders.add(CommandLineArgumentProvider { listOf("-Doutpace.releaseRuntimeModules=${releaseRuntimeModules.get()}") })
 }
+// Release builds run the notice check on their own, so even a bare assembleRelease can't ship a
+// library without its notice.
+val checkLicenseNotices = tasks.register<Test>("checkLicenseNotices") {
+    description = "Runs NoticesTest, which checks every release runtime library has a license notice."
+    group = "verification"
+    // The file collections, not the task: they depend on compiling the tests, not on running them all.
+    val unitTests = tasks.named<Test>("testDebugUnitTest").get()
+    testClassesDirs = unitTests.testClassesDirs
+    classpath = unitTests.classpath
+    filter.includeTestsMatching("io.github.outpacestream.android.core.NoticesTest")
+}
+afterEvaluate { tasks.named("preReleaseBuild") { dependsOn(checkLicenseNotices) } }
