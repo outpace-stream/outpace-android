@@ -17,18 +17,31 @@ object ContentId {
     private val explicitInfohash =
         Regex("(?i)([?&]infohash=|magnet:\\?\\S*btih:|acestream://ih:|(?<![0-9a-z])ih:$HEX{40})")
     private val whitespace = Regex("\\s+")
+    private val percentEscape = Regex("%($HEX{2})")
     private val bareId = Regex("(?<!$HEX)($HEX{40})(?!$HEX)")
 
     fun extract(text: String): Result {
-        // A getstream link in shared text reads exactly as it does when opened (decoded names, id first).
+        // A getstream link reads as it does when opened; any id in the text still wins over an infohash.
+        var getstreamInfohash = false
         for (token in text.split(whitespace)) {
-            GetStreamLink.parse(token)?.takeIf { it != Result.None }?.let { return it }
+            when (val r = GetStreamLink.parse(token)) {
+                is Result.Id -> return r
+                Result.Infohash -> getstreamInfohash = true
+                else -> Unit
+            }
         }
-        queryId.find(text)?.let { return Result.Id(it.groupValues[1].lowercase()) }
-        schemeId.find(text)?.let { return Result.Id(it.groupValues[1].lowercase()) }
-        if (explicitInfohash.containsMatchIn(text)) return Result.Infohash
+        val decoded = percentDecode(text)
+        queryId.find(decoded)?.let { return Result.Id(it.groupValues[1].lowercase()) }
+        schemeId.find(decoded)?.let { return Result.Id(it.groupValues[1].lowercase()) }
+        if (getstreamInfohash || explicitInfohash.containsMatchIn(decoded)) return Result.Infohash
         bareId.find(text)?.let { return Result.Id(it.groupValues[1].lowercase()) }
         return Result.None
+    }
+
+    /** Decodes `%XX` escapes so encoded parameter names classify like plain ones; other text is kept. */
+    private fun percentDecode(text: String): String {
+        if ('%' !in text) return text
+        return percentEscape.replace(text) { it.groupValues[1].toInt(16).toChar().toString() }
     }
 
     fun isValid(hex: String): Boolean = hex.length == 40 && hex.all { it in '0'..'9' || it in 'a'..'f' }

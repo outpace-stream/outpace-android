@@ -45,6 +45,16 @@ class ContentIdTest {
         assertEquals(Result.Id(id), ContentId.extract("http://localhost/ace/getstream?%69d=$id&infohash=$other"))
     }
 
+    @Test fun decodesEncodedParameterNamesInOtherLinks() {
+        assertEquals(Result.Infohash, ContentId.extract("acestream:?%69nfohash=$other"))
+        assertEquals(Result.Id(id), ContentId.extract("acestream:?%69d=$id&infohash=$other"))
+    }
+
+    @Test fun idElsewhereWinsOverGetstreamInfohash() = assertEquals(
+        Result.Id(id),
+        ContentId.extract("http://127.0.0.1:6878/ace/getstream?infohash=$other acestream://$id"),
+    )
+
     @Test fun rejectsMagnet() = assertEquals(Result.Infohash, ContentId.extract("magnet:?xt=urn:btih:$id&dn=x"))
 
     @Test fun rejectsIhPrefix() = assertEquals(Result.Infohash, ContentId.extract("ih:$id"))
