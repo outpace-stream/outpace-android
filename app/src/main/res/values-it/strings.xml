@@ -296,10 +296,12 @@
     <string name="settings_update_never_checked">Non ancora controllato.</string>
     <string name="settings_update_dev">Build di sviluppo. Aggiornamenti disattivati.</string>
     <string name="settings_update_check_failed">Ultimo controllo non riuscito: %1$s</string>
+    <string name="settings_whats_new">Novità</string>
+    <string name="settings_whats_new_summary">Note della versione che hai.</string>
     <string name="settings_update_check">Controlla aggiornamenti</string>
     <string name="settings_update_check_summary">Chiedi ora a GitHub l\'ultima versione.</string>
     <string name="settings_update_checking">Controllo in corso…</string>
-    <string name="settings_update_changelog">Novità</string>
+    <string name="settings_update_changelog">Registro modifiche</string>
     <string name="settings_update_changelog_summary">Note delle versioni più recenti della tua.</string>
     <string name="settings_update_install">Aggiorna</string>
     <string name="settings_update_install_summary">Scarica e installa la versione %1$s.</string>
@@ -318,6 +320,7 @@
     <string name="update_never">Non chiedere più</string>
     <string name="update_never_toast">Gli avvisi di aggiornamento sono disattivati. Puoi comunque aggiornare da Impostazioni.</string>
     <string name="update_changelog_title">Novità</string>
+    <string name="whats_new_title">Novità della versione %1$s</string>
     <string name="update_changelog_loading">Caricamento delle note di rilascio…</string>
     <string name="update_changelog_empty">Questa versione non ha note.</string>
     <string name="update_changelog_failed">Impossibile caricare le note di rilascio (%1$s).</string>

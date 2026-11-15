@@ -296,10 +296,12 @@
     <string name="settings_update_never_checked">Pas encore vérifié.</string>
     <string name="settings_update_dev">Version de développement. Mises à jour désactivées.</string>
     <string name="settings_update_check_failed">Échec de la dernière vérification : %1$s</string>
+    <string name="settings_whats_new">Nouveautés</string>
+    <string name="settings_whats_new_summary">Notes de la version installée.</string>
     <string name="settings_update_check">Rechercher des mises à jour</string>
     <string name="settings_update_check_summary">Demander maintenant la dernière version à GitHub.</string>
     <string name="settings_update_checking">Vérification…</string>
-    <string name="settings_update_changelog">Nouveautés</string>
+    <string name="settings_update_changelog">Journal des modifications</string>
     <string name="settings_update_changelog_summary">Notes des versions plus récentes que la vôtre.</string>
     <string name="settings_update_install">Mettre à jour</string>
     <string name="settings_update_install_summary">Télécharger et installer la version %1$s.</string>
@@ -318,6 +320,7 @@
     <string name="update_never">Ne plus demander</string>
     <string name="update_never_toast">Les invitations de mise à jour sont désactivées. Vous pouvez toujours mettre à jour depuis Paramètres.</string>
     <string name="update_changelog_title">Nouveautés</string>
+    <string name="whats_new_title">Nouveautés de la version %1$s</string>
     <string name="update_changelog_loading">Chargement des notes de version…</string>
     <string name="update_changelog_empty">Cette version n\'a pas de notes.</string>
     <string name="update_changelog_failed">Impossible de charger les notes de version (%1$s).</string>

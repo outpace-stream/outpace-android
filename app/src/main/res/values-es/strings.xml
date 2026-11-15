@@ -296,10 +296,12 @@
     <string name="settings_update_never_checked">Aún no se ha comprobado.</string>
     <string name="settings_update_dev">Versión de desarrollo. Las actualizaciones están desactivadas.</string>
     <string name="settings_update_check_failed">La última comprobación falló: %1$s</string>
+    <string name="settings_whats_new">Novedades</string>
+    <string name="settings_whats_new_summary">Notas de la versión que tienes.</string>
     <string name="settings_update_check">Buscar actualizaciones</string>
     <string name="settings_update_check_summary">Pregunta ahora a GitHub por la última versión.</string>
     <string name="settings_update_checking">Comprobando…</string>
-    <string name="settings_update_changelog">Novedades</string>
+    <string name="settings_update_changelog">Registro de cambios</string>
     <string name="settings_update_changelog_summary">Notas de las versiones más nuevas que la tuya.</string>
     <string name="settings_update_install">Actualizar</string>
     <string name="settings_update_install_summary">Descargar e instalar la versión %1$s.</string>
@@ -318,6 +320,7 @@
     <string name="update_never">No volver a preguntar</string>
     <string name="update_never_toast">Los avisos de actualización están desactivados. Puedes actualizar igualmente desde Ajustes.</string>
     <string name="update_changelog_title">Novedades</string>
+    <string name="whats_new_title">Novedades de %1$s</string>
     <string name="update_changelog_loading">Cargando las notas de la versión…</string>
     <string name="update_changelog_empty">Esta versión no tiene notas.</string>
     <string name="update_changelog_failed">No se pudieron cargar las notas de la versión (%1$s).</string>
