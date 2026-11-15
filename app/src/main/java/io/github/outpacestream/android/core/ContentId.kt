@@ -16,9 +16,14 @@ object ContentId {
     private val schemeId = Regex("(?i)acestream://(?:cid:)?($HEX{40})(?!$HEX)")
     private val explicitInfohash =
         Regex("(?i)([?&]infohash=|magnet:\\?\\S*btih:|acestream://ih:|(?<![0-9a-z])ih:$HEX{40})")
+    private val whitespace = Regex("\\s+")
     private val bareId = Regex("(?<!$HEX)($HEX{40})(?!$HEX)")
 
     fun extract(text: String): Result {
+        // A getstream link in shared text reads exactly as it does when opened (decoded names, id first).
+        for (token in text.split(whitespace)) {
+            GetStreamLink.parse(token)?.takeIf { it != Result.None }?.let { return it }
+        }
         queryId.find(text)?.let { return Result.Id(it.groupValues[1].lowercase()) }
         schemeId.find(text)?.let { return Result.Id(it.groupValues[1].lowercase()) }
         if (explicitInfohash.containsMatchIn(text)) return Result.Infohash

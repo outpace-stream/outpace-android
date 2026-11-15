@@ -6,6 +6,7 @@ import org.junit.Test
 
 class ContentIdTest {
     private val id = "0123456789abcdef0123456789abcdef01234567"
+    private val other = "f".repeat(40)
 
     @Test fun contentIdLinkIsAcestreamUrl() = assertEquals("acestream://$id", StreamRef.contentId(id).link)
 
@@ -37,7 +38,12 @@ class ContentIdTest {
         assertEquals(Result.Infohash, ContentId.extract("http://127.0.0.1:6878/ace/getstream?infohash=$id"))
 
     @Test fun sharedGetstreamIdStillWins() =
-        assertEquals(Result.Id(id), ContentId.extract("http://127.0.0.1:6878/ace/getstream?infohash=$id&id=$id"))
+        assertEquals(Result.Id(id), ContentId.extract("http://127.0.0.1:6878/ace/getstream?infohash=$other&id=$id"))
+
+    @Test fun sharedGetstreamDecodesParameterNames() {
+        assertEquals(Result.Infohash, ContentId.extract("see http://127.0.0.1:6878/ace/getstream?%69nfohash=$other"))
+        assertEquals(Result.Id(id), ContentId.extract("http://localhost/ace/getstream?%69d=$id&infohash=$other"))
+    }
 
     @Test fun rejectsMagnet() = assertEquals(Result.Infohash, ContentId.extract("magnet:?xt=urn:btih:$id&dn=x"))
 
