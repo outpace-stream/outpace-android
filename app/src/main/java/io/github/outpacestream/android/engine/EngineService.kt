@@ -11,6 +11,7 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
 import io.github.outpacestream.android.EngineFiles
 import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
@@ -20,13 +21,21 @@ import io.github.outpacestream.android.core.EngineTarget
 import io.github.outpacestream.android.core.Launch
 import io.github.outpacestream.android.core.RemoteEngine
 import io.github.outpacestream.android.core.RemoteHealth
+import io.github.outpacestream.android.core.StartMessage
+import io.github.outpacestream.android.core.StartStatusJson
+import io.github.outpacestream.android.core.StartStep
+import io.github.outpacestream.android.core.StartView
+import io.github.outpacestream.android.core.StartWatch
 import io.github.outpacestream.android.core.StreamInfo
+import io.github.outpacestream.android.core.StreamRef
 import io.github.outpacestream.android.core.StreamUrls
 import io.github.outpacestream.android.core.StreamsJson
 import io.github.outpacestream.android.core.TimeBudget
 import io.github.outpacestream.android.core.VersionJson
 import io.github.outpacestream.android.net.Http
+import io.github.outpacestream.android.net.HttpStatusException
 import io.github.outpacestream.android.ui.MainActivity
+import io.github.outpacestream.android.ui.startText
 import java.io.IOException
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
@@ -56,11 +65,17 @@ class EngineService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var shownStreams = -1
 
+    /** The stream start being followed after a hand-off, and its next status poll; see [watchStart]. */
+    private var watch: StartWatch? = null
+    private var watchTask: ScheduledFuture<*>? = null
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         EngineController.pollNow = { worker.execute { schedulePoll(0) } }
+        EngineController.claimStartProgress(this)
+        EngineController.watchStartHook = { ref -> worker.execute { watchStart(ref) } }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -93,7 +108,10 @@ class EngineService : Service() {
 
     override fun onDestroy() {
         EngineController.pollNow = null
+        EngineController.watchStartHook = null
         worker.shutdownNow()
+        // shutdownNow does not wait for a tick in flight; releasing ownership stops it publishing.
+        EngineController.releaseStartProgress(this)
         process?.let { terminate(it) }
         process = null
         releaseWakeLock()
@@ -182,7 +200,7 @@ class EngineService : Service() {
             if (proc.isAliveCompat()) {
                 terminate(proc)
                 process = null
-                fail(getString(R.string.engine_no_answer, START_TIMEOUT_MS / 1000))
+                fail((START_TIMEOUT_MS / 1000).toInt().let { resources.getQuantityString(R.plurals.engine_no_answer, it, it) })
             }
             // Otherwise the process exited during startup; onExit reports it.
         }
@@ -200,6 +218,7 @@ class EngineService : Service() {
         if (proc !== process) return
         process = null
         cancelPoll()
+        endWatch()
         releaseWakeLock()
         if (stopping) return
         EngineController.log.add("[app] engine exited with code $code")
@@ -223,6 +242,7 @@ class EngineService : Service() {
         EngineController.update(EngineState.Stopping)
         updateNotification()
         cancelPoll()
+        endWatch()
         terminate(proc)
         process = null
         stopping = false
@@ -236,12 +256,14 @@ class EngineService : Service() {
         generation++
         remote = null
         cancelPoll()
+        endWatch()
         Prefs(this).remoteConnected = false
         EngineController.log.add("[app] disconnected from ${engine.name}")
         EngineController.update(EngineState.Stopped, emptyList(), clearVersion = true)
     }
 
     private fun fail(reason: String) {
+        endWatch()
         EngineController.log.add("[app] $reason")
         EngineController.update(EngineState.Crashed(reason), emptyList(), clearVersion = true)
         finish()
@@ -356,6 +378,65 @@ class EngineService : Service() {
         }
     }
 
+    /**
+     * Follows [ref]'s start after a hand-off to a player: one status request about once a second,
+     * each with a hard deadline, until [StartWatch] reports playing, failed or out of time. This is
+     * the one poll that may run with no screen visible, because the user has just left for the
+     * player; it is bounded by [StartWatch.WATCH_MS] and replaced by a newer hand-off.
+     */
+    private fun watchStart(ref: StreamRef) {
+        endWatch()
+        if (remote == null && EngineController.sessionState != EngineState.Running) return
+        val w = StartWatch(SystemClock.elapsedRealtime())
+        watch = w
+        EngineController.publishStartProgress(this, StartProgress(ref, StartView(StartMessage.Waiting), done = false), ::updateNotification)
+        scheduleWatch(w, ref, 0)
+    }
+
+    private fun scheduleWatch(w: StartWatch, ref: StreamRef, delayMs: Long) {
+        val gen = generation
+        watchTask = worker.schedule({ if (gen == generation && watch === w) watchTick(w, ref) }, delayMs, TimeUnit.MILLISECONDS)
+    }
+
+    private fun watchTick(w: StartWatch, ref: StreamRef) {
+        val endpoint = remote?.endpoint ?: Endpoint.loopback(port)
+        val step = try {
+            val json = Http.getWithin(StreamUrls.status(endpoint, "ace", ref.selector), STATUS_REQUEST_MS)
+            w.status(StartStatusJson.parse(json), SystemClock.elapsedRealtime())
+        } catch (e: HttpStatusException) {
+            if (e.code == 404) w.notFound(SystemClock.elapsedRealtime()) else w.unreachable(SystemClock.elapsedRealtime())
+        } catch (_: Exception) {
+            w.unreachable(SystemClock.elapsedRealtime())
+        }
+        show(ref, step)
+        if (!step.done) return scheduleWatch(w, ref, StartWatch.POLL_MS)
+        watch = null
+        // A failure or the offline hint stays in the notification for a while, then the usual text returns.
+        if (step.view != null) {
+            val gen = generation
+            watchTask = worker.schedule({ if (gen == generation && watch == null) clearStartProgress() }, RESULT_SHOWN_MS, TimeUnit.MILLISECONDS)
+        }
+    }
+
+    private fun show(ref: StreamRef, step: StartStep) {
+        val before = EngineController.startProgress
+        val now = StartProgress(ref, step.view, step.done)
+        if (before == now) return
+        EngineController.publishStartProgress(this, now, if (before?.view != now.view) ::updateNotification else null)
+    }
+
+    private fun clearStartProgress() {
+        if (EngineController.startProgress == null) return
+        EngineController.publishStartProgress(this, null, ::updateNotification)
+    }
+
+    private fun endWatch() {
+        watchTask?.cancel(false)
+        watchTask = null
+        watch = null
+        if (EngineController.startProgress != null) EngineController.publishStartProgress(this, null)
+    }
+
     private fun terminate(proc: Process) {
         if (Build.VERSION.SDK_INT < 24) {
             // Older libcore may implement destroy() as SIGKILL, which skips the engine's shutdown.
@@ -426,7 +507,10 @@ class EngineService : Service() {
         val version = EngineController.runningVersion?.let { "v$it" } ?: ""
         val n = EngineController.streams.size
         val connected = (EngineController.sessionTarget as? EngineTarget.Remote)?.engine
-        val text = if (connected != null) {
+        val start = EngineController.startProgress?.view
+        val text = if (start != null && EngineController.sessionState == EngineState.Running) {
+            startText(start)
+        } else if (connected != null) {
             when (EngineController.sessionState) {
                 EngineState.Running -> resources.getQuantityString(R.plurals.notification_remote, n, connected.name, n)
                 is EngineState.Unreachable -> getString(R.string.notification_remote_unreachable, connected.name)
@@ -473,6 +557,8 @@ class EngineService : Service() {
         /** Per-request deadline for a remote engine's health check and stream list. */
         private const val HEALTH_MS = 3_000
         private const val VERSION_MS = 2_000
+        /** How long a failed start's message stays in the notification. */
+        private const val RESULT_SHOWN_MS = 60_000L
         private const val WAKE_LOCK_MS = 3 * BACKGROUND_POLL_MS
     }
 }

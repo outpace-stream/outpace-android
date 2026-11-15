@@ -61,6 +61,9 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
     private val remoteSection = find<View>(R.id.remote_section)
     private val remoteState = find<TextView>(R.id.remote_state)
     private val connect = find<Button>(R.id.connect)
+    private val settingsToggle = find<View>(R.id.settings_toggle)
+    private val settingsBody = find<View>(R.id.settings_body)
+    private val settingsChevron = find<ImageView>(R.id.settings_chevron)
     private val rows = SettingRows(host) { render() }
 
     /** Remote id to whether its last probe answered; absent until probed. */
@@ -81,7 +84,16 @@ class EnginesScreen(host: MainActivity, parent: ViewGroup) : Screen(host, parent
         connect.setOnClickListener {
             if (sessionActive()) EngineController.stop(host) else host.startEngine()
         }
+        settingsToggle.setOnClickListener { setSettingsExpanded(settingsBody.visibility != View.VISIBLE) }
+        setSettingsExpanded(false)
         buildSettings()
+    }
+
+    /** Collapsed by default; the state lasts while the app runs, which is all a quick tweak needs. */
+    private fun setSettingsExpanded(expanded: Boolean) {
+        settingsBody.visibility = if (expanded) View.VISIBLE else View.GONE
+        settingsChevron.rotation = if (expanded) 180f else 0f
+        settingsToggle.contentDescription = host.getString(if (expanded) R.string.engine_settings_hide else R.string.engine_settings_show)
     }
 
     private fun buildSettings() {

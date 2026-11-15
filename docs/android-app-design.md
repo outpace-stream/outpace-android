@@ -122,6 +122,9 @@ It must work equally well on a phone and on an Android TV box.
   visible. While the engine runs with no screen visible, the service does one slow poll of
   `GET /streams` (suggested every 30 s) to drive the notification, the wake lock and idle
   auto-stop; the engine has no push signal, and a localhost request every 30 s is negligible.
+  One bounded exception: after a hand-off to a player, the service follows that stream's start
+  with one `GET /streams/ace/<id>/status` a second (each with a 1 s deadline) until `playing`,
+  `failed` or 90 s, even with no screen visible, so the notification can say why a start failed.
   Nothing polls while the engine is stopped. The engine's stderr goes into a bounded in-memory
   ring buffer (a few hundred lines); the app never parses it.
 - **Kotlin**, minimal dependencies (AndroidX core, the leanback launcher bits for TV). No
@@ -210,13 +213,25 @@ Entry points, all leading to the same flow:
 
 - **Link taps:** intent filter for the `acestream` scheme (`acestream://<id>` and
   `acestream:?content_id=<id>`).
+- **Compat links from other apps:** `ACTION_VIEW` for `http://127.0.0.1:<port>/ace/getstream` or
+  `http://localhost:<port>/ace/getstream` (exact path, with or without a trailing slash),
+  declared both untyped and with `video/*` (Android
+  matches a typed intent only against a filter with a type). The app reads `id=` or `content_id=`;
+  `infohash=` is refused like other explicit infohash forms. The port is ignored, and the hand-off
+  uses the native route, so it works with the compat API off. The native `/streams/...` URL never
+  matches these filters. On API 31+, `127.0.0.1` passes `Patterns.DOMAIN_NAME`, so an implicit
+  intent for it is a domain-verification intent whatever its MIME type. When there is more than
+  one candidate, Outpace (unapproved) is dropped in favour of browsers and match-all-web players.
+  `localhost` fails that pattern and is not filtered, and explicit (package) intents are not filtered either.
 - **Share sheet:** `ACTION_SEND` with `text/plain`. The app extracts the first content id from the
   text: an `acestream://<id>` or `acestream:?content_id=<id>` link, or a bare 40-hex string (the
   engine also treats bare hex as a content id).
 - **Paste box** on the main screen.
 - **Recent streams:** the last 12 streams the user played, stored locally with their kind
   (`cid:` or `ih:`) and the name they were shown under, one click to replay. Essential on TV,
-  where typing is painful. The user can clear the list or remove one entry (long press).
+  where typing is painful. The user can clear the list or remove one entry (long press). The
+  same long-press menu copies an entry as an `acestream://<id>` link or as the bare id; infohash
+  entries offer only the id.
 - **Search results** (feature 9), which pass an explicit `ih:` selector.
 
 Links, shared text and the paste box accept content ids only. A bare 40-hex string cannot be told
@@ -231,7 +246,11 @@ Flow:
 3. Build `http://127.0.0.1:<port>/streams/ace/cid:<id>` (or `ih:<infohash>` for a search result,
    or the LAN address, see below).
 4. Fire `ACTION_VIEW` with that URI and MIME type `video/mp2t`, through the system chooser so the
-   user can pick a player and tick "always".
+   user can pick a player and tick "always". The chooser never offers Outpace itself:
+   `EXTRA_EXCLUDE_COMPONENTS` on API 24+, and below that a chooser built from the other apps'
+   activities returned by `queryIntentActivities`.
+
+5. Follow the start (feature 4a below).
 
 Secondary actions on the same screen: **Copy URL**, **Share URL** (plain text, for sending to
 another device), and **Open as HLS** (`/streams/ace/<id>.m3u8`, MIME
@@ -245,6 +264,23 @@ Live vs VOD: the native live route is `/streams/ace/<id>`; VOD content uses
 `/vod/ace/cid:<id>`. The app cannot tell which a content id is before resolving it. v1 targets
 live content. Whether to add VOD in v1 depends on what the live route returns for a VOD id;
 see "Left to the builder".
+
+### 4a. Start progress and failure reasons
+
+After the hand-off ([#25](https://github.com/outpace-stream/outpace-android/issues/25)), the
+service polls the stream's `/status` once a second and shows the result on the play screen and in
+its notification: the engine's `phase` (`resolving`, `connecting` with the peer count,
+`buffering`) while starting, and a localized message per `error.code` on `failed` (the engine's
+own message is shown only as detail for `unresolvable` and `protected`). Polling stops at
+`playing`, `failed`, a `404` after the stream was seen, 30 s without the stream appearing, or 90 s
+overall; a newer hand-off replaces it. A failure stays in the notification for 60 s. The engine
+keeps a failure on `/status` for 60 s, so a `failed` answer before anything else may belong to an
+earlier attempt: it ends the watch only once it changes, or is still there after 30 s, by which
+time the player's new request would have replaced it. Deadlines use `SystemClock.elapsedRealtime()`.
+
+Engines without `phase` get a fallback: when `peers` stays `0` for 20 s, "No peers yet. This
+stream may be offline." The decision logic is `core/StartStatus.kt` (`StartWatch`), covered by
+JVM tests.
 
 ### 5. Logs
 
@@ -327,6 +363,25 @@ see "Left to the builder".
 - The app checks its own GitHub releases and offers to update itself, from a once-a-day dialog
   and from **Settings > App updates**. Design:
   [2026-11-14-app-updates-design.md](superpowers/specs/2026-11-14-app-updates-design.md).
+- On the first launch after the version code increases, a "What's new" dialog shows the cleaned
+  release notes of the versions since the last one that ran (stored in preferences). It needs one
+  GitHub API request per update, never one per launch: the last 100 releases for a range, or the
+  installed release by tag when only its notes are wanted. It is skipped silently on a fresh
+  install, for development builds, or when the notes cannot be fetched. Settings shows the notes of
+  the installed version on demand.
+
+### 11. Languages
+
+- English is the default; Spanish, Portuguese (`values-pt`, Brazilian wording), French, Italian
+  and German are translated in `values-xx/strings.xml`. Counts use `<plurals>` with each
+  language's CLDR categories.
+- `android:localeConfig` (`res/xml/locales_config.xml`) offers the per-app language setting on
+  Android 13+, with the platform attribute only, no AndroidX. Older devices follow the device
+  language.
+- Engine-originated text (log lines, error details) is not translated.
+- `TranslationsTest` fails when a translatable string is missing from a language, a format
+  argument differs, or `locales_config.xml` falls out of step, so a new string ships with all
+  its translations.
 
 ## Build, CI and release
 

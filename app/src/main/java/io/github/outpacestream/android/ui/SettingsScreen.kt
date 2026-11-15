@@ -20,6 +20,7 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
     private val batteryRow: View
 
     private lateinit var updateStatus: View
+    private lateinit var whatsNew: View
     private lateinit var updateCheck: View
     private lateinit var updateChangelog: View
     private lateinit var updateInstall: View
@@ -51,6 +52,10 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
             isFocusable = false
             isClickable = false
         }
+        whatsNew = rows.row(group, R.string.settings_whats_new, R.string.settings_whats_new_summary).apply {
+            findViewById<TextView>(R.id.title).text = host.getString(R.string.whats_new_title, installed)
+            setOnClickListener { host.updateFlow.showWhatsNew(null, installed, quiet = false) }
+        }
         updateCheck = rows.row(group, R.string.settings_update_check, R.string.settings_update_check_summary)
         updateCheck.setOnClickListener { checkNow() }
         updateChangelog = rows.row(group, R.string.settings_update_changelog, R.string.settings_update_changelog_summary)
@@ -60,6 +65,7 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         updateNotify = rows.toggle(group, R.string.settings_update_notify, R.string.settings_update_notify_summary, { prefs.appUpdateNotify }) {
             prefs.appUpdateNotify = it
         }
+        setEnabled(whatsNew, !dev)
         setEnabled(updateCheck, !dev)
         setEnabled(updateNotify, !dev)
         host.updateFlow.onChanged = {

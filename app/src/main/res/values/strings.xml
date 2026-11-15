@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Outpace</string>
+    <string name="app_name" translatable="false">Outpace</string>
     <string name="channel_engine">Engine</string>
 
     <string name="state_stopped">Engine stopped</string>
@@ -20,12 +20,15 @@
 
     <string name="engine_update_available">v%1$s available</string>
     <string name="engine_failed_to_start">Could not start the engine: %1$s</string>
-    <string name="engine_no_answer">The engine did not answer within %1$d seconds.</string>
+    <plurals name="engine_no_answer">
+        <item quantity="one">The engine did not answer within %1$d second.</item>
+        <item quantity="other">The engine did not answer within %1$d seconds.</item>
+    </plurals>
     <string name="engine_exited">The engine exited (code %1$d).</string>
 
 
     <string name="play_title">Play stream</string>
-    <string name="play_ref">%1$s %2$s</string>
+    <string name="play_ref" translatable="false">%1$s %2$s</string>
     <string name="play_open_player">Open in player</string>
     <string name="play_open_hls">Open as HLS</string>
     <string name="play_copy">Copy URL</string>
@@ -40,6 +43,19 @@
     <string name="play_no_id">No content id found.</string>
     <string name="play_engine_failed">The engine is not running: %1$s</string>
     <string name="play_lan_hint">Other devices need LAN access turned on in Engines.</string>
+    <string name="start_waiting">Waiting for the player to open the stream…</string>
+    <string name="start_resolving">Looking up the stream…</string>
+    <string name="start_connecting">Finding peers (%1$d)…</string>
+    <string name="start_buffering">Buffering…</string>
+    <string name="start_no_peers_yet">No peers yet. This stream may be offline.</string>
+    <string name="start_no_peers">No one is sharing this stream right now. Try again later.</string>
+    <string name="start_network">Can\'t reach the peer network. Check your connection or try another network.</string>
+    <string name="start_not_a_stream">This id isn\'t a stream Outpace can open.</string>
+    <string name="start_protected">This stream is protected, so Outpace can\'t play it.</string>
+    <string name="start_capacity">The engine is already playing the maximum number of streams.</string>
+    <string name="start_no_space">Not enough free storage for this download.</string>
+    <string name="start_failed">The engine couldn\'t start this stream.</string>
+    <string name="start_with_detail" translatable="false">%1$s (%2$s)</string>
 
     <string name="versions_title">Engine versions</string>
     <string name="versions_running">Running: %1$s</string>
@@ -62,7 +78,10 @@
     <string name="version_downloading">Downloading v%1$s: %2$s</string>
     <string name="version_installed">v%1$s installed</string>
     <string name="version_failed">Install failed: %1$s</string>
-    <string name="version_full">Up to %1$d versions can be installed. Remove one first.</string>
+    <plurals name="version_full">
+        <item quantity="one">Only %1$d version can be installed. Remove it first.</item>
+        <item quantity="other">Up to %1$d versions can be installed. Remove one first.</item>
+    </plurals>
     <string name="version_remove_running">Stop the engine before removing the version it runs.</string>
     <string name="cancel">Cancel</string>
 
@@ -99,6 +118,10 @@
     <string name="engines_intro">Run an engine on this device, or use one running on another device. The selected engine plays everything.</string>
     <string name="engines_section_local">This device\'s engine</string>
     <string name="engines_section_remote">Remote engine</string>
+    <string name="engine_settings_title">Engine settings</string>
+    <string name="engine_settings_summary">Search, playback, network and peers</string>
+    <string name="engine_settings_show">Show engine settings</string>
+    <string name="engine_settings_hide">Hide engine settings</string>
     <string name="engine_local_name">This device</string>
     <string name="engine_badge_selected">Selected</string>
     <string name="engine_meta_running">running</string>
@@ -117,11 +140,14 @@
     <string name="remote_name">Name</string>
     <string name="remote_name_hint">Living room TV</string>
     <string name="remote_address">Address</string>
-    <string name="remote_address_hint">192.168.1.20:6878</string>
+    <string name="remote_address_hint" translatable="false">192.168.1.20:6878</string>
     <string name="remote_address_help">The IP address or host name and port of a device running Outpace with LAN access on. The port defaults to 6878. For an engine behind an HTTPS proxy, start with https://.</string>
     <string name="remote_name_invalid">Give it a name of up to 40 characters.</string>
     <string name="remote_address_invalid">Use host:port, for example 192.168.1.20:6878.</string>
-    <string name="remote_full">Up to %1$d remote engines can be added. Remove one first.</string>
+    <plurals name="remote_full">
+        <item quantity="one">Only %1$d remote engine can be added. Remove it first.</item>
+        <item quantity="other">Up to %1$d remote engines can be added. Remove one first.</item>
+    </plurals>
     <string name="remote_settings_note">This engine uses its own configuration. Change it on the device that runs it.</string>
     <string name="remote_state_disconnected">Not connected to %1$s</string>
     <string name="remote_state_connecting">Connecting to %1$s</string>
@@ -138,7 +164,7 @@
     <string name="home_connecting">Connecting</string>
     <string name="home_connected">Connected</string>
     <string name="home_unreachable">Not answering</string>
-    <string name="engine_detail_named">%1$s · %2$s</string>
+    <string name="engine_detail_named" translatable="false">%1$s · %2$s</string>
 
     <!-- Home -->
     <string name="no_engine_selected">No engine selected. Choose one in Engines.</string>
@@ -175,11 +201,13 @@
         <item quantity="other">%d peers</item>
     </plurals>
     <string name="stream_buffer">%.1f s buffered</string>
-    <string name="meta_separator">" · "</string>
+    <string name="meta_separator" translatable="false">" · "</string>
     <string name="recent_menu_play">Play</string>
+    <string name="recent_menu_copy_link">Copy link</string>
     <string name="recent_menu_copy">Copy id</string>
     <string name="recent_menu_remove">Remove from recent</string>
     <string name="id_copied">Id copied</string>
+    <string name="copied_value">Copied %1$s</string>
 
     <!-- Search -->
     <string name="search_title">Search</string>
@@ -273,6 +301,8 @@
     <string name="settings_update_never_checked">Not checked yet.</string>
     <string name="settings_update_dev">Development build. Updates are off.</string>
     <string name="settings_update_check_failed">Last check failed: %1$s</string>
+    <string name="settings_whats_new">What\'s new</string>
+    <string name="settings_whats_new_summary">Release notes of the version you have.</string>
     <string name="settings_update_check">Check for updates</string>
     <string name="settings_update_check_summary">Ask GitHub for the latest release now.</string>
     <string name="settings_update_checking">Checking…</string>
@@ -295,6 +325,7 @@
     <string name="update_never">Never ask again</string>
     <string name="update_never_toast">Update prompts are off. You can still update from Settings.</string>
     <string name="update_changelog_title">What\'s new</string>
+    <string name="whats_new_title">What\'s new in %1$s</string>
     <string name="update_changelog_loading">Loading the release notes…</string>
     <string name="update_changelog_empty">This release has no notes.</string>
     <string name="update_changelog_failed">Could not load the release notes (%1$s).</string>

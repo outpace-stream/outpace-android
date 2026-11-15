@@ -53,9 +53,15 @@ a stream is playing. If you leave the app while the update downloads, the instal
 when you come back. If Android can't install the update, the app says why and offers the release
 page so you can install it by hand.
 
+The first time you open the app after it updates, a **What's new in X.Y.Z** dialog shows the
+release notes of every version since the one you had. It appears once per version, never after a
+fresh install, and not at all when the notes can't be loaded (for example offline). **OK**, the
+remote's center button or Back closes it.
+
 **Settings > App updates** works whatever you chose in the dialog. It shows the installed and
-latest versions and when the app last checked, and has **Check for updates**, **Changelog**,
-**Update**, and the **Notify me about updates** switch that **Never ask again** turns off.
+latest versions and when the app last checked, and has **What's new in X.Y.Z** (the notes of the
+version you have), **Check for updates**, **Changelog**, **Update**, and the **Notify me about
+updates** switch that **Never ask again** turns off.
 
 Only signed release builds update this way. A build you compiled yourself is signed with a
 different key, so Android refuses the update, and installing the release APK by hand fails the same
@@ -85,7 +91,7 @@ upright they sit along the bottom; on TV, tablets and landscape phones they form
 left. Back from any other tab returns to Home.
 
 Home shows which engine the app uses and whether it is running or connected, with a coloured dot,
-the engine's name and version, and the address players use. It has one button:
+the engine's name and version, and the address players use. One button sits beside the status:
 
 | Selected engine | Button |
 | --- | --- |
@@ -118,7 +124,8 @@ runs, and selecting another engine disconnects from a remote one first.
 
 When a downloaded version is selected, the tab shows its state with **Start engine** or **Stop
 engine**, **Restart**, **Versions** ([Engine versions](#engine-versions)) and **Logs**, a
-**vX.Y.Z available** button when a newer release exists, and the engine [settings](#engine-settings).
+**vX.Y.Z available** button when a newer release exists. Below that, a collapsed **Engine
+settings** section opens the engine [settings](#engine-settings).
 When you change settings while the engine runs, a banner offers **Restart** to apply them.
 
 ### Remote engines
@@ -165,13 +172,30 @@ You can start playback from:
 
 - **A link.** Tap an `acestream://<id>` or `acestream:?content_id=<id>` link in a browser or chat
   app and choose Outpace.
+- **Another app.** Apps and add-ons that open streams through a local AceStream-compatible engine
+  (`http://127.0.0.1:6878/ace/getstream?id=<id>`, or `localhost`) can open them in Outpace: pick
+  Outpace when Android asks which app to use. Outpace reads the content id (`id=` or
+  `content_id=`), starts its engine if needed and hands the stream to your player as usual, so
+  this works with the AceStream-compatible API turned off. The port in the link does not matter.
+
+  On Android 12 and later, Android treats a `127.0.0.1` link as a web link. It offers that link
+  only to apps approved for the address, and Outpace cannot be verified for it. Unless Outpace is
+  the only app that can open the link, Android skips Outpace and opens it in your browser. If
+  the link has a `video/*` type, Android may open it in a player that accepts any web address.
+  The type does not exempt the link. The same links with `localhost` are not affected, because
+  Android does not treat `localhost` as a web domain. A link that names Outpace's package or
+  activity directly is also unaffected. Outpace does not yet have a confirmed setting that
+  approves it for `127.0.0.1`.
 - **The share menu.** Share text that contains a content id or an `acestream:` link to Outpace.
 - **Home.** Paste a content id or link into the box and press **Play**. On phones, **Paste**
   fills the box from the clipboard.
 - **Search.** Find a stream by name and press its **Play** button; see [Search](#search).
 - **Recently played.** Home lists the last 12 streams you played, with their names when known.
-  This is the easy way to replay on a TV remote. **Clear** forgets them; long press a row's
-  **Play** button to copy its id or remove just that one.
+  This is the easy way to replay on a TV remote. **Clear** forgets them. Long press a row's
+  **Play** button for more: **Copy link** copies an `acestream://` link that opens the stream in
+  another app or in Outpace on another device, **Copy id** copies the bare 40-hex id, and
+  **Remove from recent** forgets just that one. Streams played from search have no link, only
+  their infohash to copy.
 - **Now playing.** While the engine runs, Home lists what it is playing, with the title, the
   number of clients, peers and seconds buffered. **Play** opens it again. Few or no
   peers usually means the stream is hard to find; see
@@ -180,7 +204,7 @@ You can start playback from:
 The app starts the engine (or connects to the selected remote engine) if needed, waits until it
 answers, then opens Android's "Play with" chooser for `http://127.0.0.1:6878/streams/ace/cid:<id>` (or `ih:<infohash>` for a
 search result). Tick "Always" to go
-straight to your favourite player next time. The same screen also has:
+straight to your favourite player next time. Outpace never lists itself in that chooser. The same screen also has:
 
 - **Open as HLS**, for players that handle `.m3u8` better than a raw MPEG-TS stream.
 - **Copy URL** and **Share URL**, for players that don't appear in the chooser or for another
@@ -188,8 +212,27 @@ straight to your favourite player next time. The same screen also has:
   uses this device's LAN address instead of `127.0.0.1`.
 
 Links, shared text and the paste box take content ids only. Infohashes and magnet links pasted or
-shared there are rejected; to play by infohash, use Search. A bare 40-character hex string is
+shared there, and `getstream` links with `infohash=`, are rejected; to play by infohash, use Search. A bare 40-character hex string is
 treated as a content id, as the engine does.
+
+After the hand-off, the app follows the start for up to 90 seconds and shows how far it got, on
+the play screen and in the engine notification: "Looking up the stream", "Finding peers (3)",
+then "Buffering". It stops once the stream plays. If the start fails, it shows why, with a
+suggested action where there is one:
+
+| Engine error | Message |
+| --- | --- |
+| `no_peers` | No one is sharing this stream right now. Try again later. |
+| `network` | Can't reach the peer network. Check your connection or try another network. |
+| `not_found`, `unresolvable` | This id isn't a stream Outpace can open. |
+| `protected` | This stream is protected, so Outpace can't play it. |
+| `capacity` | The engine is already playing the maximum number of streams. |
+| `no_space` | Not enough free storage for this download. |
+
+A failure stays in the notification for a minute. Start phases and error codes need an engine
+that reports them on `/status` (a release after v1.1.0); with an older engine, the app shows the peer
+count and, when it stays at zero for 20 seconds, "No peers yet. This stream may be offline." The
+same works with a remote engine.
 
 The app plays live streams. VOD content ids are not handled yet.
 
@@ -243,8 +286,9 @@ that API and keep working.
 
 ## Engine settings
 
-Engine settings sit in the Engines tab, below this device's engine, and appear only while a
-downloaded version is selected. They save as soon as you change them and apply the next time the
+Engine settings sit in the Engines tab, in the **Engine settings** section below this device's
+engine, and appear only while a downloaded version is selected. The section starts collapsed:
+choose it to show or hide the settings. They save as soon as you change them and apply the next time the
 engine starts. While the engine runs with older settings, a banner offers **Restart** to apply
 them right away. Playback presets set an engine variable only when they differ from the engine
 default. **Start on boot** and **Stop when idle** are in the **Settings** tab.
@@ -274,6 +318,17 @@ The engine's data and cache live in the app's private storage (`OUTPACE_DATA_DIR
 `OUTPACE_CACHE_DIR`). Uninstalling the app removes them. The peer listener uses `0.0.0.0:8621`
 unless you change **Peer port**; see [Seeding and Peers](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers).
 
+## Languages
+
+The app is available in English, Spanish, Portuguese, French, Italian and German. It follows the
+device language and falls back to English for any other. On Android 13 and newer you can pick a
+language for this app alone in **Android Settings > Apps > Outpace > Language**, without changing
+the device language; some TV devices do not show that screen. Messages that come from the engine
+itself, such as log lines and error details in parentheses, stay in English.
+
+The translations were machine-written and may read stiffly in places. Corrections from native
+speakers are welcome as issues or pull requests against `app/src/main/res/values-xx/strings.xml`.
+
 ## Background running and battery
 
 While the engine runs, the app shows a notification with the stream count and a **Stop**
@@ -287,7 +342,9 @@ boot is on, the app asks once.
 The app holds a wake lock only while this device's engine has an active stream; a remote
 connection needs none. It checks the engine, local or remote, every
 30 seconds when no app screen is open, and every 2 seconds while one is. Peer counts and buffer on the main
-screen are fetched only while it is open, for at most 4 streams.
+screen are fetched only while it is open, for at most 4 streams. After you hand a stream to a
+player, the app also checks that one stream's start once a second, and stops when it plays,
+fails, or after 90 seconds at most.
 
 ## Logs and problems
 

@@ -2,9 +2,13 @@ package io.github.outpacestream.android.ui
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
@@ -14,6 +18,7 @@ import io.github.outpacestream.android.Prefs
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.ContentId
 import io.github.outpacestream.android.core.Endpoint
+import io.github.outpacestream.android.core.GetStreamLink
 import io.github.outpacestream.android.core.RecentEntry
 import io.github.outpacestream.android.core.StreamRef
 import io.github.outpacestream.android.core.StreamUrls
@@ -24,9 +29,10 @@ import io.github.outpacestream.android.engine.EngineState
 
 /**
  * Turns a link, shared text, pasted id or an in-app stream (search result, recent, active) into a
- * hand-off to an external player. Links and shared text are only read for content ids. The app's
- * own screens open it through the non-exported [IN_APP_ALIAS] and pass an explicit [EXTRA_REF],
- * which may be an infohash from search; those extras are ignored on any other entry.
+ * hand-off to an external player. Links (including other apps' `http://127.0.0.1/ace/getstream`
+ * links) and shared text are only read for content ids. The app's own screens open it through
+ * the non-exported [IN_APP_ALIAS] and pass an explicit [EXTRA_REF], which may be an infohash from
+ * search; those extras are ignored on any other entry.
  */
 class PlayActivity : Activity() {
     private lateinit var status: TextView
@@ -64,11 +70,34 @@ class PlayActivity : Activity() {
             prepare(explicit, intent.getStringExtra(EXTRA_NAME))
             return
         }
-        when (val r = ContentId.extract(inputText())) {
+        when (val r = linkResult() ?: ContentId.extract(inputText())) {
             is ContentId.Result.Id -> prepare(StreamRef.contentId(r.hex), null)
             ContentId.Result.Infohash -> fail(getString(R.string.play_infohash))
             ContentId.Result.None -> fail(getString(R.string.play_no_id))
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        EngineController.addListener(onEngine)
+        showStart()
+    }
+
+    override fun onStop() {
+        EngineController.removeListener(onEngine)
+        super.onStop()
+    }
+
+    private val onEngine: () -> Unit = { showStart() }
+
+    /** Once handed off, the progress or failure of this stream's start, as the service follows it. */
+    private fun showStart() {
+        if (actions.visibility != View.VISIBLE) return
+        val p = EngineController.startProgress
+        // No watch, or one for another stream (a newer hand-off, or the engine stopped): back to ready.
+        val view = p?.takeIf { it.ref == ref }?.view
+        status.text = if (view == null) getString(R.string.play_ready) else startText(view)
+        progress.visibility = if (view != null && p?.done == false && !view.message.failure) View.VISIBLE else View.GONE
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -80,6 +109,12 @@ class PlayActivity : Activity() {
         Intent.ACTION_VIEW -> intent.dataString.orEmpty()
         Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
         else -> intent.getStringExtra(EXTRA_TEXT).orEmpty()
+    }
+
+    /** A getstream link from another app; null for every other entry, which [ContentId.extract] reads. */
+    private fun linkResult(): ContentId.Result? {
+        if (intent.action != Intent.ACTION_VIEW || intent.scheme != "http") return null
+        return GetStreamLink.parse(intent.dataString.orEmpty()) ?: ContentId.Result.None
     }
 
     private fun fail(message: String) {
@@ -120,6 +155,7 @@ class PlayActivity : Activity() {
             launched = true
             openPlayer(hls = false)
         }
+        showStart()
     }
 
     private fun settings() = EngineController.effectiveSettings(Prefs(this).settings)
@@ -150,15 +186,38 @@ class PlayActivity : Activity() {
         val view = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(localUrl(hls)), type)
         val title = name ?: activeTitle()
         if (title != null) view.putExtra("title", title)
-        if (packageManager.queryIntentActivities(view, 0).isEmpty()) {
+        val chooser = playerChooser(view)
+        if (chooser == null) {
             toast(getString(R.string.play_no_player))
             return
         }
         try {
-            startActivity(Intent.createChooser(view, getString(R.string.play_choose)))
+            startActivity(chooser)
+            ref?.let(EngineController::watchStart)
         } catch (_: ActivityNotFoundException) {
             toast(getString(R.string.play_no_player))
         }
+    }
+
+    /**
+     * A chooser that never offers Outpace itself, since this activity also handles typed video
+     * getstream links. API 24+ excludes our components; below that the chooser is built from the
+     * other apps' activities. Null when no other app can play [view].
+     */
+    private fun playerChooser(view: Intent): Intent? {
+        // MATCH_DEFAULT_ONLY: only activities an implicit startActivity (and so the chooser) can reach.
+        val others = packageManager.queryIntentActivities(view, PackageManager.MATCH_DEFAULT_ONLY)
+            .map { it.activityInfo }
+            .filter { it.packageName != packageName && it.exported }
+        if (others.isEmpty()) return null
+        val title = getString(R.string.play_choose)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val own = arrayOf(ComponentName(this, PlayActivity::class.java), ComponentName(packageName, IN_APP_ALIAS))
+            return Intent.createChooser(view, title).putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, own)
+        }
+        val targets = others.map { Intent(view).setComponent(ComponentName(it.packageName, it.name)) }
+        val extra: Array<Parcelable> = targets.drop(1).toTypedArray()
+        return Intent.createChooser(targets.first(), title).putExtra(Intent.EXTRA_INITIAL_INTENTS, extra)
     }
 
     private fun copyUrl() {
