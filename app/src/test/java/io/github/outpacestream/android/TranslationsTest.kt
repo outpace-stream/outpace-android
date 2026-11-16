@@ -61,7 +61,7 @@ class TranslationsTest {
 
     @Test fun everyLanguageIsPresent() {
         assertEquals(
-            listOf("values-de", "values-es", "values-fr", "values-it", "values-pt"),
+            listOf("values-de", "values-es", "values-fr", "values-it", "values-pt", "values-ru"),
             locales.map { it.name },
         )
     }
@@ -90,13 +90,15 @@ class TranslationsTest {
     }
 
     @Test fun pluralsKeepTheirCategories() {
-        // CLDR categories Android uses for integers; "many" covers large round numbers in these languages.
+        // CLDR categories Android uses for integers; "many" covers large round numbers in the Romance
+        // languages, and Russian picks one, few or many by the last digits ("other" is for fractions).
         val required = mapOf(
             "values-de" to setOf("one", "other"),
             "values-es" to setOf("one", "many", "other"),
             "values-fr" to setOf("one", "many", "other"),
             "values-it" to setOf("one", "many", "other"),
             "values-pt" to setOf("one", "many", "other"),
+            "values-ru" to setOf("one", "few", "many", "other"),
         )
         for (dir in locales) {
             val (entries, _) = parse(File(dir, "strings.xml"))
