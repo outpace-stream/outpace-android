@@ -13,7 +13,7 @@ import io.github.outpacestream.android.engine.EngineController
 class LogsActivity : Activity() {
     private lateinit var text: TextView
     private lateinit var scroll: ScrollView
-    private var shown = -1
+    private var shown = -1L
     private val tick = object : Runnable {
         override fun run() {
             render()
@@ -56,20 +56,22 @@ class LogsActivity : Activity() {
      * return to the bottom catches up.
      */
     private fun render() {
+        val revision = EngineController.log.revision()
+        if (revision == shown) return
+        if (shown != -1L && (!atBottom() || text.hasSelection())) return
+        shown = revision
         val lines = EngineController.log.snapshot()
-        val signature = lines.size * 31 + (lines.lastOrNull()?.hashCode() ?: 0)
-        if (signature == shown) return
-        if (shown != -1 && (!atBottom() || text.hasSelection())) return
-        shown = signature
         text.text = if (lines.isEmpty()) getString(R.string.logs_empty) else lines.joinToString("\n")
-        // Scroll once the new text is laid out. This runs after the TextView's own pre-draw pass,
-        // which moves a selectable TextView's reset cursor (offset 0) into view, scrolling to the top.
+        // Replacing the text puts a selectable TextView's cursor at offset 0, and its own pre-draw
+        // pass, which runs before this listener, may start an animated scroll toward it. Jump to
+        // the end, then replace that animation with a zero-velocity fling that stops in place.
         val observer = scroll.viewTreeObserver
         observer.addOnPreDrawListener(
             object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
                     if (observer.isAlive) observer.removeOnPreDrawListener(this)
                     scroll.scrollTo(0, text.bottom)
+                    scroll.fling(0)
                     return true
                 }
             },
