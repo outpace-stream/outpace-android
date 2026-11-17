@@ -461,8 +461,9 @@ searches for TVs unless you open that screen or press **Search again**.
 ## Logs and problems
 
 **View logs** (in Settings > Local engine) shows the engine's last 500 lines of output, plus the app's own lines starting with
-`[app]`. **Copy** and **Share** help when you report a problem; remove content ids before posting
-logs anywhere public.
+`[app]`. New lines appear while the view is at the bottom; scroll up, or select text, and it holds
+still until you return to the bottom. **Copy** and **Share** help when you report a problem;
+remove content ids before posting logs anywhere public.
 
 - **"The engine exited (code N)"**: the app restarts a crashed engine once. If it exits again,
   it stays stopped so it can't loop. Check **Logs**, then start it again.
