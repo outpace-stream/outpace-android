@@ -298,8 +298,10 @@ class PlayActivity : Activity() {
         }
         val others = RecommendedPlayer.vlcFirst(found.map { it.packageName }).map(found::get)
         val targets = others.map { Intent(view).setComponent(ComponentName(it.packageName, it.name)) }
-        val extra: Array<Parcelable> = targets.drop(1).toTypedArray()
-        return Intent.createChooser(targets.first(), title).putExtra(Intent.EXTRA_INITIAL_INTENTS, extra)
+        // The chooser lists initial intents above the base intent's match, so the last target is the
+        // base and the order, VLC first, is kept.
+        val extra: Array<Parcelable> = targets.dropLast(1).toTypedArray()
+        return Intent.createChooser(targets.last(), title).putExtra(Intent.EXTRA_INITIAL_INTENTS, extra)
     }
 
     private fun copyUrl() {
