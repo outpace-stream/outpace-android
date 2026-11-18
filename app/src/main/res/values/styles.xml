@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme.Base" parent="@android:style/Theme.Material.Light">
+        <item name="android:textViewStyle">@style/TextViewStart</item>
         <item name="android:colorPrimary">@color/surface</item>
         <item name="android:colorPrimaryDark">@color/text</item>
         <item name="android:colorAccent">@color/accent</item>
@@ -20,6 +21,7 @@
     </style>
 
     <style name="AppTheme.Dialog.Base" parent="@android:style/Theme.Material.Light.Dialog">
+        <item name="android:textViewStyle">@style/TextViewStart</item>
         <item name="android:colorAccent">@color/accent</item>
         <item name="android:colorBackground">@color/surface</item>
         <item name="android:textColorPrimary">@color/text</item>
@@ -79,6 +81,13 @@
         <item name="android:background">@drawable/bg_card</item>
         <item name="android:padding">18dp</item>
         <item name="android:orientation">vertical</item>
+    </style>
+
+    <!-- Plain TextViews align to the layout's start, so Latin text such as an engine name or an
+         engine error sits on the right in Arabic like the text around it. The platform default
+         aligns each view by its own text's direction. -->
+    <style name="TextViewStart" parent="@android:style/Widget.Material.TextView">
+        <item name="android:textAlignment">viewStart</item>
     </style>
 
     <style name="Text" />

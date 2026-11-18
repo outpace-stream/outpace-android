@@ -426,11 +426,12 @@ apply on the next engine start, through the usual **Restart** banner.
 
 ## Languages
 
-The app is available in English, Spanish, Portuguese, French, Italian, German, Russian and
-Turkish. It follows the device language and falls back to English for any other. On Android 13 and
-newer you can pick a language for this app alone in **Android Settings > Apps > Outpace >
-Language**, without changing the device language; some TV devices do not show that screen. Messages that come from the
-engine itself, such as log lines and error details in parentheses, stay in English.
+The app is available in English, Spanish, Portuguese, French, Italian, German, Russian, Turkish
+and Arabic. It follows the device language and falls back to English for any other. In Arabic the
+layout runs right to left. On Android 13 and newer you can pick a language for this app alone in
+**Android Settings > Apps > Outpace > Language**, without changing the device language; some TV
+devices do not show that screen. Messages that come from the engine itself, such as log lines and
+error details in parentheses, stay in English.
 
 The translations were machine-written and may read stiffly in places. Corrections from native
 speakers are welcome as issues or pull requests against `app/src/main/res/values-xx/strings.xml`.

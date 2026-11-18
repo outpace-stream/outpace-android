@@ -80,7 +80,7 @@ flowchart LR
   release notes, and updates after you confirm, with the APK checked against its `.sha256`.
 - **Small and dependency-free.** An APK under 2 MB, built on the platform SDK alone, with no
   analytics or trackers. Available in English, Spanish, Portuguese, French, Italian, German,
-  Russian and Turkish.
+  Russian, Turkish and Arabic.
 
 ## Requirements
 

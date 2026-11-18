@@ -85,7 +85,7 @@
 
         <LinearLayout android:id="@+id/empty" style="@style/Card" android:layout_marginTop="28dp" android:gravity="center_horizontal">
             <TextView style="@style/Text.Body" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:gravity="center" android:text="@string/home_empty" />
+                android:gravity="center" android:textAlignment="center" android:text="@string/home_empty" />
             <Button android:id="@+id/go_search" android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:layout_marginTop="12dp" android:text="@string/action_find_streams" />
         </LinearLayout>
