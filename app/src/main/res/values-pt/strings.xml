@@ -29,6 +29,10 @@
     <string name="play_title">Reproduzir stream</string>
     <string name="play_open_player">Abrir no player</string>
     <string name="play_open_hls">Abrir como HLS</string>
+    <string name="play_open_vlc">Abrir no VLC (recomendado)</string>
+    <string name="play_vlc_hint">Para uma reprodução mais confiável, instale o VLC.</string>
+    <string name="play_get_vlc">Baixar o VLC</string>
+    <string name="play_vlc_hint_dismiss">Não mostrar de novo</string>
     <string name="play_copy">Copiar URL</string>
     <string name="play_share">Compartilhar URL</string>
     <string name="play_choose">Reproduzir com</string>

@@ -29,6 +29,10 @@
     <string name="play_title">Lire un flux</string>
     <string name="play_open_player">Ouvrir dans un lecteur</string>
     <string name="play_open_hls">Ouvrir en HLS</string>
+    <string name="play_open_vlc">Ouvrir dans VLC (recommandé)</string>
+    <string name="play_vlc_hint">Pour une lecture plus fiable, installez VLC.</string>
+    <string name="play_get_vlc">Obtenir VLC</string>
+    <string name="play_vlc_hint_dismiss">Ne plus afficher</string>
     <string name="play_copy">Copier l\'URL</string>
     <string name="play_share">Partager l\'URL</string>
     <string name="play_choose">Lire avec</string>

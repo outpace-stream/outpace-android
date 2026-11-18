@@ -8,7 +8,8 @@ The Outpace Android app runs the engine on a phone or an Android TV box without 
 without Termux, or connects to an Outpace engine running on another device, such as a home
 server or a TV box. It downloads the engine release you choose, keeps it running in the
 background, and hands streams to the video player you already use, such as VLC, MX Player, Just
-Player or Kodi. It has no player of its own.
+Player or Kodi. It has no player of its own. VLC is the recommended player: some TVs' built-in
+players stall on live streams that VLC plays without problems. Any player still works.
 
 ## Install
 
@@ -231,6 +232,11 @@ answers, then opens Android's "Play with" chooser for `http://127.0.0.1:6878/str
 search result). Tick "Always" to go
 straight to your favourite player next time. Outpace never lists itself in that chooser. The same screen also has:
 
+- **Open in VLC (recommended)**, shown first and focused when VLC is installed. It sends the same
+  URL straight to VLC. **Open in player** still lists every player, VLC included. On Android 6
+  and older, VLC is also listed first in the chooser.
+- When VLC is not installed, a short hint suggests it, with **Get VLC** when an app store is
+  available. It never blocks playback; **Don't show again** hides it for good.
 - **Open as HLS**, for players that handle `.m3u8` better than a raw MPEG-TS stream.
 - **Copy URL** and **Share URL**, for players that don't appear in the chooser or for another
   device. To play on another device, turn on **Allow LAN access** first; the copied URL then
@@ -470,6 +476,9 @@ remove content ids before posting logs anywhere public.
 - **"The engine exited (code N)"**: the app restarts a crashed engine once. If it exits again,
   it stays stopped so it can't loop. Check **Logs**, then start it again.
 - **"No app on this device can play the stream"**: install a video player, or use **Copy URL**.
+- **A black screen, then back to Outpace, with a TV's built-in player**: some stock TV players
+  stall on live MPEG-TS streams, even while the engine delivers data. Use VLC, or try
+  **Open as HLS**.
 - **The engine shows up as `linker` in process lists**: on Android 10 and newer, apps can't run
   downloaded programs directly, so the app starts the engine through Android's own program
   loader (`/system/bin/linker64`, or `/system/bin/linker` for 32-bit). That is expected.
