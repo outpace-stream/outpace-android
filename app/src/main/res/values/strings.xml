@@ -29,6 +29,10 @@
     <string name="play_ref" translatable="false">%1$s %2$s</string>
     <string name="play_open_player">Open in player</string>
     <string name="play_open_hls">Open as HLS</string>
+    <string name="play_open_vlc">Open in VLC (recommended)</string>
+    <string name="play_vlc_hint">For the most reliable playback, install VLC.</string>
+    <string name="play_get_vlc">Get VLC</string>
+    <string name="play_vlc_hint_dismiss">Don\'t show again</string>
     <string name="play_copy">Copy URL</string>
     <string name="play_share">Share URL</string>
     <string name="play_choose">Play with</string>

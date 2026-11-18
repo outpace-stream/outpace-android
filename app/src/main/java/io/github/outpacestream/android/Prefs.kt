@@ -105,6 +105,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("battery_prompt_shown", false)
         set(v) = sp.edit().putBoolean("battery_prompt_shown", v).apply()
 
+    /** The play screen's "install VLC" hint was dismissed; it stays hidden from then on. */
+    var vlcHintDismissed: Boolean
+        get() = sp.getBoolean("vlc_hint_dismissed", false)
+        set(v) = sp.edit().putBoolean("vlc_hint_dismissed", v).apply()
+
     /** Latest release version from the redirect check, and when it was fetched. */
     var latestVersion: String?
         get() = sp.getString("latest_version", null)

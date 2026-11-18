@@ -31,6 +31,10 @@
     <string name="play_title">Смотреть трансляцию</string>
     <string name="play_open_player">Открыть в плеере</string>
     <string name="play_open_hls">Открыть как HLS</string>
+    <string name="play_open_vlc">Открыть в VLC (рекомендуется)</string>
+    <string name="play_vlc_hint">Для самого надёжного воспроизведения установите VLC.</string>
+    <string name="play_get_vlc">Установить VLC</string>
+    <string name="play_vlc_hint_dismiss">Больше не показывать</string>
     <string name="play_copy">Копировать URL</string>
     <string name="play_share">Поделиться URL</string>
     <string name="play_choose">Открыть с помощью</string>

@@ -277,6 +277,20 @@ Flow:
    `EXTRA_EXCLUDE_COMPONENTS` on API 24+, and below that a chooser built from the other apps'
    activities returned by `queryIntentActivities`.
 
+   VLC (`org.videolan.vlc`) is recommended, never required
+   ([#57](https://github.com/outpace-stream/outpace-android/issues/57)): some TV stock players
+   (a TCL TV's `com.tcl.ui_mediaCenter`) block in prepare on the live MPEG-TS URL until they ANR,
+   while VLC plays it. When a VLC activity is among the players for the hand-off, the screen shows
+   **Open in VLC (recommended)** above **Open in player** and focuses it; it sends the same intent
+   with VLC's component set. The automatic first hand-off still opens the chooser, so no player is
+   made the default. The chooser itself is not reordered on API 24+: how `EXTRA_INITIAL_INTENTS`
+   combines with `EXTRA_EXCLUDE_COMPONENTS` differs between the AOSP chooser, the API 34+
+   IntentResolver and OEM TV resolvers (VLC listed twice, or dropped). Below API 24, where the
+   chooser is built from explicit targets, VLC is the first. Without VLC, a hint suggests it, with
+   a `market://` store button only when something resolves that link; dismissing it is remembered.
+   The decision logic is `core/RecommendedPlayer.kt`, covered by JVM tests. The manifest declares
+   `<queries>` for the VLC package and the `market` scheme (API 30+ package visibility).
+
 5. Follow the start (feature 4a below).
 
 Secondary actions on the same screen: **Copy URL**, **Share URL** (plain text, for sending to

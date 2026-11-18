@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -20,6 +21,7 @@ import io.github.outpacestream.android.core.ContentId
 import io.github.outpacestream.android.core.Endpoint
 import io.github.outpacestream.android.core.GetStreamLink
 import io.github.outpacestream.android.core.RecentEntry
+import io.github.outpacestream.android.core.RecommendedPlayer
 import io.github.outpacestream.android.core.StreamRef
 import io.github.outpacestream.android.core.StreamUrls
 import io.github.outpacestream.android.engine.EngineController
@@ -41,6 +43,11 @@ class PlayActivity : Activity() {
     private lateinit var progress: ProgressBar
     private lateinit var urlView: TextView
     private lateinit var actions: View
+    private lateinit var openButton: Button
+    private lateinit var vlcButton: Button
+    private lateinit var vlcHint: View
+    /** VLC's activity for the MPEG-TS hand-off, when VLC can play it; see [refreshPlayers]. */
+    private var vlc: ActivityInfo? = null
     private var ref: StreamRef? = null
     private var name: String? = null
     private var launched = false
@@ -57,7 +64,13 @@ class PlayActivity : Activity() {
         refView = findViewById(R.id.ref)
         launched = savedInstanceState?.getBoolean("launched") ?: false
 
-        findViewById<Button>(R.id.open).setOnClickListener { openPlayer(hls = false) }
+        openButton = findViewById(R.id.open)
+        vlcButton = findViewById(R.id.open_vlc)
+        vlcHint = findViewById(R.id.vlc_hint)
+        openButton.setOnClickListener { openPlayer(hls = false) }
+        vlcButton.setOnClickListener { openVlc() }
+        findViewById<Button>(R.id.get_vlc).setOnClickListener { getVlc() }
+        findViewById<Button>(R.id.vlc_hint_dismiss).setOnClickListener { dismissVlcHint() }
         findViewById<Button>(R.id.open_hls).setOnClickListener { openPlayer(hls = true) }
         findViewById<Button>(R.id.copy).setOnClickListener { copyUrl() }
         findViewById<Button>(R.id.share).setOnClickListener { shareUrl() }
@@ -81,6 +94,8 @@ class PlayActivity : Activity() {
     override fun onStart() {
         super.onStart()
         EngineController.addListener(onEngine)
+        // Back from the store or a player: VLC may have been installed or removed meanwhile.
+        if (actions.visibility == View.VISIBLE) refreshPlayers()
         showStart()
     }
 
@@ -152,7 +167,8 @@ class PlayActivity : Activity() {
         urlView.text = localUrl(hls = false)
         actions.visibility = View.VISIBLE
         findViewById<Button>(R.id.cast).visibility = if (CastActivity.offered(this)) View.VISIBLE else View.GONE
-        findViewById<Button>(R.id.open).requestFocus()
+        refreshPlayers()
+        primaryButton().requestFocus()
         if (!launched) {
             launched = true
             openPlayer(hls = false)
@@ -183,12 +199,78 @@ class PlayActivity : Activity() {
         return StreamUrls.live(Endpoint(host ?: Endpoint.LOOPBACK_HOST, settings.port), r)
     }
 
-    private fun openPlayer(hls: Boolean) {
+    /** The hand-off intent; every player, VLC included, gets this same URL and type. */
+    private fun viewIntent(hls: Boolean): Intent {
         val type = if (hls) "application/vnd.apple.mpegurl" else "video/mp2t"
         val view = Intent(Intent.ACTION_VIEW).setDataAndType(Uri.parse(localUrl(hls)), type)
         val title = name ?: activeTitle()
         if (title != null) view.putExtra("title", title)
-        val chooser = playerChooser(view)
+        return view
+    }
+
+    /** Other apps' activities that an implicit startActivity (and so the chooser) can reach for [view]. */
+    private fun players(view: Intent): List<ActivityInfo> =
+        packageManager.queryIntentActivities(view, PackageManager.MATCH_DEFAULT_ONLY)
+            .map { it.activityInfo }
+            .filter { it.packageName != packageName && it.exported }
+
+    /**
+     * Shows "Open in VLC" when VLC can play the stream, else the dismissible "install VLC" hint
+     * (with a store button only when a store handles the link). Never blocks the other players.
+     */
+    private fun refreshPlayers() {
+        val handlers = players(viewIntent(hls = false))
+        val prefs = Prefs(this)
+        val store = Intent(Intent.ACTION_VIEW, Uri.parse(RecommendedPlayer.STORE_URI)).resolveActivity(packageManager) != null
+        val offer = RecommendedPlayer.offer(handlers.map { it.packageName }, prefs.vlcHintDismissed, store)
+        vlc = offer.vlc?.let(handlers::get)
+        val hadFocus = currentFocus
+        vlcButton.visibility = if (vlc != null) View.VISIBLE else View.GONE
+        vlcHint.visibility = if (offer.hint) View.VISIBLE else View.GONE
+        findViewById<Button>(R.id.get_vlc).visibility = if (offer.storeLink) View.VISIBLE else View.GONE
+        // A hidden view keeps no focus, which would leave a D-pad user with nothing selected.
+        if (hadFocus != null && !hadFocus.isShown) primaryButton().requestFocus()
+        setPrimary(openButton, vlc == null)
+    }
+
+    /** "Open in VLC" when it is offered, else the chooser. */
+    private fun primaryButton(): Button = if (vlcButton.visibility == View.VISIBLE) vlcButton else openButton
+
+    /** Only one primary-styled button: the chooser button steps down while "Open in VLC" is shown. */
+    private fun setPrimary(button: Button, primary: Boolean) {
+        button.setBackgroundResource(if (primary) R.drawable.bg_button_primary else R.drawable.bg_button_secondary)
+        val color = if (primary) R.color.button_primary_text else R.color.button_secondary_text
+        @Suppress("DEPRECATION")
+        button.setTextColor(if (Build.VERSION.SDK_INT >= 23) getColorStateList(color) else resources.getColorStateList(color))
+    }
+
+    /** The same hand-off as [openPlayer], straight to VLC; falls back to the chooser if VLC is gone. */
+    private fun openVlc() {
+        val target = vlc ?: return openPlayer(hls = false)
+        try {
+            startActivity(viewIntent(hls = false).setComponent(ComponentName(target.packageName, target.name)))
+            ref?.let(EngineController::watchStart)
+        } catch (_: ActivityNotFoundException) {
+            refreshPlayers()
+            openPlayer(hls = false)
+        }
+    }
+
+    private fun getVlc() {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(RecommendedPlayer.STORE_URI)))
+        } catch (_: ActivityNotFoundException) {
+            refreshPlayers()
+        }
+    }
+
+    private fun dismissVlcHint() {
+        Prefs(this).vlcHintDismissed = true
+        refreshPlayers()
+    }
+
+    private fun openPlayer(hls: Boolean) {
+        val chooser = playerChooser(viewIntent(hls))
         if (chooser == null) {
             toast(getString(R.string.play_no_player))
             return
@@ -204,22 +286,22 @@ class PlayActivity : Activity() {
     /**
      * A chooser that never offers Outpace itself, since this activity also handles typed video
      * getstream links. API 24+ excludes our components; below that the chooser is built from the
-     * other apps' activities. Null when no other app can play [view].
+     * other apps' activities, VLC first. Null when no other app can play [view].
      */
     private fun playerChooser(view: Intent): Intent? {
-        // MATCH_DEFAULT_ONLY: only activities an implicit startActivity (and so the chooser) can reach.
-        val others = packageManager.queryIntentActivities(view, PackageManager.MATCH_DEFAULT_ONLY)
-            .map { it.activityInfo }
-            .filter { it.packageName != packageName && it.exported }
-        if (others.isEmpty()) return null
+        val found = players(view)
+        if (found.isEmpty()) return null
         val title = getString(R.string.play_choose)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             val own = arrayOf(ComponentName(this, PlayActivity::class.java), ComponentName(packageName, IN_APP_ALIAS))
             return Intent.createChooser(view, title).putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, own)
         }
+        val others = RecommendedPlayer.vlcFirst(found.map { it.packageName }).map(found::get)
         val targets = others.map { Intent(view).setComponent(ComponentName(it.packageName, it.name)) }
-        val extra: Array<Parcelable> = targets.drop(1).toTypedArray()
-        return Intent.createChooser(targets.first(), title).putExtra(Intent.EXTRA_INITIAL_INTENTS, extra)
+        // The chooser lists initial intents above the base intent's match, so the last target is the
+        // base and the order, VLC first, is kept.
+        val extra: Array<Parcelable> = targets.dropLast(1).toTypedArray()
+        return Intent.createChooser(targets.last(), title).putExtra(Intent.EXTRA_INITIAL_INTENTS, extra)
     }
 
     private fun copyUrl() {
