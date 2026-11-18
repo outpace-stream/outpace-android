@@ -445,9 +445,11 @@ background. Exiting stops it all:
   question warns that players and other devices using it will stop working. With nothing
   running, Back closes the app without asking.
 
-Some devices still stop background apps. If streams stop when the screen turns off, allow the app
-to ignore battery optimisation (**Settings > Battery optimisation**). On TV, and when start on
-boot is on, the app asks once.
+Some phones and tablets still stop background apps. If streams stop when the screen turns off,
+allow the app to ignore battery optimisation (**Settings > Battery optimisation**). When start on
+boot is on, the app asks once. The row is hidden once the app is exempt, on TV and other devices
+without a battery (Android only applies these limits on battery power), and when the device has
+no battery optimisation screen.
 
 The app holds a wake lock only while this device's engine has an active stream; a remote
 connection needs none. It checks the engine, local or remote, every

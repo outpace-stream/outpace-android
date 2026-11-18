@@ -25,6 +25,16 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="http" android:mimeType="application/vnd.apple.mpegurl" />
         </intent>
+        <!-- Battery optimisation screens, resolved before the Settings row is offered. -->
+        <intent>
+            <action
+                android:name="android.settings.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"
+                tools:ignore="BatteryLife" />
+            <data android:scheme="package" />
+        </intent>
+        <intent>
+            <action android:name="android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS" />
+        </intent>
     </queries>
 
     <application
