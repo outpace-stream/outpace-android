@@ -10,6 +10,7 @@ import android.widget.TextView
 import io.github.outpacestream.android.BuildConfig
 import io.github.outpacestream.android.R
 import io.github.outpacestream.android.core.AppRelease
+import io.github.outpacestream.android.core.BatteryOptimisation
 import io.github.outpacestream.android.core.Releases
 import io.github.outpacestream.android.core.UpdatePolicy
 import io.github.outpacestream.android.net.AppUpdates
@@ -24,6 +25,13 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
     private val engines = EngineSections(host, view)
     private val bootRow: View
     private val batteryRow: View
+
+    /**
+     * Where the battery row leads, ignoring the exemption, refreshed when the tab appears; null
+     * hides the row. The exemption itself is checked on every render, since the direct prompt is
+     * a dialog that returns without stopping this activity.
+     */
+    private var batteryScreen: BatteryOptimisation.Screen? = null
 
     private lateinit var updateStatus: View
     private lateinit var updateTitle: TextView
@@ -45,7 +53,7 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         bootRow = rows.toggle(group, R.string.settings_boot, R.string.settings_boot_summary, { prefs.startOnBoot }) { prefs.startOnBoot = it }
         rows.toggle(group, R.string.settings_idle, R.string.settings_idle_summary, { prefs.idleStop }) { prefs.idleStop = it }
         batteryRow = rows.row(group, R.string.settings_battery, R.string.settings_battery_summary)
-        batteryRow.setOnClickListener { BatteryPrompt.request(host) }
+        batteryRow.setOnClickListener { batteryScreen?.let { BatteryPrompt.open(host, it) } }
         buildUpdates(find(R.id.group_updates))
         // The version is in App updates above, so About only says where releases come from.
         find<TextView>(R.id.about).text = host.getString(R.string.settings_about, Releases.REPO, AppRelease.REPO.slug)
@@ -60,7 +68,10 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
         engines.onShown()
     }
 
-    override fun onVisible() = engines.onVisible()
+    override fun onVisible() {
+        batteryScreen = BatteryPrompt.screen(host, checkExempt = false)
+        engines.onVisible()
+    }
 
     override fun onInvisible() = engines.onInvisible()
 
@@ -167,7 +178,7 @@ class SettingsScreen(host: MainActivity, parent: ViewGroup) : Screen(host, paren
 
     override fun render() {
         engines.render()
-        batteryRow.visibility = if (BatteryPrompt.isExempt(host)) View.GONE else View.VISIBLE
+        batteryRow.visibility = if (batteryScreen == null || BatteryPrompt.isExempt(host)) View.GONE else View.VISIBLE
         renderUpdates()
     }
 }

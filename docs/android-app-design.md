@@ -318,7 +318,9 @@ JVM tests.
 ### 6. Battery and boot
 
 - A one-time prompt (and a settings entry) to exempt the app from battery optimisation, shown
-  prominently on TV and on phones only when start-on-boot is enabled.
+  on phones and tablets only when start-on-boot is enabled. TVs and devices without a battery get
+  neither, since Doze and App Standby only apply on battery power; the entry is also hidden when
+  neither the direct prompt nor the settings list resolves.
 - `BOOT_COMPLETED` receiver starts the service when start-on-boot is on.
 
 ### 7. Engine versions
