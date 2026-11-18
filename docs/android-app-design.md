@@ -419,8 +419,9 @@ JVM tests.
 ### 11. Languages
 
 - English is the default; Spanish, Portuguese (`values-pt`, Brazilian wording), French, Italian,
-  German, Russian and Turkish are translated in `values-xx/strings.xml`. Counts use `<plurals>` with each
-  language's CLDR categories.
+  German, Russian, Turkish and Arabic are translated in `values-xx/strings.xml`. Counts use
+  `<plurals>` with each language's CLDR categories (all six for Arabic). The manifest sets
+  `android:supportsRtl`, so Arabic mirrors the layout; layouts use start/end, never left/right.
 - `android:localeConfig` (`res/xml/locales_config.xml`) offers the per-app language setting on
   Android 13+, with the platform attribute only, no AndroidX. Older devices follow the device
   language.

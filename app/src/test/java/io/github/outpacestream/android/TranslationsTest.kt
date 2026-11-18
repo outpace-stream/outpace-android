@@ -61,7 +61,7 @@ class TranslationsTest {
 
     @Test fun everyLanguageIsPresent() {
         assertEquals(
-            listOf("values-de", "values-es", "values-fr", "values-it", "values-pt", "values-ru", "values-tr"),
+            listOf("values-ar", "values-de", "values-es", "values-fr", "values-it", "values-pt", "values-ru", "values-tr"),
             locales.map { it.name },
         )
     }
@@ -92,8 +92,9 @@ class TranslationsTest {
     @Test fun pluralsKeepTheirCategories() {
         // CLDR categories Android uses for integers; "many" covers large round numbers in the Romance
         // languages, Russian picks one, few or many by the last digits ("other" is for fractions), and
-        // Turkish, like German, only tells one from other.
+        // Turkish, like German, only tells one from other; Arabic uses all six categories.
         val required = mapOf(
+            "values-ar" to setOf("zero", "one", "two", "few", "many", "other"),
             "values-de" to setOf("one", "other"),
             "values-es" to setOf("one", "many", "other"),
             "values-fr" to setOf("one", "many", "other"),
