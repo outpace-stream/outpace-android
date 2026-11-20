@@ -120,8 +120,9 @@ to run. Once installed, it updates itself from this repository's releases.
 
 Already running Outpace on another machine? Skip steps 2 and 3: in **Settings > Engine
 connection** choose **Add a remote engine** and enter its address, such as `192.168.1.20:6878`.
-That engine must listen on the network (`OUTPACE_BIND=0.0.0.0:6878`). Add
-`OUTPACE_ACE_COMPAT=true` if you want the app to show its version.
+That engine must listen on the network (`OUTPACE_BIND=0.0.0.0:6878`). The app shows its version
+when the AceStream-compatible API is on, which is the default after engine 1.2.1; on 1.2.1 and older
+add `OUTPACE_ACE_COMPAT=true`.
 
 ## Good to know
 

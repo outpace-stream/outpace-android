@@ -28,7 +28,9 @@ class Prefs(context: Context) {
             seeding = sp.getBoolean("seeding", true),
             inbound = sp.getBoolean("inbound", true),
             portMapping = sp.getBoolean("port_mapping", false),
-            aceCompat = sp.getBoolean("ace_compat", false),
+            // Stored under a new key so the old default (off), which every settings save wrote
+            // even for users who never touched the toggle, does not survive the change to on.
+            aceCompat = sp.getBoolean(ACE_COMPAT_KEY, true),
             search = sp.getBoolean("search", false),
             startupBuffer = StartupBuffer.fromKey(sp.getString("startup_buffer", null)),
             hlsStart = HlsStart.fromKey(sp.getString("hls_start", null)),
@@ -44,7 +46,7 @@ class Prefs(context: Context) {
         set(s) = sp.edit()
             .putBoolean("lan", s.lan).putInt("port", s.port).putBoolean("seeding", s.seeding)
             .putBoolean("inbound", s.inbound).putBoolean("port_mapping", s.portMapping)
-            .putBoolean("ace_compat", s.aceCompat).putBoolean("search", s.search)
+            .remove("ace_compat").putBoolean(ACE_COMPAT_KEY, s.aceCompat).putBoolean("search", s.search)
             .putString("startup_buffer", s.startupBuffer.key).putString("hls_start", s.hlsStart.key)
             .putBoolean("catalog_fallback", s.catalogFallback).putBoolean("low_memory", s.lowMemory)
             .putString("upload_limit", s.uploadLimit.key).putInt("peer_port", s.peerPort)
@@ -173,6 +175,7 @@ class Prefs(context: Context) {
         set(v) = sp.edit().putString("recent_queries", JSONArray(v.take(RecentList.MAX_QUERIES)).toString()).apply()
 
     companion object {
+        private const val ACE_COMPAT_KEY = "ace_compat_v2"
         const val IDLE_STOP_MS = 10 * 60_000L
         const val DAY_MS = 24 * 60 * 60_000L
     }
