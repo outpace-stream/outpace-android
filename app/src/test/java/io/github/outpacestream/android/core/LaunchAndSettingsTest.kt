@@ -50,6 +50,11 @@ class LaunchAndSettingsTest {
         assertEquals("false", env["OUTPACE_COMPAT_ACESTREAM_SERVICES"])
     }
 
+    @Test fun envAceCompatOnByDefault() {
+        assertEquals("true", EngineSettings().env("/d", "/c")["OUTPACE_ACE_COMPAT"])
+        assertEquals("false", EngineSettings(aceCompat = false).env("/d", "/c")["OUTPACE_ACE_COMPAT"])
+    }
+
     @Test fun envSearch() =
         assertEquals("true", EngineSettings(search = true).env("/d", "/c")["OUTPACE_COMPAT_ACESTREAM_SERVICES"])
 

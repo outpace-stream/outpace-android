@@ -6,7 +6,8 @@ data class EngineSettings(
     val seeding: Boolean = true,
     val inbound: Boolean = true,
     val portMapping: Boolean = false,
-    val aceCompat: Boolean = false,
+    /** Serve the engine's AceStream-compatible routes (`/ace/getstream`, `/server/api`); on by default, like the engine. */
+    val aceCompat: Boolean = true,
     /** Opt-in stream-name search through AceStream's public index (engine 1.0.0 and later). */
     val search: Boolean = false,
     val startupBuffer: StartupBuffer = StartupBuffer.SMOOTH,
