@@ -215,7 +215,7 @@ Each maps to an existing variable; see `docs/wiki/Environment-Variables.md` for 
 | Accept inbound peers | `OUTPACE_ENABLE_INBOUND` | engine default (on) |
 | Router port mapping | `OUTPACE_ENABLE_PORT_MAPPING` | engine default (off) |
 | SOCKS5 proxy (engine 1.2.0+) | `OUTPACE_PROXY_MODE` (`on`, `fallback`) and `OUTPACE_PROXY`, only when not off | off |
-| AceStream-compatible API | `OUTPACE_ACE_COMPAT` | off |
+| AceStream-compatible API | `OUTPACE_ACE_COMPAT` | on (stored as `ace_compat_v2`, so the old stored default does not carry over) |
 | Stream search | `OUTPACE_COMPAT_ACESTREAM_SERVICES` | off |
 | AceStream identity | `OUTPACE_ACESTREAM_IDENTITY` (engine 1.1.0 and later, hidden below) | off, variable omitted |
 | Cast to TVs (DLNA) | `OUTPACE_ENABLE_CAST` (engine 1.2.0+, needs LAN access) | off |

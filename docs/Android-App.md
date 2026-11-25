@@ -185,7 +185,8 @@ With a remote engine:
   that engine.
 - The remote engine's own configuration applies. The app does not change its settings, versions,
   restarts or logs. Home shows its version when the engine answers the AceStream-compatible
-  `get_version` call (`OUTPACE_ACE_COMPAT=true`).
+  `get_version` call. Engines newer than 1.2.1 answer it by default unless started with
+  `OUTPACE_ACE_COMPAT=0`; 1.2.1 and older need `OUTPACE_ACE_COMPAT=true`.
 
 The engine's HTTP API is plain HTTP with no password, so the app allows unencrypted connections to
 any address, which Android cannot limit to the local network. Add only engines on networks you
@@ -383,7 +384,7 @@ default. **Start on boot** and **Stop when idle** are further down Settings, und
 | Accept inbound peers | On | [`OUTPACE_ENABLE_INBOUND`](https://github.com/outpace-stream/outpace-engine/wiki/Seeding-and-Peers). Sent as `false` while the proxy is Always. |
 | Router port mapping | Off | [`OUTPACE_ENABLE_PORT_MAPPING`](https://github.com/outpace-stream/outpace-engine/wiki/NAT-and-Port-Mapping). Sent as `false` while the proxy is Always. |
 | Peer port | 8621 | [`OUTPACE_PEER_LISTEN`](https://github.com/outpace-stream/outpace-engine/wiki/NAT-and-Port-Mapping) to `0.0.0.0:<port>`, set only when changed. It is also the announced and router-mapped port. It must differ from the HTTP port and from `1935`, the engine's RTMP port. |
-| AceStream-compatible API | Off | [`OUTPACE_ACE_COMPAT`](https://github.com/outpace-stream/outpace-engine/wiki/Playing-Streams#acestream-compatible-api) |
+| AceStream-compatible API | On | [`OUTPACE_ACE_COMPAT`](https://github.com/outpace-stream/outpace-engine/wiki/Playing-Streams#acestream-compatible-api). Serves `/ace/getstream` and `/server/api` for apps and playlists written for AceStream. App 1.1.0 and older had it off by default; updating turns it on once, and you can turn it off again. |
 | Cast to TVs (DLNA) | Off | [`OUTPACE_ENABLE_CAST`](https://github.com/outpace-stream/outpace-engine/wiki/Casting)`=true`, set only when on. Shown for engine v1.2.0 or newer. Needs **Allow LAN access**; see [Play on TV](#play-on-tv-dlna). |
 | Stream search | Off | [`OUTPACE_COMPAT_ACESTREAM_SERVICES`](https://github.com/outpace-stream/outpace-engine/wiki/Stream-Search). Sends queries and your IP address to AceStream's public index over plain HTTP. |
 | AceStream identity | Off | [`OUTPACE_ACESTREAM_IDENTITY`](https://github.com/outpace-stream/outpace-engine/wiki/Engine-Camouflage)`=true`, set only when on. Shown only for engine v1.1.0 or newer. Peers, trackers, the catalog and (with **Stream search** on) search see the official AceStream Linux engine profile instead of Outpace. The first start with it on stores a device id (`acestream-device-id`) in the app's private data, which uninstalling removes. The engine makes one HTTPS lookup to RIPEstat (`stat.ripe.net`) for this device's network and country after two peers report the same public address. If the engine cannot derive its hardware key, it stops at startup and the error shows in Logs. |
